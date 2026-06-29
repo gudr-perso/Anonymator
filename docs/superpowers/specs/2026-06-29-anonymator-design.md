@@ -98,6 +98,8 @@ Piloté par un **fichier JSON** éditable dans Paramètres. Champs par entrée :
 `code · libellé · méthode (Regex|LLM/NER|Hybride) · validation · actif · étiquette · sensibilité (Haute/Moyenne/Basse)`.
 Profil par défaut verrouillé + surcharges utilisateur. (Le champ « préfixe token » de pseudonymisation est réservé v2.)
 
+**Décision — `ORG` actif par défaut** : les organisations sont masquées par défaut, **y compris les noms de banques récurrents** (« Crédit Agricole », « CRCA »). L'utilisateur peut désactiver le type ORG (toggle) ou décocher des occurrences à la revue.
+
 ---
 
 ## 5. Mode TEXTE (anonymisation)
@@ -191,6 +193,5 @@ Profil par défaut verrouillé + surcharges utilisateur. (Le champ « préfixe t
 
 ## 12. Points ouverts (à préciser à l'implémentation)
 - Liste finale des entités **actives** par défaut en v1 (depuis le référentiel §4.3).
-- Politique sur les **noms d'organisations bancaires** récurrents (« Crédit Agricole ») : masqués ou non par défaut (réglable via toggle ORG).
 - Stratégie exacte de **chunking** du texte très long (seuil, recouvrement).
 - Faut-il un **versionnage git** du projet (non initialisé à ce jour).
