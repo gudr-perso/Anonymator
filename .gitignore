@@ -1,0 +1,26 @@
+# Brainstorming / visual companion (local only)
+.superpowers/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+build/
+dist/
+*.spec
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# App data / modèles téléchargés / sorties
+*.log
+models/
+output/
+*_ano_*.csv
+*_ano_*.xlsx
+*_ano_*.txt
