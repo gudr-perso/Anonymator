@@ -3,6 +3,7 @@ from datetime import datetime
 from pathlib import Path
 from anonymator.ner import NerDetector
 from anonymator.referential import Referential
+from anonymator.model import Entity
 from anonymator.pipeline import detect
 from anonymator.anonymize import apply_masking
 from anonymator.dedup import detect_unique
@@ -45,6 +46,43 @@ def anonymize_xlsx(path: Path, ner: NerDetector, ref: Referential,
     return FileResult(out, report)
 
 
+def scan_csv(doc, ner: NerDetector, ref: Referential,
+             cols: set[int]) -> dict[tuple[int, int], list[Entity]]:
+    """Détecte les entités par cellule (dédupliqué) sur les colonnes `cols`.
+    Clés = (ligne, colonne) ; valeurs = entités détectées dans la cellule.
+    Offsets des entités relatifs à la valeur de cellule (cf. dedup.detect_unique)."""
+    data_start = 1 if doc.has_header else 0
+    values = [doc.rows[r][c]
+              for r in range(data_start, len(doc.rows))
+              for c in cols if c < len(doc.rows[r])]
+    cache = detect_unique(values, lambda v: detect(v, ner, ref))
+    result: dict[tuple[int, int], list[Entity]] = {}
+    for r in range(data_start, len(doc.rows)):
+        for c in cols:
+            if c >= len(doc.rows[r]):
+                continue
+            ents = cache.get(doc.rows[r][c], [])
+            if ents:
+                result[(r, c)] = ents
+    return result
+
+
+def apply_csv(doc, retained_by_cell: dict[tuple[int, int], list[Entity]],
+              ref: Referential) -> tuple["csv_io.CsvDocument", AuditReport]:
+    """Masque les entités retenues par cellule et produit le rapport.
+    Mute `doc.rows` en place et le retourne."""
+    report = AuditReport()
+    for (r, c), ents in retained_by_cell.items():
+        if not ents:
+            continue
+        original = doc.rows[r][c]
+        location = f"{_column_label(doc, c)} L{r + 1}"
+        for e in ents:
+            report.add(e.type, e.value, ref.tag_for(e.type), location)
+        doc.rows[r][c] = apply_masking(original, ents, ref)
+    return doc, report
+
+
 def anonymize_csv(path: Path, ner: NerDetector, ref: Referential,
                   output_dir: Path, when: datetime,
                   include: set[int] | None = None,
@@ -54,27 +92,8 @@ def anonymize_csv(path: Path, ner: NerDetector, ref: Referential,
         doc.rows, doc.has_header)
     if exclude:
         cols -= set(exclude)
-
-    data_start = 1 if doc.has_header else 0
-    values = [doc.rows[r][c]
-              for r in range(data_start, len(doc.rows))
-              for c in cols if c < len(doc.rows[r])]
-    cache = detect_unique(values, lambda v: detect(v, ner, ref))
-
-    report = AuditReport()
-    for r in range(data_start, len(doc.rows)):
-        for c in cols:
-            if c >= len(doc.rows[r]):
-                continue
-            original = doc.rows[r][c]
-            ents = cache.get(original, [])
-            if not ents:
-                continue
-            location = f"{_column_label(doc, c)} L{r + 1}"
-            for e in ents:
-                report.add(e.type, e.value, ref.tag_for(e.type), location)
-            doc.rows[r][c] = apply_masking(original, ents, ref)
-
+    scanned = scan_csv(doc, ner, ref, cols)
+    doc, report = apply_csv(doc, scanned, ref)
     out = anonymized_path(path, output_dir, when)
     csv_io.write_csv(doc, out)
     return FileResult(out, report)
