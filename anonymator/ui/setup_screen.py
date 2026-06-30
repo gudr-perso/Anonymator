@@ -36,12 +36,14 @@ class SetupScreen(QWidget):
         self._worker: DownloadWorker | None = None
 
     def _start(self):
+        if self._worker and self._worker.isRunning():
+            return
         self.btn_start.setEnabled(False)
         self.progress.setVisible(True)
         self.label_status.setText("Téléchargement en cours…")
         self._worker = DownloadWorker()
         self._worker.status.connect(self._on_status)
-        self._worker.finished.connect(self._on_download_finished)
+        self._worker.download_finished.connect(self._on_download_finished)
         self._worker.error.connect(self._on_error)
         self._worker.start()
 
@@ -58,3 +60,9 @@ class SetupScreen(QWidget):
         self.label_status.setText("Erreur lors du téléchargement.")
         self._log.append(f"[ERREUR] {msg}")
         self.btn_start.setEnabled(True)
+
+    def closeEvent(self, event):
+        if self._worker and self._worker.isRunning():
+            self._worker.quit()
+            self._worker.wait()
+        super().closeEvent(event)
