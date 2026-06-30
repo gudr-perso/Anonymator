@@ -52,6 +52,20 @@ def test_analyze_builds_session_and_side(qtbot, tmp_path):
     assert s.side.topLevelItem(0).childCount() == 2   # deux valeurs distinctes
 
 
+def test_pagination_navigates(qtbot, tmp_path):
+    lines = "Nom;Montant\n" + "".join(f"Nom{i};1,00\n" for i in range(45))
+    src = tmp_path / "big.csv"; src.write_bytes(lines.encode("cp1252"))
+    s = _screen(); qtbot.addWidget(s)
+    s.load_path(str(src)); s.analyze()
+    qtbot.waitUntil(lambda: s.session is not None, timeout=5000)
+    assert s._page_count() == 3            # 45 lignes / 20
+    s._go(99)                              # clampé à la dernière
+    assert s.page == 2
+    assert s.table.rowCount() == 5         # 45 - 40
+    s._go(0)
+    assert s.table.rowCount() == 20
+
+
 def test_run_on_csv_writes_output(qtbot, tmp_path):
     src = tmp_path / "f.csv"
     src.write_bytes("Nom;Montant\nClaire Martin;100,00\n".encode("cp1252"))

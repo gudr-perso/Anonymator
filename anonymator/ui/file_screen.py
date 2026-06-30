@@ -185,9 +185,45 @@ class FileScreen(QWidget):
             _, t, _ = top.data(0, Qt.UserRole)
             top.setText(1, str(self.session.count_retained(t)))
 
-    def _render_page(self): pass
+    def _data_rows(self):
+        start = 1 if self.doc.has_header else 0
+        return list(range(start, len(self.doc.rows)))
 
-    # ---------- stubs (replaced in Tasks 5+) ----------
-    def _go(self, p): pass
-    def _goto_typed(self): pass
-    def _page_count(self): return 1
+    def _page_count(self):
+        n = len(self._data_rows())
+        return max(1, (n + PAGE_SIZE - 1) // PAGE_SIZE)
+
+    def _go(self, page):
+        self.page = max(0, min(page, self._page_count() - 1))
+        self._render_page()
+
+    def _goto_typed(self):
+        try:
+            self._go(int(self.goto.text()) - 1)
+        except ValueError:
+            pass
+
+    def _render_page(self):
+        if self.session is None:
+            return
+        rows = self._data_rows()
+        width = max(len(r) for r in self.doc.rows)
+        page_rows = rows[self.page * PAGE_SIZE:(self.page + 1) * PAGE_SIZE]
+        header = self.doc.rows[0] if self.doc.has_header else None
+        self.table.clear()
+        self.table.setColumnCount(width)
+        self.table.setRowCount(len(page_rows))
+        if header:
+            self.table.setHorizontalHeaderLabels(
+                [header[c] if c < len(header) else f"col{c}" for c in range(width)])
+        for vr, r in enumerate(page_rows):
+            retained_cols = {c: self.session.entities_for_cell(r, c) for c in range(width)}
+            for c in range(width):
+                val = self.doc.rows[r][c] if c < len(self.doc.rows[r]) else ""
+                item = QTableWidgetItem(val)
+                ents = retained_cols.get(c) or []
+                if ents:
+                    col = QColor(color_for(ents[0].type)); col.setAlpha(70)
+                    item.setBackground(col)
+                self.table.setItem(vr, c, item)
+        self.lbl_page.setText(f"page {self.page + 1} / {self._page_count()}")
