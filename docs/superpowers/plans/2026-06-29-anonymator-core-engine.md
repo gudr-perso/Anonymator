@@ -980,4 +980,9 @@ git commit -m "feat: application du masquage [LABEL] sur texte"
 - §5 masquage texte [CATÉGORIE] → Task 12. ✓ (la **revue interactive** et l'export relèvent du Plan 3 UI / Plan 2 rapport.)
 - §10 chunking texte très long → **non couvert ici**, prévu en amont du pipeline lors du branchement UI (Plan 3) ; le pipeline étant sans état, le chunking se fait par découpe + recalage d'offsets.
 
-**Limites volontaires de ce plan :** pas d'E/S fichiers (Plan 2), pas d'UI/thèmes/packaging (Plan 3), pas de rapport d'audit (Plan 2). Code postal (`POSTAL_CODE`) et BIC non implémentés en Task 5 : à ajouter au même endroit que les autres patterns si retenus au calibrage (entrées à ajouter au référentiel + une ligne dans `_PATTERNS`).
+**Limites volontaires de ce plan :** pas d'E/S fichiers (Plan 2), pas d'UI/thèmes/packaging (Plan 3), pas de rapport d'audit (Plan 2).
+
+**Ajout post-plan — BIC et code postal FR (implémentés) :** ajoutés à la couche déterministe après coup.
+- BIC : validateur de plausibilité via le **code pays ISO-3166** (réduit les faux positifs sur les mots de 8 lettres en capitales ; résiduel rattrapé par la revue).
+- Code postal : `\b\d{5}\b` + plausibilité département 01-98.
+- **Tous deux `active:false` par défaut** (opt-in) : trop bruyants sur les fichiers comptables (mots type `VIREMENT`/`SALAIRES` → BIC ; n° de pièce/montants 5 chiffres → CP). Activables dans le référentiel/les Paramètres.
