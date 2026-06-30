@@ -1,10 +1,12 @@
+from pathlib import Path
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QLabel
-from PySide6.QtGui import QPainter, QPen, QColor
+from PySide6.QtGui import QPainter, QPen, QColor, QPixmap
 from PySide6.QtCore import Qt
 from anonymator.ui.components.cards import NavCard
 
 _HERO_BG = "#E8F3EA"
 _GRID = "#D3E5D7"
+_LOGO = Path(__file__).parent / "assets" / "logo.png"
 
 
 class HeroPanel(QWidget):
@@ -40,8 +42,13 @@ class HomeScreen(QWidget):
         hero = HeroPanel()
         hv = QVBoxLayout(hero)
         hv.setContentsMargins(48, 44, 48, 44)
-        logo = QLabel("CUMA"); logo.setObjectName("title")
-        logo.setStyleSheet("color: #31B700; font-size: 34px; font-weight: 800;")
+        has_logo = _LOGO.exists()
+        if has_logo:
+            logo = QLabel()
+            logo.setPixmap(QPixmap(str(_LOGO)).scaledToWidth(250, Qt.SmoothTransformation))
+        else:
+            logo = QLabel("CUMA"); logo.setObjectName("title")
+            logo.setStyleSheet("color: #31B700; font-size: 34px; font-weight: 800;")
         title = QLabel("Anonymisez.\nPartagez l'essentiel.")
         title.setObjectName("title")
         sub = QLabel("Protégez noms, adresses et coordonnées avant tout partage. "
@@ -49,9 +56,11 @@ class HomeScreen(QWidget):
         sub.setObjectName("muted"); sub.setWordWrap(True)
         hv.addWidget(logo); hv.addSpacing(120); hv.addWidget(title); hv.addWidget(sub)
         hv.addStretch()
-        foot = QLabel("la puissance du <span style='color:#E8621A;font-weight:700'>groupe</span>")
-        foot.setTextFormat(Qt.RichText)
-        hv.addWidget(foot)
+        # tagline déjà présente dans le logo officiel → on ne la répète qu'en repli texte
+        if not has_logo:
+            foot = QLabel("la puissance du <span style='color:#E8621A;font-weight:700'>groupe</span>")
+            foot.setTextFormat(Qt.RichText)
+            hv.addWidget(foot)
 
         right = QWidget()
         rv = QVBoxLayout(right)
