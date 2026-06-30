@@ -29,3 +29,39 @@ def test_types_and_values(tmp_path):
 def test_count_retained_all_by_default(tmp_path):
     s = _session(tmp_path)
     assert s.count_retained("PERSON") == 3     # 2 + 1 occurrences
+
+
+def test_disable_type(tmp_path):
+    s = _session(tmp_path)
+    s.set_type_enabled("PERSON", False)
+    assert s.count_retained("PERSON") == 0
+
+
+def test_disable_single_value(tmp_path):
+    s = _session(tmp_path)
+    s.set_value_enabled("PERSON", "Claire Martin", False)
+    assert s.count_retained("PERSON") == 1      # seul "Paul Durand" reste
+
+
+def test_exclude_column(tmp_path):
+    s = _session(tmp_path)
+    s.set_column_enabled(0, False)
+    assert s.count_retained("PERSON") == 0
+
+
+def test_exclude_single_cell(tmp_path):
+    s = _session(tmp_path)
+    s.set_cell_excluded(1, 0, True)             # 1re occurrence de Claire Martin
+    assert s.count_retained("PERSON") == 2
+
+
+def test_masked_document_and_report(tmp_path):
+    s = _session(tmp_path)
+    s.set_value_enabled("PERSON", "Paul Durand", False)
+    md = s.masked_document()
+    assert md.rows[1][0] == "[PERSONNE]"         # Claire Martin masquée
+    assert md.rows[3][0] == "Paul Durand"        # décochée → en clair
+    rows = s.report().to_rows()
+    assert {r["original"] for r in rows} == {"Claire Martin"}
+    # le document original n'est pas muté
+    assert s.doc.rows[1][0] == "Claire Martin"

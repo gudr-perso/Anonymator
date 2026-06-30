@@ -1,4 +1,6 @@
 from anonymator.model import Entity
+from anonymator.anonymize import apply_masking
+from anonymator.report.audit import AuditReport
 
 
 class FileReviewSession:
@@ -52,3 +54,46 @@ class FileReviewSession:
         for (r, c) in self._cells:
             total += sum(1 for e in self._cell_retained(r, c) if e.type == etype)
         return total
+
+    # --- setters ---
+    def set_type_enabled(self, etype: str, enabled: bool) -> None:
+        self._types_enabled[etype] = enabled
+
+    def set_value_enabled(self, etype: str, value: str, enabled: bool) -> None:
+        self._values_enabled[(etype, value)] = enabled
+
+    def set_column_enabled(self, col: int, enabled: bool) -> None:
+        self._columns_enabled[col] = enabled
+
+    def set_cell_excluded(self, r: int, c: int, excluded: bool) -> None:
+        if excluded:
+            self._cells_excluded.add((r, c))
+        else:
+            self._cells_excluded.discard((r, c))
+
+    def entities_for_cell(self, r: int, c: int) -> list[Entity]:
+        """Entités actuellement retenues pour la cellule (pilote le surlignage)."""
+        return self._cell_retained(r, c)
+
+    def is_value_enabled(self, etype: str, value: str) -> bool:
+        """État de la case d'une valeur distincte (pour cocher l'UI)."""
+        return self._values_enabled.get((etype, value), True)
+
+    # --- producteurs ---
+    def masked_document(self):
+        import copy
+        out = copy.deepcopy(self.doc)
+        for (r, c) in self._cells:
+            ents = self._cell_retained(r, c)
+            if ents:
+                out.rows[r][c] = apply_masking(out.rows[r][c], ents, self.ref)
+        return out
+
+    def report(self) -> AuditReport:
+        from anonymator.files.anonymize_file import _column_label
+        rep = AuditReport()
+        for (r, c) in self._cells:
+            for e in self._cell_retained(r, c):
+                location = f"{_column_label(self.doc, c)} L{r + 1}"
+                rep.add(e.type, e.value, self.ref.tag_for(e.type), location)
+        return rep
