@@ -10,7 +10,7 @@ from anonymator.report.audit import AuditReport
 from anonymator.output_naming import anonymized_path
 
 def anonymize_workbook(path: Path, ner: NerDetector, ref: Referential,
-                       output_dir: Path, when: datetime):
+                       output_dir: Path, when: datetime) -> tuple[Path, AuditReport]:
     wb = openpyxl.load_workbook(path)
     string_cells = []  # (sheet_title, coordinate, value)
     for ws in wb.worksheets:

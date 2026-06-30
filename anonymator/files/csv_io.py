@@ -5,7 +5,8 @@ from pathlib import Path
 
 from anonymator.files.encoding import detect_encoding
 
-_CANDIDATES = [";", "|", ",", "\t"]
+_PRIMARY = [";", "|", "\t"]
+_FALLBACK = [","]
 
 
 @dataclass
@@ -18,27 +19,23 @@ class CsvDocument:
 
 
 def sniff_delimiter(sample: str) -> str:
-    """Detect CSV delimiter from a text sample.
-
-    Strategy: for each candidate, check that it appears a consistent number of
-    times on every non-empty line.  Pick the candidate with the highest
-    consistent per-line count.  Falls back to ";" when nothing matches.
-    """
+    """Choisit le séparateur consistant (même nombre >0 sur chaque ligne non vide).
+    Priorité aux séparateurs structurels (;, |, tab) ; la virgule (souvent une
+    virgule décimale en français) n'est retenue que si aucun structurel ne convient.
+    Défaut ";"."""
     lines = [l for l in sample.splitlines() if l]
     if not lines:
         return ";"
 
-    best_delim = ";"
-    best_count = 0
+    def best_consistent(candidates):
+        best_delim, best_count = None, 0
+        for delim in candidates:
+            counts = [line.count(delim) for line in lines]
+            if all(c == counts[0] for c in counts) and counts[0] > best_count:
+                best_delim, best_count = delim, counts[0]
+        return best_delim
 
-    for delim in _CANDIDATES:
-        counts = [line.count(delim) for line in lines]
-        if counts and all(c == counts[0] for c in counts) and counts[0] > 0:
-            if counts[0] > best_count:
-                best_count = counts[0]
-                best_delim = delim
-
-    return best_delim
+    return best_consistent(_PRIMARY) or best_consistent(_FALLBACK) or ";"
 
 
 def read_csv(path: Path) -> CsvDocument:

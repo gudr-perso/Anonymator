@@ -95,6 +95,9 @@ def anonymize_file(path: Path, ner: NerDetector, ref: Referential,
         return anonymize_csv(path, ner, ref, output_dir, when,
                              include=include, exclude=exclude)
     if suffix == ".xlsx":
+        if include is not None or exclude is not None:
+            raise NotImplementedError(
+                "Sélection de colonnes non supportée pour .xlsx en v1")
         return anonymize_xlsx(path, ner, ref, output_dir, when)
     raise UnsupportedFormat(
         f"Format non supporté : {suffix} (formats acceptés : .txt, .csv, .xlsx)")
