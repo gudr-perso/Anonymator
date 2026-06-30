@@ -5,7 +5,6 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
                                QMessageBox)
 from anonymator.files.anonymize_file import anonymize_file, UnsupportedFormat
 from anonymator.files import csv_io
-from anonymator.files.columns import default_maskable_columns
 
 
 class FileScreen(QWidget):
