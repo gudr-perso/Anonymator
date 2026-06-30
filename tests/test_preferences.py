@@ -22,3 +22,15 @@ def test_roundtrip_save_load(tmp_path):
 
 def test_load_missing_file_returns_defaults(tmp_path):
     assert Preferences.load(tmp_path / "absent.json").theme == "cuma"
+
+
+def test_ner_stoplist_roundtrip(tmp_path):
+    p = Preferences(ner_stoplist=["service client", "divers"])
+    path = tmp_path / "p.json"
+    p.save(path)
+    loaded = Preferences.load(path)
+    assert loaded.ner_stoplist == ["service client", "divers"]
+
+
+def test_ner_stoplist_defaults_none():
+    assert Preferences().ner_stoplist is None
