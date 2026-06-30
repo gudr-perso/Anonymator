@@ -197,6 +197,10 @@ def test_defaults_to_semicolon_when_ambiguous():
 
 - [ ] **Step 3 : Implémenter** (début de `csv_io.py`)
 
+> ⚠️ **Ne PAS utiliser `csv.Sniffer().sniff()`** : sur les CSV français il détecte `,` au lieu de `;`
+> à cause des **virgules décimales** (`20,00`). On utilise une approche de **cohérence par ligne** :
+> le bon séparateur apparaît un nombre **constant** de fois sur chaque ligne.
+
 ```python
 # anonymator/files/csv_io.py
 import csv
@@ -204,14 +208,17 @@ import csv
 _CANDIDATES = [";", "|", ",", "\t"]
 
 def sniff_delimiter(sample: str) -> str:
-    try:
-        dialect = csv.Sniffer().sniff(sample, delimiters="".join(_CANDIDATES))
-        return dialect.delimiter
-    except csv.Error:
-        # ambigu / une seule colonne : compter les candidats, défaut ";"
-        counts = {d: sample.count(d) for d in _CANDIDATES}
-        best = max(counts, key=counts.get)
-        return best if counts[best] > 0 else ";"
+    """Choisit le séparateur qui apparaît un nombre constant (>0) de fois sur
+    chaque ligne non vide ; à égalité, le plus fréquent. Défaut ";"."""
+    lines = [l for l in sample.splitlines() if l]
+    if not lines:
+        return ";"
+    best_delim, best_count = ";", 0
+    for delim in _CANDIDATES:
+        counts = [line.count(delim) for line in lines]
+        if all(c == counts[0] for c in counts) and counts[0] > best_count:
+            best_delim, best_count = delim, counts[0]
+    return best_delim
 ```
 
 - [ ] **Step 4 : Run → PASS** (3 tests).
