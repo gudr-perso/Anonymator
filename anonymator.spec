@@ -10,6 +10,7 @@ a = Analysis(
         ('anonymator/ui/assets/anonymator.ico', 'anonymator/ui/assets'),
         ('anonymator/ui/assets/logo.png', 'anonymator/ui/assets'),
         ('anonymator/ui/assets/picto.png', 'anonymator/ui/assets'),
+        ('anonymator/ui/assets/icons', 'anonymator/ui/assets/icons'),
     ],
     hiddenimports=[
         'anonymator.ui.colors',
@@ -23,6 +24,7 @@ a = Analysis(
         'anonymator.ui.setup_screen',
         'anonymator.ui.download_worker',
         'anonymator.ui.main_window',
+        'anonymator.ui.text_analyze_worker',
         'anonymator.core.review_session',
         'anonymator.core.chunking',
         'anonymator.core.model_status',
@@ -41,6 +43,7 @@ a = Analysis(
         'PySide6.QtCore',
         'PySide6.QtWidgets',
         'PySide6.QtGui',
+        'PySide6.QtSvg',
     ],
     hookspath=[],
     hooksconfig={},

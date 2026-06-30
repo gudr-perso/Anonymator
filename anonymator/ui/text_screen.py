@@ -1,14 +1,14 @@
 from pathlib import Path
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
                                QTextEdit, QLabel, QFileDialog, QApplication,
-                               QScrollArea)
+                               QScrollArea, QMessageBox)
 from PySide6.QtGui import QTextCharFormat, QColor, QTextCursor
 from PySide6.QtCore import Qt
-from anonymator.core.chunking import detect_long
 from anonymator.core.review_session import ReviewSession
 from anonymator.core.risk import risk_level
 from anonymator.ui.colors import color_for
 from anonymator.ui.icons import icon
+from anonymator.ui.text_analyze_worker import TextAnalyzeWorker
 from anonymator.ui.components.header import HeaderBand
 from anonymator.ui.components.cards import Card, StatCard
 from anonymator.ui.components.badge import CategoryBadge
@@ -20,6 +20,7 @@ class TextScreen(QWidget):
         super().__init__()
         self.ref, self.loader, self.prefs = ref, loader, prefs
         self.session: ReviewSession | None = None
+        self._worker: TextAnalyzeWorker | None = None
 
         root = QVBoxLayout(self)
         root.addWidget(HeaderBand())
@@ -57,6 +58,7 @@ class TextScreen(QWidget):
 
         ent_card = Card("shield", "Entités détectées")
         self.entity_area = QScrollArea(); self.entity_area.setWidgetResizable(True)
+        self.entity_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self._entity_host = QWidget(); self._entity_layout = QVBoxLayout(self._entity_host)
         self._entity_layout.addStretch()
         self.entity_area.setWidget(self._entity_host)
@@ -66,24 +68,60 @@ class TextScreen(QWidget):
         root.addLayout(body)
 
         actions = QHBoxLayout()
-        self.btn_apply = QPushButton("  Appliquer le masquage"); self.btn_apply.setObjectName("primary")
+        self.btn_analyze = QPushButton("  Analyser"); self.btn_analyze.setObjectName("primary")
+        self.btn_analyze.setIcon(icon("scan", "white"))
+        self.btn_analyze.clicked.connect(self.analyze)
+        self.btn_apply = QPushButton("  Appliquer le masquage"); self.btn_apply.setObjectName("info")
         self.btn_apply.setIcon(icon("sparkle", "white"))
         self.btn_apply.clicked.connect(self.apply)
-        self.btn_analyze = QPushButton("  Analyser"); self.btn_analyze.setObjectName("secondary")
-        self.btn_analyze.setIcon(icon("scan", "#00965E"))
-        self.btn_analyze.clicked.connect(self.analyze)
         self.btn_copy = QPushButton("Copier"); self.btn_copy.setObjectName("ghost"); self.btn_copy.clicked.connect(self._copy)
         self.btn_export = QPushButton("Exporter .txt"); self.btn_export.setObjectName("ghost"); self.btn_export.clicked.connect(self._export)
-        actions.addWidget(self.btn_apply); actions.addWidget(self.btn_analyze); actions.addStretch()
+        actions.addWidget(self.btn_analyze); actions.addWidget(self.btn_apply); actions.addStretch()
         actions.addWidget(self.btn_copy); actions.addWidget(self.btn_export)
         root.addLayout(actions)
 
+        # Voile "travail en cours" superposé (masqué par défaut)
+        self._overlay = QLabel("⏳  Analyse en cours…", self)
+        self._overlay.setObjectName("busyOverlay")
+        self._overlay.setAlignment(Qt.AlignCenter)
+        self._overlay.hide()
+
     def analyze(self):
+        if self._worker is not None and self._worker.isRunning():
+            return
         text = self.input.toPlainText()
-        ner = self.loader.get()
-        ents = detect_long(text, ner, self.ref)
+        self._set_busy(True)
+        self._worker = TextAnalyzeWorker(text, self.loader, self.ref)
+        self._worker.done.connect(self._on_analyzed)
+        self._worker.error.connect(self._on_analyze_error)
+        self._worker.finished.connect(self._worker.deleteLater)
+        self._worker.start()
+
+    def _on_analyzed(self, text, ents):
         self.session = ReviewSession(text, ents)
         self._refresh_entities(); self._highlight(); self._refresh_stats()
+        self._set_busy(False)
+
+    def _on_analyze_error(self, msg):
+        self._set_busy(False)
+        QMessageBox.warning(self, "Erreur d'analyse", msg)
+
+    def _set_busy(self, busy: bool, message: str = "⏳  Analyse en cours…"):
+        if busy:
+            self._overlay.setText(message)
+            self._overlay.setGeometry(self.rect())
+            self._overlay.raise_(); self._overlay.show()
+            self.setCursor(Qt.BusyCursor)
+        else:
+            self._overlay.hide()
+            self.unsetCursor()
+        self.btn_analyze.setEnabled(not busy)
+        self.btn_apply.setEnabled(not busy)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if self._overlay.isVisible():
+            self._overlay.setGeometry(self.rect())
 
     def _clear_entities(self):
         while self._entity_layout.count() > 1:
@@ -99,8 +137,16 @@ class TextScreen(QWidget):
         for i, e in enumerate(self.session.entities()):
             row = QWidget(); h = QHBoxLayout(row); h.setContentsMargins(2, 2, 2, 2)
             h.addWidget(CategoryBadge(e.type))
+            col = QVBoxLayout(); col.setContentsMargins(0, 0, 0, 0); col.setSpacing(1)
             val = QLabel(e.value); val.setStyleSheet("font-size: 13px;")
-            h.addWidget(val); h.addStretch()
+            col.addWidget(val)
+            if not e.confirmed:
+                note = QLabel("⚠ format ressemblant mais erroné")
+                note.setStyleSheet("color:#9a031e; font-style:italic; font-size:11px;")
+                note.setToolTip("Le motif a la bonne forme mais la validation "
+                                "(clé de contrôle) a échoué — non masqué par défaut.")
+                col.addWidget(note)
+            h.addLayout(col); h.addStretch()
             tog = ToggleSwitch(); tog.setChecked(e.confirmed)
             tog.toggled.connect(lambda on, idx=i: self._on_toggle(idx, on))
             h.addWidget(tog)

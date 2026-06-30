@@ -31,6 +31,10 @@ class FileReviewSession:
     def types(self) -> list[str]:
         return sorted(self._types_enabled)
 
+    def total_occurrences(self) -> int:
+        """Nombre total d'occurrences détectées (toutes valeurs, tous types)."""
+        return sum(self._values_count.values())
+
     def values_for(self, etype: str) -> list[tuple[str, int]]:
         items = [(v, n) for (t, v), n in self._values_count.items() if t == etype]
         return sorted(items)

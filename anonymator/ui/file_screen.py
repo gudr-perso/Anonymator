@@ -12,8 +12,15 @@ from anonymator.files.columns import default_maskable_columns
 from anonymator.core.file_review_session import FileReviewSession
 from anonymator.ui.file_scan_worker import FileScanWorker
 from anonymator.ui.colors import color_for
+from anonymator.ui.icons import icon
+from anonymator.ui.components.header import HeaderBand
+from anonymator.ui.components.cards import Card
 
 PAGE_SIZE = 20
+
+
+def _fmt_int(n: int) -> str:
+    return f"{n:,}".replace(",", " ")   # espace fine insécable
 
 
 class FileScreen(QWidget):
@@ -25,50 +32,105 @@ class FileScreen(QWidget):
         self.doc = None
         self.session: FileReviewSession | None = None
         self.page = 0
+        self._busy = False
         self._worker: FileScanWorker | None = None
 
-        layout = QVBoxLayout(self)
-        self.label = QLabel("Aucun fichier")
-        self.table = QTableWidget()
-        btns = QHBoxLayout()
-        self.btn_open = QPushButton("Ouvrir…")
-        self.btn_open.clicked.connect(self._open)
-        self.btn_review = QPushButton("Analyser et revoir")
-        self.btn_review.setEnabled(False)
-        self.btn_review.clicked.connect(self.analyze)
-        self.btn_run = QPushButton("Anonymiser et enregistrer")
-        self.btn_run.clicked.connect(lambda: self.run())
-        self.btn_back = QPushButton("Accueil")
-        self.btn_back.setObjectName("ghost")
-        self.btn_back.clicked.connect(on_back)
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0); root.setSpacing(0)
+        root.addWidget(HeaderBand())
+
+        # ---- barre d'action : infos fichier (gauche) + actions (droite) ----
+        bar = QHBoxLayout(); bar.setContentsMargins(18, 14, 18, 8); bar.setSpacing(12)
+        self._file_ic = QLabel(); self._file_ic.setPixmap(icon("document", "#00965E").pixmap(22, 22))
+        info_col = QVBoxLayout(); info_col.setSpacing(1)
+        self.name_label = QLabel("Aucun fichier"); self.name_label.setObjectName("fileName")
+        self.meta_label = QLabel("Importez un fichier .txt, .csv ou .xlsx")
+        self.meta_label.setObjectName("fileMeta")
+        info_col.addWidget(self.name_label); info_col.addWidget(self.meta_label)
+        bar.addWidget(self._file_ic); bar.addLayout(info_col); bar.addStretch()
+
+        self.btn_open = QPushButton("  Ouvrir"); self.btn_open.setObjectName("ghost")
+        self.btn_open.setIcon(icon("folder", "#00965E")); self.btn_open.clicked.connect(self._open)
+        self.btn_review = QPushButton("  Analyser"); self.btn_review.setObjectName("primary")
+        self.btn_review.setIcon(icon("scan", "white"))
+        self.btn_review.setEnabled(False); self.btn_review.clicked.connect(self.analyze)
+        self.btn_run = QPushButton("  Anonymiser && enregistrer"); self.btn_run.setObjectName("info")
+        self.btn_run.setIcon(icon("shield", "white")); self.btn_run.clicked.connect(self._run_clicked)
+        self.btn_back = QPushButton("  Accueil"); self.btn_back.setObjectName("ghost")
+        self.btn_back.setIcon(icon("home", "#6B7C72")); self.btn_back.clicked.connect(on_back)
         for b in (self.btn_open, self.btn_review, self.btn_run, self.btn_back):
-            btns.addWidget(b)
+            bar.addWidget(b)
+        root.addLayout(bar)
 
-        # side panel (types/values) + pagination — hidden until analyze
+        # ---- corps : extrait (gauche) + entités (droite) ----
+        self.table = QTableWidget()
+        self.table.setShowGrid(True)
+        self.table.setAlternatingRowColors(False)
+        self.table.horizontalHeader().setStretchLastSection(True)
+        self.table.verticalHeader().setDefaultAlignment(Qt.AlignCenter)
+        table_card = Card("document", "Écritures comptables — extrait")
+        table_card.body.addWidget(self.table)
+
+        from PySide6.QtWidgets import QHeaderView
         self.side = QTreeWidget()
-        self.side.setHeaderLabels(["Typologie / valeur", "Occ."])
+        self.side.setHeaderHidden(True)
+        self.side.setColumnCount(2)
+        self.side.setRootIsDecorated(True)
+        self.side.header().setStretchLastSection(False)
+        self.side.header().setSectionResizeMode(0, QHeaderView.Stretch)
+        self.side.header().setSectionResizeMode(1, QHeaderView.ResizeToContents)
         self.side.itemChanged.connect(self._on_side_changed)
-        self.side.hide()
-        self.pager = QHBoxLayout()
-        self.btn_first = QPushButton("« Première"); self.btn_first.clicked.connect(lambda: self._go(0))
-        self.btn_prev = QPushButton("‹ Préc."); self.btn_prev.clicked.connect(lambda: self._go(self.page - 1))
-        self.lbl_page = QLabel("")
-        self.btn_next = QPushButton("Suiv. ›"); self.btn_next.clicked.connect(lambda: self._go(self.page + 1))
-        self.btn_last = QPushButton("Dernière »"); self.btn_last.clicked.connect(lambda: self._go(self._page_count() - 1))
-        self.goto = QLineEdit(); self.goto.setFixedWidth(50)
+        ent_card = Card("shield", "Entités détectées")
+        self.occ_badge = QLabel(""); self.occ_badge.setObjectName("occBadge"); self.occ_badge.hide()
+        ent_card.head.addWidget(self.occ_badge)
+        hint = QLabel("Décochez une valeur ou une catégorie pour la conserver en clair.")
+        hint.setObjectName("hint"); hint.setWordWrap(True)
+        ent_card.body.addWidget(hint)
+        ent_card.body.addWidget(self.side)
+        self.side.hide(); hint.hide(); self._hint = hint
+
+        body = QHBoxLayout(); body.setContentsMargins(18, 0, 18, 8); body.setSpacing(12)
+        body.addWidget(table_card, 3)
+        body.addWidget(ent_card, 2)
+        root.addLayout(body, 1)
+
+        # ---- pied de pagination ----
+        self.pager = QHBoxLayout(); self.pager.setContentsMargins(18, 6, 18, 14)
+        self.btn_first = QPushButton("« Première"); self.btn_first.setObjectName("pager")
+        self.btn_first.clicked.connect(lambda: self._go(0))
+        self.btn_prev = QPushButton("‹ Précédent"); self.btn_prev.setObjectName("pager")
+        self.btn_prev.clicked.connect(lambda: self._go(self.page - 1))
+        self.lbl_page = QLabel(""); self.lbl_page.setObjectName("pageInfo")
+        self.lbl_page.setAlignment(Qt.AlignCenter)
+        self.btn_next = QPushButton("Suivant ›"); self.btn_next.setObjectName("pager")
+        self.btn_next.clicked.connect(lambda: self._go(self.page + 1))
+        self.btn_last = QPushButton("Dernière »"); self.btn_last.setObjectName("pager")
+        self.btn_last.clicked.connect(lambda: self._go(self._page_count() - 1))
+        self.goto = QLineEdit(); self.goto.setFixedWidth(50); self.goto.setPlaceholderText("page")
         self.goto.returnPressed.connect(self._goto_typed)
-        for w in (self.btn_first, self.btn_prev, self.lbl_page, self.btn_next, self.btn_last, QLabel("Aller à"), self.goto):
-            self.pager.addWidget(w)
+        self.pager.addWidget(self.btn_first); self.pager.addWidget(self.btn_prev)
+        self.pager.addStretch(); self.pager.addWidget(self.lbl_page); self.pager.addStretch()
+        self.pager.addWidget(self.btn_next); self.pager.addWidget(self.btn_last)
+        self.pager.addWidget(self.goto)
         self.pager_widget = QWidget(); self.pager_widget.setLayout(self.pager); self.pager_widget.hide()
+        root.addWidget(self.pager_widget)
 
-        body = QHBoxLayout()
-        body.addWidget(self.table, 3)
-        body.addWidget(self.side, 1)
-
-        layout.addWidget(self.label)
-        layout.addLayout(btns)
-        layout.addLayout(body)
-        layout.addWidget(self.pager_widget)
+    # ---------- file-info meta ----------
+    def _set_meta(self, status: str | None = None):
+        if not self.path:
+            self.name_label.setText("Aucun fichier")
+            self.meta_label.setText("Importez un fichier .txt, .csv ou .xlsx")
+            return
+        self.name_label.setText(self.path.name)
+        kind = f"Fichier {self.path.suffix.lstrip('.').upper()}"
+        parts = [kind]
+        if self.doc is not None:
+            parts.append(f"{_fmt_int(len(self.doc.rows))} lignes")
+        if status is not None:
+            parts.append(status)
+        elif self.session is not None:
+            parts.append(f"{_fmt_int(self.session.total_occurrences())} entités détectées")
+        self.meta_label.setText(" · ".join(parts))
 
     # ---------- opening / preview ----------
     def _open(self):
@@ -82,12 +144,13 @@ class FileScreen(QWidget):
         self.doc = None
         self.session = None
         self.side.hide(); self.pager_widget.hide()
-        self.label.setText(self.path.name)
+        self.occ_badge.hide(); self._hint.hide()
         suffix = self.path.suffix.lower()
         self.btn_review.setEnabled(suffix in (".csv", ".txt"))
         if suffix == ".csv":
             self.doc = csv_io.read_csv(self.path)
             self._fill_preview(self.doc.rows[:50])
+        self._set_meta()
 
     def _fill_preview(self, rows):
         if not rows:
@@ -124,6 +187,18 @@ class FileScreen(QWidget):
             return None
         return result
 
+    def _run_clicked(self):
+        """Handler du bouton : anonymise, écrit et confirme à l'utilisateur."""
+        if not self.path:
+            QMessageBox.information(self, "Aucun fichier",
+                                    "Ouvrez d'abord un fichier à anonymiser.")
+            return
+        result = self.run()
+        if result is not None:
+            QMessageBox.information(
+                self, "Fichier anonymisé",
+                f"Fichier enregistré :\n{result.output_path}")
+
     # ---------- review mode ----------
     def analyze(self):
         if self._worker and self._worker.isRunning():
@@ -138,9 +213,7 @@ class FileScreen(QWidget):
             return
         cols = default_maskable_columns(self.doc.rows, self.doc.has_header)
         self._cols = cols
-        self.btn_review.setEnabled(False)
-        self.btn_run.setEnabled(False)
-        self.label.setText(f"{self.path.name} — analyse en cours…")
+        self._set_busy(True)
         ner = self.loader.get()
         self._worker = FileScanWorker(self.doc, ner, self.ref, cols)
         self._worker.scan_finished.connect(self._on_scanned)
@@ -148,31 +221,46 @@ class FileScreen(QWidget):
         self._worker.finished.connect(self._worker.deleteLater)
         self._worker.start()
 
+    def _set_busy(self, busy: bool):
+        self._busy = busy
+        self.btn_review.setEnabled(not busy)
+        self.btn_run.setEnabled(not busy)
+        self.btn_open.setEnabled(not busy)
+        self.setCursor(Qt.BusyCursor if busy else Qt.ArrowCursor)
+        self._set_meta("analyse en cours…" if busy else None)
+
     def _on_scan_error(self, msg):
-        self.btn_review.setEnabled(True); self.btn_run.setEnabled(True)
-        self.label.setText(self.path.name)
+        self._set_busy(False)
         QMessageBox.warning(self, "Erreur d'analyse", msg)
 
     def _on_scanned(self, scanned):
         self.session = FileReviewSession(self.doc, scanned, self.ref, self._cols)
-        self.btn_review.setEnabled(True); self.btn_run.setEnabled(True)
-        self.label.setText(self.path.name)
+        self._set_busy(False)
+        self.occ_badge.setText(f"{_fmt_int(self.session.total_occurrences())} occ.")
+        self.occ_badge.show(); self._hint.show()
         self.page = 0
         self._build_side()
         self.side.show(); self.pager_widget.show()
         self._render_page()
 
     def _build_side(self):
+        from PySide6.QtGui import QFont
+        bold = QFont(); bold.setBold(True)
         self.side.blockSignals(True)
         self.side.clear()
         for t in self.session.types():
-            top = QTreeWidgetItem([t, str(self.session.count_retained(t))])
+            top = QTreeWidgetItem([t, f"×{self.session.count_retained(t)}"])
             top.setForeground(0, QColor(color_for(t)))
+            top.setForeground(1, QColor("#6B7C72"))
+            top.setTextAlignment(1, Qt.AlignRight | Qt.AlignVCenter)
+            top.setFont(0, bold)
             top.setData(0, Qt.UserRole, ("type", t, None))
             top.setFlags(top.flags() | Qt.ItemIsUserCheckable)
             top.setCheckState(0, Qt.Checked if self.session.is_type_enabled(t) else Qt.Unchecked)
             for value, n in self.session.values_for(t):
                 child = QTreeWidgetItem([value, f"×{n}"])
+                child.setForeground(1, QColor("#9aa8a0"))
+                child.setTextAlignment(1, Qt.AlignRight | Qt.AlignVCenter)
                 child.setData(0, Qt.UserRole, ("value", t, value))
                 child.setFlags(child.flags() | Qt.ItemIsUserCheckable)
                 enabled = self.session.is_value_enabled(t, value)
@@ -198,7 +286,7 @@ class FileScreen(QWidget):
         for i in range(self.side.topLevelItemCount()):
             top = self.side.topLevelItem(i)
             _, t, _ = top.data(0, Qt.UserRole)
-            top.setText(1, str(self.session.count_retained(t)))
+            top.setText(1, f"×{self.session.count_retained(t)}")
 
     def _data_rows(self):
         start = 1 if self.doc.has_header else 0
@@ -241,4 +329,9 @@ class FileScreen(QWidget):
                     col = QColor(color_for(ents[0].type)); col.setAlpha(70)
                     item.setBackground(col)
                 self.table.setItem(vr, c, item)
-        self.lbl_page.setText(f"page {self.page + 1} / {self._page_count()}")
+        last = self._page_count() - 1
+        self.lbl_page.setText(f"Page {self.page + 1} / {self._page_count()}")
+        self.btn_first.setEnabled(self.page > 0)
+        self.btn_prev.setEnabled(self.page > 0)
+        self.btn_next.setEnabled(self.page < last)
+        self.btn_last.setEnabled(self.page < last)

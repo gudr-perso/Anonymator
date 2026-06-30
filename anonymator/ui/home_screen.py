@@ -5,7 +5,7 @@ from PySide6.QtCore import Qt
 from anonymator.ui.components.cards import NavCard
 
 _HERO_BG = "#E8F3EA"
-_GRID = "#D3E5D7"
+_GRID = "#E1EBE3"
 _LOGO = Path(__file__).parent / "assets" / "logo.png"
 
 
@@ -54,6 +54,7 @@ class HomeScreen(QWidget):
         sub = QLabel("Protégez noms, adresses et coordonnées avant tout partage. "
                      "Traitement 100% local, aucune donnée envoyée.")
         sub.setObjectName("muted"); sub.setWordWrap(True)
+        sub.setStyleSheet("color:#6B7C72; font-size:16px; line-height:140%;")
         hv.addWidget(logo); hv.addSpacing(120); hv.addWidget(title); hv.addWidget(sub)
         hv.addStretch()
         # tagline déjà présente dans le logo officiel → on ne la répète qu'en repli texte

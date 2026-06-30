@@ -30,6 +30,10 @@ class Referential:
     def tag_for(self, code: str) -> str:
         return self._by_code[code]["tag"]
 
+    def label_for(self, code: str) -> str:
+        """Libellé lisible du type (repli sur le code si absent)."""
+        return self._by_code.get(code, {}).get("label", code)
+
     def is_active(self, code: str) -> bool:
         if code in self._overrides:
             return self._overrides[code]
