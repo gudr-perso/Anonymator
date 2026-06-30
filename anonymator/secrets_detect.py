@@ -23,5 +23,43 @@ def _matches(regex, text, etype):
     return out
 
 
+_WORD_RE = re.compile(r"\S+")
+
+
+def _char_classes(token: str) -> int:
+    classes = 0
+    if any(c.islower() for c in token): classes += 1
+    if any(c.isupper() for c in token): classes += 1
+    if any(c.isdigit() for c in token): classes += 1
+    if any(not c.isalnum() for c in token): classes += 1
+    return classes
+
+
+def _looks_like_secret(token: str) -> bool:
+    t = token.strip(".,;:()[]")
+    if len(t) < 8:
+        return False
+    if t.isdigit() or t.isalpha():          # pur numérique ou pur alpha → pas un secret
+        return False
+    return _char_classes(t) >= 3            # ≥3 classes parmi minuscule/majuscule/chiffre/symbole
+
+
+def _entropy_secrets(text: str, already: list[Entity]) -> list[Entity]:
+    taken = {(e.start, e.end) for e in already}
+    out = []
+    for m in _WORD_RE.finditer(text):
+        raw = m.group(0)
+        t = raw.strip(".,;:()[]")
+        if not t or not _looks_like_secret(t):
+            continue
+        start = m.start() + raw.find(t)
+        end = start + len(t)
+        if (start, end) in taken:
+            continue
+        out.append(Entity("PASSWORD", t, start, end, "secret", 0.7))
+    return out
+
+
 def detect_secrets(text: str) -> list[Entity]:
-    return _matches(_PWD_RE, text, "PASSWORD") + _matches(_LOGIN_RE, text, "LOGIN")
+    contextual = _matches(_PWD_RE, text, "PASSWORD") + _matches(_LOGIN_RE, text, "LOGIN")
+    return contextual + _entropy_secrets(text, contextual)

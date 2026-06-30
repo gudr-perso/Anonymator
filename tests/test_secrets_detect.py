@@ -45,3 +45,23 @@ def test_login_avec_is_bounded():
     # 'avec' très loin du verbe 'connecté' ne doit pas capturer un nom de collaborateur
     text = "il est connecté au reseau et il travaille tres souvent depuis des annees avec Jean"
     assert all(e.type != "LOGIN" for e in detect_secrets(text))
+
+
+def test_entropy_detects_strong_token():
+    r = _by_type("cle V3lo!2026#Claire ailleurs")
+    assert "V3lo!2026#Claire" in r.get("PASSWORD", [])
+
+
+def test_entropy_ignores_account_number():
+    assert all(e.type != "PASSWORD" for e in detect_secrets("compte 41100000 montant"))
+
+
+def test_entropy_ignores_plain_words():
+    assert all(e.type != "PASSWORD" for e in detect_secrets("Bonjour Madame Toulouse"))
+
+
+def test_entropy_no_duplicate_with_contextual():
+    # un secret déjà capturé par la règle contextuelle ne doit pas être émis deux fois
+    ents = [e for e in detect_secrets("mot de passe : T0ulouse*Hugo-90 fin") if e.type == "PASSWORD"]
+    vals = [e.value for e in ents]
+    assert vals.count("T0ulouse*Hugo-90") == 1
