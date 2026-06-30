@@ -126,6 +126,8 @@ class FileScreen(QWidget):
 
     # ---------- review mode ----------
     def analyze(self):
+        if self._worker and self._worker.isRunning():
+            return
         if self.path and self.path.suffix.lower() == ".txt":
             from anonymator.files import txt_io
             text, _enc = txt_io.read_text(self.path)
