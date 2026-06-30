@@ -1,6 +1,33 @@
-from PySide6.QtWidgets import (QWidget, QHBoxLayout, QVBoxLayout, QLabel)
+from PySide6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QLabel
+from PySide6.QtGui import QPainter, QPen, QColor
 from PySide6.QtCore import Qt
 from anonymator.ui.components.cards import NavCard
+
+_HERO_BG = "#E8F3EA"
+_GRID = "#D3E5D7"
+
+
+class HeroPanel(QWidget):
+    """Panneau gauche : fond vert pâle + grille de cadrage légère."""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setObjectName("Hero")
+        self.setStyleSheet(f"#Hero {{ background: {_HERO_BG}; }}")
+
+    def paintEvent(self, _event):
+        p = QPainter(self)
+        p.fillRect(self.rect(), QColor(_HERO_BG))
+        pen = QPen(QColor(_GRID)); pen.setWidth(1)
+        p.setPen(pen)
+        step = 26
+        w, h = self.width(), self.height()
+        x = step
+        while x < w:
+            p.drawLine(x, 0, x, h); x += step
+        y = step
+        while y < h:
+            p.drawLine(0, y, w, y); y += step
+        p.end()
 
 
 class HomeScreen(QWidget):
@@ -10,10 +37,9 @@ class HomeScreen(QWidget):
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
 
-        hero = QWidget(); hero.setObjectName("Hero")
-        hero.setStyleSheet("#Hero { background: #E8F3EA; }")
+        hero = HeroPanel()
         hv = QVBoxLayout(hero)
-        hv.setContentsMargins(40, 40, 40, 40)
+        hv.setContentsMargins(48, 44, 48, 44)
         logo = QLabel("CUMA"); logo.setObjectName("title")
         logo.setStyleSheet("color: #31B700; font-size: 34px; font-weight: 800;")
         title = QLabel("Anonymisez.\nPartagez l'essentiel.")

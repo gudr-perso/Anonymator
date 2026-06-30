@@ -14,6 +14,7 @@ THEMES = {
 _TEMPLATE = """
 QWidget {{ background: {bg}; color: {text};
           font-family: 'Inter','Segoe UI',sans-serif; font-size: 14px; }}
+QLabel {{ background: transparent; }}
 QLabel#title {{ font-family: 'Space Grotesk','Segoe UI',sans-serif;
                font-size: 26px; font-weight: 700; color: {text}; }}
 QLabel#muted {{ color: {text_muted}; }}
@@ -30,6 +31,12 @@ QPushButton#primary:hover {{ background: {primary}; }}
 QPushButton#secondary {{ background: transparent; color: {text};
                         border: 1px solid {border}; border-radius: 8px; padding: 10px 18px; }}
 QPushButton#ghost {{ background: transparent; color: {action}; border: none; padding: 8px 14px; }}
+#Crumb {{ background: {surface_alt}; border: 1px solid {border}; border-radius: 18px; }}
+QPushButton#crumb {{ background: transparent; color: {text_muted}; border: none;
+                    padding: 6px 14px; border-radius: 14px; }}
+QPushButton#crumb:hover {{ color: {text}; }}
+QPushButton#crumbActive {{ background: {surface}; color: {action}; border: 1px solid {border};
+                          border-radius: 14px; padding: 6px 14px; font-weight: 700; }}
 """
 
 

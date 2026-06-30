@@ -5,7 +5,8 @@ from PySide6.QtSvg import QSvgRenderer
 
 _DIR = Path(__file__).parent / "assets" / "icons"
 ICON_NAMES = ["document", "folder", "settings", "chevron-right",
-              "shield", "layers", "eye-off", "alert"]
+              "shield", "layers", "eye-off", "alert",
+              "sparkle", "scan", "home"]
 
 
 def icon(name: str, color: str | None = None, size: int = 24) -> QIcon:

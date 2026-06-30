@@ -8,6 +8,7 @@ from anonymator.core.chunking import detect_long
 from anonymator.core.review_session import ReviewSession
 from anonymator.core.risk import risk_level
 from anonymator.ui.colors import color_for
+from anonymator.ui.icons import icon
 from anonymator.ui.components.header import HeaderBand
 from anonymator.ui.components.cards import Card, StatCard
 from anonymator.ui.components.badge import CategoryBadge
@@ -23,9 +24,14 @@ class TextScreen(QWidget):
         root = QVBoxLayout(self)
         root.addWidget(HeaderBand())
 
-        nav = QHBoxLayout()
-        back = QPushButton("Accueil"); back.setObjectName("ghost"); back.clicked.connect(on_back)
-        nav.addWidget(back); nav.addWidget(QLabel("Texte")); nav.addStretch()
+        crumb = QWidget(); crumb.setObjectName("Crumb")
+        cb = QHBoxLayout(crumb); cb.setContentsMargins(4, 4, 4, 4); cb.setSpacing(4)
+        home_btn = QPushButton(" Accueil"); home_btn.setObjectName("crumb")
+        home_btn.setIcon(icon("home", "#6B7C72")); home_btn.clicked.connect(on_back)
+        txt_btn = QPushButton(" Texte"); txt_btn.setObjectName("crumbActive")
+        txt_btn.setIcon(icon("document", "#00965E"))
+        cb.addWidget(home_btn); cb.addWidget(txt_btn)
+        nav = QHBoxLayout(); nav.addWidget(crumb); nav.addStretch()
         root.addLayout(nav)
 
         stats = QHBoxLayout()
@@ -60,9 +66,11 @@ class TextScreen(QWidget):
         root.addLayout(body)
 
         actions = QHBoxLayout()
-        self.btn_apply = QPushButton("Appliquer le masquage"); self.btn_apply.setObjectName("primary")
+        self.btn_apply = QPushButton("  Appliquer le masquage"); self.btn_apply.setObjectName("primary")
+        self.btn_apply.setIcon(icon("sparkle", "white"))
         self.btn_apply.clicked.connect(self.apply)
-        self.btn_analyze = QPushButton("Analyser"); self.btn_analyze.setObjectName("secondary")
+        self.btn_analyze = QPushButton("  Analyser"); self.btn_analyze.setObjectName("secondary")
+        self.btn_analyze.setIcon(icon("scan", "#00965E"))
         self.btn_analyze.clicked.connect(self.analyze)
         self.btn_copy = QPushButton("Copier"); self.btn_copy.setObjectName("ghost"); self.btn_copy.clicked.connect(self._copy)
         self.btn_export = QPushButton("Exporter .txt"); self.btn_export.setObjectName("ghost"); self.btn_export.clicked.connect(self._export)
