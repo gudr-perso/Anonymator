@@ -38,3 +38,13 @@ def test_nir_invalid_key():
 
 def test_nir_corsica_2a():
     assert nir_is_valid("1 55 08 2A 084 024 49") is True
+
+
+def test_luhn_valid_real_sirens():
+    # vrais SIREN valides qui échouaient sous la version buguée (parité inversée)
+    assert luhn_is_valid("542107651") is True   # BNP Paribas
+    assert luhn_is_valid("775672272") is True   # EDF
+
+
+def test_luhn_detects_single_digit_error():
+    assert luhn_is_valid("542107652") is False  # un chiffre changé → invalide

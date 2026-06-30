@@ -8,7 +8,7 @@ def luhn_is_valid(number: str) -> bool:
     checksum = 0
     parity = (len(digits) - 1) % 2
     for i, d in enumerate(digits):
-        if i % 2 == parity:
+        if i % 2 != parity:
             d *= 2
             if d > 9:
                 d -= 9
@@ -33,6 +33,4 @@ def nir_is_valid(nir: str) -> bool:
         return False
     body, key = m.group(1), int(m.group(2))
     num = body.replace("2A", "19").replace("2B", "18")
-    if not num.isdigit():
-        return False
     return (97 - (int(num) % 97)) == key
