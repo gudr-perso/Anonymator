@@ -1,0 +1,31 @@
+from anonymator.files import csv_io
+from anonymator.files.anonymize_file import scan_csv
+from anonymator.files.columns import default_maskable_columns
+from anonymator.referential import Referential
+from anonymator.ner import FakeNer
+from anonymator.core.file_review_session import FileReviewSession
+
+
+def _session(tmp_path):
+    src = tmp_path / "f.csv"
+    src.write_bytes(
+        "Nom;Montant\nClaire Martin;100,00\nClaire Martin;50,00\nPaul Durand;7,00\n"
+        .encode("cp1252"))
+    doc = csv_io.read_csv(src)
+    ref = Referential.load_default()
+    ner = FakeNer({"Claire Martin": "PERSON", "Paul Durand": "PERSON"})
+    cols = default_maskable_columns(doc.rows, doc.has_header)
+    scanned = scan_csv(doc, ner, ref, cols)
+    return FileReviewSession(doc, scanned, ref, cols)
+
+
+def test_types_and_values(tmp_path):
+    s = _session(tmp_path)
+    assert s.types() == ["PERSON"]
+    values = dict(s.values_for("PERSON"))      # {valeur: occurrences}
+    assert values == {"Claire Martin": 2, "Paul Durand": 1}
+
+
+def test_count_retained_all_by_default(tmp_path):
+    s = _session(tmp_path)
+    assert s.count_retained("PERSON") == 3     # 2 + 1 occurrences
