@@ -6,11 +6,11 @@
     {"code": "EMAIL",   "label": "E-mail",        "method": "deterministic","active": true,  "tag": "[EMAIL]",    "sensitivity": "Haute"},
     {"code": "PHONE",   "label": "Téléphone",     "method": "deterministic","active": true,  "tag": "[TEL]",      "sensitivity": "Haute"},
     {"code": "IBAN",    "label": "IBAN",          "method": "deterministic","active": true,  "tag": "[IBAN]",     "sensitivity": "Haute"},
-    {"code": "BIC",         "label": "BIC / SWIFT",  "method": "deterministic","active": true,  "tag": "[BIC]",  "sensitivity": "Moyenne"},
+    {"code": "BIC",         "label": "BIC / SWIFT",  "method": "deterministic","active": false, "tag": "[BIC]",  "sensitivity": "Moyenne"},
     {"code": "SIREN",   "label": "SIREN",         "method": "deterministic","active": true,  "tag": "[SIREN]",    "sensitivity": "Moyenne"},
     {"code": "SIRET",   "label": "SIRET",         "method": "deterministic","active": true,  "tag": "[SIRET]",    "sensitivity": "Moyenne"},
     {"code": "NIR",     "label": "N° sécu",       "method": "deterministic","active": true,  "tag": "[NIR]",      "sensitivity": "Haute"},
-    {"code": "POSTAL_CODE", "label": "Code postal",  "method": "deterministic","active": true,  "tag": "[CP]",   "sensitivity": "Basse"},
+    {"code": "POSTAL_CODE", "label": "Code postal",  "method": "deterministic","active": false, "tag": "[CP]",   "sensitivity": "Basse"},
     {"code": "URL",     "label": "URL",           "method": "deterministic","active": false, "tag": "[URL]",      "sensitivity": "Basse"}
   ]
 }

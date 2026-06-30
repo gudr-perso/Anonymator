@@ -14,3 +14,11 @@ def test_active_deterministic_types_excludes_inactive():
     ref = Referential.load_default()
     types = ref.active_deterministic_types()
     assert "EMAIL" in types and "URL" not in types
+
+def test_bic_and_postal_code_are_opt_in_by_default():
+    # bruyants sur les fichiers comptables → désactivés par défaut, activables à la demande
+    ref = Referential.load_default()
+    assert ref.is_active("BIC") is False
+    assert ref.is_active("POSTAL_CODE") is False
+    types = ref.active_deterministic_types()
+    assert "BIC" not in types and "POSTAL_CODE" not in types
