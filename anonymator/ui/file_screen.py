@@ -33,6 +33,7 @@ class FileScreen(QWidget):
         self.btn_open = QPushButton("Ouvrir…")
         self.btn_open.clicked.connect(self._open)
         self.btn_review = QPushButton("Analyser et revoir")
+        self.btn_review.setEnabled(False)
         self.btn_review.clicked.connect(self.analyze)
         self.btn_run = QPushButton("Anonymiser et enregistrer")
         self.btn_run.clicked.connect(lambda: self.run())
