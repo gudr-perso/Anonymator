@@ -1,6 +1,6 @@
 import re
 from anonymator.model import Entity
-from anonymator.validators import luhn_is_valid, iban_is_valid, nir_is_valid
+from anonymator.validators import luhn_is_valid, iban_is_valid, nir_is_valid, bic_is_plausible, postal_code_fr_is_plausible
 
 # (pattern, type, validateur optionnel sur la valeur normalisée)
 _PATTERNS = [
@@ -9,10 +9,14 @@ _PATTERNS = [
      "PHONE", None),
     (re.compile(r"\b[A-Z]{2}\d{2}(?:\s?[A-Z0-9]{2,4}){2,8}\b"),
      "IBAN", lambda v: iban_is_valid(v)),
+    (re.compile(r"\b[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}(?:[A-Z0-9]{3})?\b"),
+     "BIC", lambda v: bic_is_plausible(v)),
     (re.compile(r"\b\d{14}\b"), "SIRET", lambda v: luhn_is_valid(v)),
     (re.compile(r"\b\d{9}\b"), "SIREN", lambda v: luhn_is_valid(v)),
     (re.compile(r"\b[12]\s?\d{2}\s?\d{2}\s?(?:\d{2}|2[AB])\s?\d{3}\s?\d{3}\s?\d{2}\b"),
      "NIR", lambda v: nir_is_valid(v)),
+    (re.compile(r"\b\d{5}\b"), "POSTAL_CODE",
+     lambda v: postal_code_fr_is_plausible(v)),
     (re.compile(r"https?://[^\s]+"), "URL", None),
 ]
 

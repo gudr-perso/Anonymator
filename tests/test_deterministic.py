@@ -30,3 +30,17 @@ def test_spans_are_correct():
     e = next(e for e in detect_deterministic(text) if e.type == "EMAIL")
     assert text[e.start:e.end] == "jp.lefevre@gmail.com"
     assert e.source == "deterministic"
+
+
+def test_detects_bic():
+    assert ("BIC", "BNPAFRPPXXX") in types_at("Virement BIC BNPAFRPPXXX vers...")
+    assert ("BIC", "SOGEFRPP") in types_at("ref SOGEFRPP fin")
+
+
+def test_detects_postal_code_fr():
+    assert ("POSTAL_CODE", "75008") in types_at("Paris 75008 France")
+
+
+def test_rejects_implausible_postal_code():
+    assert all(e.type != "POSTAL_CODE"
+               for e in detect_deterministic("ref 00123 xx"))
