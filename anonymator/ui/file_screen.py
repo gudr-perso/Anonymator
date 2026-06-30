@@ -117,9 +117,74 @@ class FileScreen(QWidget):
             return None
         return result
 
-    # ---------- review mode stubs (replaced in Tasks 4-5) ----------
-    def analyze(self): pass
-    def _on_side_changed(self, *a): pass
+    # ---------- review mode ----------
+    def analyze(self):
+        if self.doc is None:
+            return
+        cols = default_maskable_columns(self.doc.rows, self.doc.has_header)
+        self._cols = cols
+        self.btn_review.setEnabled(False)
+        self.btn_run.setEnabled(False)
+        self.label.setText(f"{self.path.name} — analyse en cours…")
+        ner = self.loader.get()
+        self._worker = FileScanWorker(self.doc, ner, self.ref, cols)
+        self._worker.scan_finished.connect(self._on_scanned)
+        self._worker.error.connect(self._on_scan_error)
+        self._worker.start()
+
+    def _on_scan_error(self, msg):
+        self.btn_review.setEnabled(True); self.btn_run.setEnabled(True)
+        self.label.setText(self.path.name)
+        QMessageBox.warning(self, "Erreur d'analyse", msg)
+
+    def _on_scanned(self, scanned):
+        self.session = FileReviewSession(self.doc, scanned, self.ref, self._cols)
+        self.btn_review.setEnabled(True); self.btn_run.setEnabled(True)
+        self.label.setText(self.path.name)
+        self.page = 0
+        self._build_side()
+        self.side.show(); self.pager_widget.show()
+        self._render_page()
+
+    def _build_side(self):
+        self.side.blockSignals(True)
+        self.side.clear()
+        for t in self.session.types():
+            top = QTreeWidgetItem([t, str(self.session.count_retained(t))])
+            top.setForeground(0, QColor(color_for(t)))
+            top.setData(0, Qt.UserRole, ("type", t, None))
+            top.setFlags(top.flags() | Qt.ItemIsUserCheckable)
+            top.setCheckState(0, Qt.Checked)
+            for value, n in self.session.values_for(t):
+                child = QTreeWidgetItem([value, f"×{n}"])
+                child.setData(0, Qt.UserRole, ("value", t, value))
+                child.setFlags(child.flags() | Qt.ItemIsUserCheckable)
+                enabled = self.session.is_value_enabled(t, value)
+                child.setCheckState(0, Qt.Checked if enabled else Qt.Unchecked)
+                top.addChild(child)
+            self.side.addTopLevelItem(top)
+        self.side.expandAll()
+        self.side.blockSignals(False)
+
+    def _on_side_changed(self, item, _col):
+        kind, etype, value = item.data(0, Qt.UserRole)
+        checked = item.checkState(0) == Qt.Checked
+        if kind == "type":
+            self.session.set_type_enabled(etype, checked)
+        else:
+            self.session.set_value_enabled(etype, value, checked)
+        self._refresh_counts()
+        self._render_page()
+
+    def _refresh_counts(self):
+        for i in range(self.side.topLevelItemCount()):
+            top = self.side.topLevelItem(i)
+            _, t, _ = top.data(0, Qt.UserRole)
+            top.setText(1, str(self.session.count_retained(t)))
+
+    def _render_page(self): pass
+
+    # ---------- stubs (replaced in Tasks 5+) ----------
     def _go(self, p): pass
     def _goto_typed(self): pass
     def _page_count(self): return 1

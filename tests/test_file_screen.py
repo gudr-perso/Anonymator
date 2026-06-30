@@ -39,6 +39,19 @@ def test_preview_splits_columns(qtbot, tmp_path):
     assert s.table.item(0, 0).text() == "Claire Martin"
 
 
+def test_analyze_builds_session_and_side(qtbot, tmp_path):
+    src = tmp_path / "f.csv"
+    src.write_bytes("Nom;Montant\nClaire Martin;100,00\nPaul Durand;50,00\n".encode("cp1252"))
+    s = _screen({"Claire Martin": "PERSON", "Paul Durand": "PERSON"})
+    qtbot.addWidget(s)
+    s.load_path(str(src))
+    s.analyze()
+    qtbot.waitUntil(lambda: s.session is not None, timeout=5000)
+    assert s.session.count_retained("PERSON") == 2
+    assert s.side.topLevelItemCount() == 1            # un type : PERSON
+    assert s.side.topLevelItem(0).childCount() == 2   # deux valeurs distinctes
+
+
 def test_run_on_csv_writes_output(qtbot, tmp_path):
     src = tmp_path / "f.csv"
     src.write_bytes("Nom;Montant\nClaire Martin;100,00\n".encode("cp1252"))
