@@ -1,12 +1,13 @@
 import re
 from anonymator.model import Entity
 
-# Jeton « secret » : suite sans espace, on s'arrête à la ponctuation de fin usuelle.
-_TOKEN = r"[^\s,;)\]]+(?<![.])"   # autorise . interne, pas en fin
+# Jeton « secret » : suite sans espace ; on retire une ponctuation de fin (.!:).
+_TOKEN = r"[^\s,;)\]]+(?<![.!:])"
 
-_PWD_KEYS = r"(?:mot de passe|mots de passe|mdp|password|pass(?:e)?)"
-_LOGIN_KEYS = (r"(?:login|identifiant|utilisateur|user(?:name)?|"
-               r"acc[eè]s au compte|connect[ée]\w*(?:\s+\w+)*\s+avec)")
+# (?<!\w) empêche de matcher "passe"/"pass" À L'INTÉRIEUR d'un mot (impasse, bypass).
+_PWD_KEYS = r"(?<!\w)(?:mots? de passe|mdp|password)"
+_LOGIN_KEYS = (r"(?<!\w)(?:login|identifiant|utilisateur|username|"
+               r"acc[eè]s au compte|connect[ée]\w*(?:\s+\w+){0,3}\s+avec)")
 # séparateurs entre le mot-clé et la valeur : : — - ( espace, "provisoire/temporaire"
 _SEP = r"(?:\s+(?:provisoire|temporaire))?\s*(?:[:\-—(]\s*|\s+)"
 
