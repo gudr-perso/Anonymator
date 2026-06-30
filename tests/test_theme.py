@@ -20,3 +20,18 @@ def test_build_qss_injects_theme_colors():
 
 def test_build_qss_unknown_theme_falls_back_to_default():
     assert build_qss("zzz") == build_qss(DEFAULT_THEME)
+
+
+def test_themes_have_extended_tokens():
+    from anonymator.ui.theme import THEMES
+    for tokens in THEMES.values():
+        for key in ["bg", "bg_hero", "surface", "surface_alt", "border",
+                    "primary", "action", "accent", "text", "text_muted"]:
+            assert key in tokens and tokens[key].startswith("#")
+
+
+def test_qss_includes_card_and_header_styles():
+    from anonymator.ui.theme import build_qss
+    qss = build_qss("cuma")
+    assert "#Card" in qss
+    assert "HeaderBand" in qss

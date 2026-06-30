@@ -18,7 +18,12 @@ def test_detects_iban_only_if_valid_checksum():
     good = "FR7630006000011234567890189"
     bad = "FR7630006000011234567890188"
     assert ("IBAN", good) in types_at(f"vir {good}")
-    assert all(e.type != "IBAN" for e in detect_deterministic(f"vir {bad}"))
+    # valid IBAN must be confirmed=True
+    good_ents = [e for e in detect_deterministic(f"vir {good}") if e.type == "IBAN"]
+    assert good_ents and good_ents[0].confirmed is True
+    # invalid IBAN is now emitted confirmed=False (not dropped)
+    bad_ents = [e for e in detect_deterministic(f"vir {bad}") if e.type == "IBAN"]
+    assert bad_ents and bad_ents[0].confirmed is False
 
 
 def test_detects_siret_via_luhn():
@@ -44,3 +49,22 @@ def test_detects_postal_code_fr():
 def test_rejects_implausible_postal_code():
     assert all(e.type != "POSTAL_CODE"
                for e in detect_deterministic("ref 00123 xx"))
+
+
+def test_invalid_iban_emitted_unconfirmed():
+    ents = detect_deterministic("RIB FR76 3000 4000 1200 0000 1234 567")
+    iban = [e for e in ents if e.type == "IBAN"]
+    assert iban and iban[0].confirmed is False
+
+
+def test_invalid_nir_emitted_unconfirmed():
+    ents = detect_deterministic("ref 2 86 03 69 123 456 78")
+    nir = [e for e in ents if e.type == "NIR"]
+    assert nir and nir[0].confirmed is False
+
+
+def test_invalid_bic_still_skipped():
+    # "ZZZZZZZZ" a le bon FORMAT BIC mais "ZZ" n'est pas un pays ISO valide :
+    # le validateur échoue → BIC n'est pas "unconfirmable", donc rejeté (pas émis).
+    ents = detect_deterministic("code ZZZZZZZZ")
+    assert not [e for e in ents if e.type == "BIC"]

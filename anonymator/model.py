@@ -9,6 +9,7 @@ class Entity:
     end: int           # offset caractère exclusif
     source: str        # "deterministic" | "ner"
     confidence: float = 1.0
+    confirmed: bool = True   # False = format plausible mais validation déterministe KO
 
     @property
     def length(self) -> int:

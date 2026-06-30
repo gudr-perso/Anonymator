@@ -23,3 +23,19 @@ def test_pipeline_deterministic_wins_overlap():
     out = detect(f"vir {iban}", ner, ref)
     assert any(e.type == "IBAN" for e in out)
     assert all(e.type != "ORG" for e in out)
+
+
+def test_pipeline_detects_secrets():
+    ref = Referential.load_default()
+    ner = FakeNer({})
+    ents = detect("mot de passe : V3lo!2026#Claire", ner, ref)
+    assert any(e.type == "PASSWORD" for e in ents)
+
+
+def test_pipeline_filters_stoplist():
+    ref = Referential.load_default()
+    ner = FakeNer({"service client": "ORG", "Claire Martin": "PERSON"})
+    ents = detect("appel au service client par Claire Martin", ner, ref)
+    types_values = {(e.type, e.value) for e in ents}
+    assert ("ORG", "service client") not in types_values
+    assert ("PERSON", "Claire Martin") in types_values

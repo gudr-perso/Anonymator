@@ -11,6 +11,8 @@ ENTITY_COLORS = {
     "NIR":         "#c1121f",
     "POSTAL_CODE": "#4d908e",
     "URL":         "#577590",
+    "LOGIN":       "#5f0f40",
+    "PASSWORD":    "#9a031e",
 }
 _FALLBACK = "#8499AB"
 

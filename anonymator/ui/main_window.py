@@ -1,5 +1,6 @@
 # anonymator/ui/main_window.py
 from pathlib import Path
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QMainWindow, QStackedWidget
 from anonymator.referential import Referential
 from anonymator.ui.preferences import Preferences
@@ -12,6 +13,8 @@ from anonymator.ui.settings_screen import SettingsScreen
 from anonymator.ui.setup_screen import SetupScreen
 from anonymator.core.model_status import is_model_available
 
+_ASSETS = Path(__file__).parent / "assets"
+
 PREFS_PATH = Path.home() / ".anonymator" / "preferences.json"
 
 
@@ -21,9 +24,12 @@ class MainWindow(QMainWindow):
                  skip_setup: bool = False):
         super().__init__()
         self.setWindowTitle("Anonymator")
+        ico = _ASSETS / "anonymator.ico"
+        if ico.exists():
+            self.setWindowIcon(QIcon(str(ico)))
         self.prefs_path = prefs_path
         self.prefs = Preferences.load(prefs_path)
-        self.ref = Referential.load_default()
+        self.ref = self._build_ref()
         self.loader = loader or ModelLoader()
 
         self.stack = QStackedWidget()
@@ -32,7 +38,8 @@ class MainWindow(QMainWindow):
         self.setup_screen = SetupScreen()
         self.home = HomeScreen(self.show_text, self.show_file, self.show_settings)
         self.text_screen = TextScreen(self.ref, self.loader, self.prefs, self.show_home)
-        self.file_screen = FileScreen(self.ref, self.loader, self.prefs, self.show_home)
+        self.file_screen = FileScreen(self.ref, self.loader, self.prefs,
+                                      self.show_home, on_text_review=self._review_text)
         self.settings_screen = SettingsScreen(self.ref, self.prefs,
                                               self._apply_prefs, self.show_home)
         for w in (self.setup_screen, self.home, self.text_screen,
@@ -48,12 +55,26 @@ class MainWindow(QMainWindow):
 
         self._apply_theme()
 
+    def _build_ref(self):
+        ref = Referential.load_default(overrides=self.prefs.entity_overrides)
+        if self.prefs.ner_stoplist is not None:
+            ref = ref.with_stoplist(self.prefs.ner_stoplist)
+        return ref
+
     def _apply_theme(self):
         self.setStyleSheet(build_qss(self.prefs.theme))
 
     def _apply_prefs(self):
         self.prefs.save(self.prefs_path)
+        self.ref = self._build_ref()
+        self.text_screen.ref = self.ref
+        self.file_screen.ref = self.ref
         self._apply_theme()
+
+    def _review_text(self, text: str):
+        self.text_screen.input.setPlainText(text)
+        self.stack.setCurrentWidget(self.text_screen)
+        self.text_screen.analyze()
 
     def show_home(self):
         self.stack.setCurrentWidget(self.home)

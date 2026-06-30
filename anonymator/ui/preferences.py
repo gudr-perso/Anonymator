@@ -8,6 +8,7 @@ class Preferences:
     theme: str = "cuma"
     output_dir: str | None = None
     entity_overrides: dict[str, bool] = field(default_factory=dict)
+    ner_stoplist: list[str] | None = None
 
     def save(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -21,4 +22,5 @@ class Preferences:
         data = json.loads(path.read_text(encoding="utf-8"))
         return cls(theme=data.get("theme", "cuma"),
                    output_dir=data.get("output_dir"),
-                   entity_overrides=data.get("entity_overrides", {}))
+                   entity_overrides=data.get("entity_overrides", {}),
+                   ner_stoplist=data.get("ner_stoplist"))
