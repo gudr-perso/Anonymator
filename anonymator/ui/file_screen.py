@@ -130,6 +130,7 @@ class FileScreen(QWidget):
         self._worker = FileScanWorker(self.doc, ner, self.ref, cols)
         self._worker.scan_finished.connect(self._on_scanned)
         self._worker.error.connect(self._on_scan_error)
+        self._worker.finished.connect(self._worker.deleteLater)
         self._worker.start()
 
     def _on_scan_error(self, msg):
@@ -154,7 +155,7 @@ class FileScreen(QWidget):
             top.setForeground(0, QColor(color_for(t)))
             top.setData(0, Qt.UserRole, ("type", t, None))
             top.setFlags(top.flags() | Qt.ItemIsUserCheckable)
-            top.setCheckState(0, Qt.Checked)
+            top.setCheckState(0, Qt.Checked if self.session.is_type_enabled(t) else Qt.Unchecked)
             for value, n in self.session.values_for(t):
                 child = QTreeWidgetItem([value, f"×{n}"])
                 child.setData(0, Qt.UserRole, ("value", t, value))
@@ -167,6 +168,8 @@ class FileScreen(QWidget):
         self.side.blockSignals(False)
 
     def _on_side_changed(self, item, _col):
+        if self.session is None:
+            return
         kind, etype, value = item.data(0, Qt.UserRole)
         checked = item.checkState(0) == Qt.Checked
         if kind == "type":

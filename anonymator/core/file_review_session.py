@@ -56,6 +56,9 @@ class FileReviewSession:
         return total
 
     # --- setters ---
+    def is_type_enabled(self, etype: str) -> bool:
+        return self._types_enabled.get(etype, True)
+
     def set_type_enabled(self, etype: str, enabled: bool) -> None:
         self._types_enabled[etype] = enabled
 
