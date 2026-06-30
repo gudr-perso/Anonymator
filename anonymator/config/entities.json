@@ -1,0 +1,14 @@
+{
+  "entities": [
+    {"code": "PERSON",  "label": "Personne",      "method": "ner",          "active": true,  "tag": "[PERSONNE]", "sensitivity": "Haute"},
+    {"code": "ADDRESS", "label": "Adresse",       "method": "ner",          "active": true,  "tag": "[ADRESSE]",  "sensitivity": "Haute"},
+    {"code": "ORG",     "label": "Organisation",  "method": "ner",          "active": true,  "tag": "[ORG]",      "sensitivity": "Moyenne"},
+    {"code": "EMAIL",   "label": "E-mail",        "method": "deterministic","active": true,  "tag": "[EMAIL]",    "sensitivity": "Haute"},
+    {"code": "PHONE",   "label": "Téléphone",     "method": "deterministic","active": true,  "tag": "[TEL]",      "sensitivity": "Haute"},
+    {"code": "IBAN",    "label": "IBAN",          "method": "deterministic","active": true,  "tag": "[IBAN]",     "sensitivity": "Haute"},
+    {"code": "SIREN",   "label": "SIREN",         "method": "deterministic","active": true,  "tag": "[SIREN]",    "sensitivity": "Moyenne"},
+    {"code": "SIRET",   "label": "SIRET",         "method": "deterministic","active": true,  "tag": "[SIRET]",    "sensitivity": "Moyenne"},
+    {"code": "NIR",     "label": "N° sécu",       "method": "deterministic","active": true,  "tag": "[NIR]",      "sensitivity": "Haute"},
+    {"code": "URL",     "label": "URL",           "method": "deterministic","active": false, "tag": "[URL]",      "sensitivity": "Basse"}
+  ]
+}
