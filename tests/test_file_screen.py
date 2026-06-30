@@ -18,6 +18,7 @@ def test_scan_worker_emits_result(qtbot, tmp_path):
                             Referential.load_default(), cols)
     with qtbot.waitSignal(worker.scan_finished, timeout=5000) as blocker:
         worker.start()
+    worker.wait()           # ensure thread finishes before teardown
     scanned = blocker.args[0]
     assert (1, 0) in scanned
 
