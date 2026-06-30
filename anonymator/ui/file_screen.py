@@ -2,34 +2,73 @@ from datetime import datetime
 from pathlib import Path
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
                                QLabel, QTableWidget, QTableWidgetItem, QFileDialog,
-                               QMessageBox)
-from anonymator.files.anonymize_file import anonymize_file, UnsupportedFormat
+                               QMessageBox, QTreeWidget, QTreeWidgetItem, QLineEdit)
+from PySide6.QtGui import QColor
+from PySide6.QtCore import Qt
+from anonymator.files.anonymize_file import (anonymize_file, UnsupportedFormat)
 from anonymator.files import csv_io
+from anonymator.files.columns import default_maskable_columns
+from anonymator.core.file_review_session import FileReviewSession
+from anonymator.ui.file_scan_worker import FileScanWorker
+from anonymator.ui.colors import color_for
+
+PAGE_SIZE = 20
 
 
 class FileScreen(QWidget):
-    def __init__(self, ref, loader, prefs, on_back):
+    def __init__(self, ref, loader, prefs, on_back, on_text_review=None):
         super().__init__()
         self.ref, self.loader, self.prefs = ref, loader, prefs
+        self.on_text_review = on_text_review
         self.path: Path | None = None
-        self.excluded: set[int] = set()
+        self.doc = None
+        self.session: FileReviewSession | None = None
+        self.page = 0
+        self._worker: FileScanWorker | None = None
+
         layout = QVBoxLayout(self)
         self.label = QLabel("Aucun fichier")
         self.table = QTableWidget()
         btns = QHBoxLayout()
         self.btn_open = QPushButton("Ouvrir…")
         self.btn_open.clicked.connect(self._open)
+        self.btn_review = QPushButton("Analyser et revoir")
+        self.btn_review.clicked.connect(self.analyze)
         self.btn_run = QPushButton("Anonymiser et enregistrer")
         self.btn_run.clicked.connect(lambda: self.run())
         self.btn_back = QPushButton("Accueil")
         self.btn_back.setObjectName("ghost")
         self.btn_back.clicked.connect(on_back)
-        for b in (self.btn_open, self.btn_run, self.btn_back):
+        for b in (self.btn_open, self.btn_review, self.btn_run, self.btn_back):
             btns.addWidget(b)
+
+        # side panel (types/values) + pagination — hidden until analyze
+        self.side = QTreeWidget()
+        self.side.setHeaderLabels(["Typologie / valeur", "Occ."])
+        self.side.itemChanged.connect(self._on_side_changed)
+        self.side.hide()
+        self.pager = QHBoxLayout()
+        self.btn_first = QPushButton("« Première"); self.btn_first.clicked.connect(lambda: self._go(0))
+        self.btn_prev = QPushButton("‹ Préc."); self.btn_prev.clicked.connect(lambda: self._go(self.page - 1))
+        self.lbl_page = QLabel("")
+        self.btn_next = QPushButton("Suiv. ›"); self.btn_next.clicked.connect(lambda: self._go(self.page + 1))
+        self.btn_last = QPushButton("Dernière »"); self.btn_last.clicked.connect(lambda: self._go(self._page_count() - 1))
+        self.goto = QLineEdit(); self.goto.setFixedWidth(50)
+        self.goto.returnPressed.connect(self._goto_typed)
+        for w in (self.btn_first, self.btn_prev, self.lbl_page, self.btn_next, self.btn_last, QLabel("Aller à"), self.goto):
+            self.pager.addWidget(w)
+        self.pager_widget = QWidget(); self.pager_widget.setLayout(self.pager); self.pager_widget.hide()
+
+        body = QHBoxLayout()
+        body.addWidget(self.table, 3)
+        body.addWidget(self.side, 1)
+
         layout.addWidget(self.label)
         layout.addLayout(btns)
-        layout.addWidget(self.table)
+        layout.addLayout(body)
+        layout.addWidget(self.pager_widget)
 
+    # ---------- opening / preview ----------
     def _open(self):
         path, _ = QFileDialog.getOpenFileName(
             self, "Ouvrir", "", "Fichiers (*.txt *.csv *.xlsx)")
@@ -38,20 +77,31 @@ class FileScreen(QWidget):
 
     def load_path(self, path: str):
         self.path = Path(path)
-        self.excluded = set()
+        self.doc = None
+        self.session = None
+        self.side.hide(); self.pager_widget.hide()
         self.label.setText(self.path.name)
-        if self.path.suffix.lower() == ".csv":
-            doc = csv_io.read_csv(self.path)
-            self._fill_preview(doc.rows[:50])
+        suffix = self.path.suffix.lower()
+        self.btn_review.setEnabled(suffix == ".csv")   # txt/xlsx routing added in Task 7
+        if suffix == ".csv":
+            self.doc = csv_io.read_csv(self.path)
+            self._fill_preview(self.doc.rows[:50])
 
     def _fill_preview(self, rows):
         if not rows:
             return
-        self.table.setColumnCount(max(len(r) for r in rows))
-        self.table.setRowCount(len(rows))
-        for r, row in enumerate(rows):
-            for c, val in enumerate(row):
-                self.table.setItem(r, c, QTableWidgetItem(val))
+        header = rows[0] if (self.doc and self.doc.has_header) else None
+        data = rows[1:] if header else rows
+        width = max(len(r) for r in rows)
+        self.table.clear()
+        self.table.setColumnCount(width)
+        self.table.setRowCount(len(data))
+        if header:
+            self.table.setHorizontalHeaderLabels(
+                [header[c] if c < len(header) else f"col{c}" for c in range(width)])
+        for r, row in enumerate(data):
+            for c in range(width):
+                self.table.setItem(r, c, QTableWidgetItem(row[c] if c < len(row) else ""))
 
     def run(self, when: datetime | None = None):
         if not self.path:
@@ -60,10 +110,15 @@ class FileScreen(QWidget):
         when = when or datetime.now()
         try:
             ner = self.loader.get()
-            exclude = self.excluded if self.path.suffix.lower() == ".csv" else None
-            result = anonymize_file(self.path, ner, self.ref, out_dir, when,
-                                    exclude=exclude)
+            result = anonymize_file(self.path, ner, self.ref, out_dir, when)
         except UnsupportedFormat as e:
             QMessageBox.warning(self, "Format non supporté", str(e))
             return None
         return result
+
+    # ---------- review mode stubs (replaced in Tasks 4-5) ----------
+    def analyze(self): pass
+    def _on_side_changed(self, *a): pass
+    def _go(self, p): pass
+    def _goto_typed(self): pass
+    def _page_count(self): return 1

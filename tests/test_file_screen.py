@@ -23,6 +23,22 @@ def test_scan_worker_emits_result(qtbot, tmp_path):
     assert (1, 0) in scanned
 
 
+def _screen(loader_map=None):
+    ref = Referential.load_default()
+    loader = ModelLoader(FakeNer(loader_map or {}))
+    return FileScreen(ref, loader, Preferences(), on_back=lambda: None)
+
+
+def test_preview_splits_columns(qtbot, tmp_path):
+    src = tmp_path / "f.csv"
+    src.write_bytes("Nom;Montant\nClaire Martin;100,00\n".encode("cp1252"))
+    s = _screen(); qtbot.addWidget(s)
+    s.load_path(str(src))
+    assert s.table.columnCount() == 2
+    assert s.table.horizontalHeaderItem(0).text() == "Nom"
+    assert s.table.item(0, 0).text() == "Claire Martin"
+
+
 def test_run_on_csv_writes_output(qtbot, tmp_path):
     src = tmp_path / "f.csv"
     src.write_bytes("Nom;Montant\nClaire Martin;100,00\n".encode("cp1252"))
