@@ -178,7 +178,18 @@ def test_luhn_invalid_siren():
 
 def test_luhn_rejects_too_short():
     assert luhn_is_valid("7") is False
+
+def test_luhn_valid_real_sirens():
+    # vrais SIREN valides qui distinguent l'algo correct d'une parité inversée
+    assert luhn_is_valid("542107651") is True   # BNP Paribas
+    assert luhn_is_valid("775672272") is True   # EDF
+
+def test_luhn_detects_single_digit_error():
+    assert luhn_is_valid("542107652") is False
 ```
+
+> ⚠️ Ne PAS utiliser uniquement `552081317` comme exemple valide : ce numéro passe aussi bien
+> avec l'algorithme correct qu'avec une parité inversée, donc il ne détecte pas le bug.
 
 - [ ] **Step 2 : Lancer le test pour vérifier l'échec**
 
@@ -196,7 +207,7 @@ def luhn_is_valid(number: str) -> bool:
     checksum = 0
     parity = (len(digits) - 1) % 2
     for i, d in enumerate(digits):
-        if i % 2 == parity:
+        if i % 2 != parity:
             d *= 2
             if d > 9:
                 d -= 9
