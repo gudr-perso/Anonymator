@@ -9,6 +9,7 @@ from anonymator.dedup import detect_unique
 from anonymator.report.audit import AuditReport
 from anonymator.output_naming import anonymized_path
 from anonymator.files import csv_io
+from anonymator.files import txt_io
 from anonymator.files.columns import default_maskable_columns
 
 
@@ -22,6 +23,19 @@ def _column_label(doc, col: int) -> str:
     if doc.has_header and doc.rows and col < len(doc.rows[0]):
         return doc.rows[0][col]
     return f"col{col}"
+
+
+def anonymize_txt(path: Path, ner: NerDetector, ref: Referential,
+                  output_dir: Path, when: datetime) -> FileResult:
+    text, encoding = txt_io.read_text(path)
+    ents = detect(text, ner, ref)
+    report = AuditReport()
+    for e in ents:
+        report.add(e.type, e.value, ref.tag_for(e.type), "texte")
+    masked = apply_masking(text, ents, ref)
+    out = anonymized_path(path, output_dir, when)
+    txt_io.write_text(masked, encoding, out)
+    return FileResult(out, report)
 
 
 def anonymize_csv(path: Path, ner: NerDetector, ref: Referential,
