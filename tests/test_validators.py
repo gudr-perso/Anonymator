@@ -1,4 +1,4 @@
-from anonymator.validators import luhn_is_valid
+from anonymator.validators import luhn_is_valid, iban_is_valid
 
 
 def test_luhn_valid_siren():
@@ -11,3 +11,15 @@ def test_luhn_invalid_siren():
 
 def test_luhn_rejects_too_short():
     assert luhn_is_valid("7") is False
+
+
+def test_iban_valid_fr():
+    assert iban_is_valid("FR7630006000011234567890189") is True
+
+
+def test_iban_valid_with_spaces():
+    assert iban_is_valid("FR76 3000 6000 0112 3456 7890 189") is True
+
+
+def test_iban_invalid_checksum():
+    assert iban_is_valid("FR7630006000011234567890188") is False

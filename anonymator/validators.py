@@ -14,3 +14,12 @@ def luhn_is_valid(number: str) -> bool:
                 d -= 9
         checksum += d
     return checksum % 10 == 0
+
+
+def iban_is_valid(iban: str) -> bool:
+    s = iban.replace(" ", "").upper()
+    if not re.fullmatch(r"[A-Z]{2}\d{2}[A-Z0-9]{10,30}", s):
+        return False
+    rearranged = s[4:] + s[:4]
+    digits = "".join(str(int(ch, 36)) for ch in rearranged)
+    return int(digits) % 97 == 1
