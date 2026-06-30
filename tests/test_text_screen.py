@@ -24,3 +24,11 @@ def test_apply_produces_masked_text(qtbot):
     s.input.setPlainText("Claire Martin mail c@x.fr")
     s.analyze(); s.apply()
     assert s.output.toPlainText() == "[PERSONNE] mail [EMAIL]"
+
+
+def test_stats_update_after_analyze(qtbot):
+    s = _screen(); qtbot.addWidget(s)
+    s.input.setPlainText("Claire Martin mail c@x.fr")
+    s.analyze()
+    assert s.stat_detected.value_label.text() == "2"
+    assert s.stat_risk.value_label.text() == "Élevé"
