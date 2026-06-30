@@ -207,7 +207,7 @@ class FileScreen(QWidget):
         if self.session is None:
             return
         rows = self._data_rows()
-        width = max(len(r) for r in self.doc.rows)
+        width = max((len(r) for r in self.doc.rows), default=0)
         page_rows = rows[self.page * PAGE_SIZE:(self.page + 1) * PAGE_SIZE]
         header = self.doc.rows[0] if self.doc.has_header else None
         self.table.clear()
