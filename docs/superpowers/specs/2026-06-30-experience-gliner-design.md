@@ -193,16 +193,34 @@ venv de dev) :
 
 ---
 
-## 9. Hors périmètre
+## 9. Versionnage & intégrité
 
-- Choix du modèle GLiNER / multi-modèles, calibrage du seuil (`threshold`) ou des labels.
-- Téléchargement en arrière-plan automatique sans action utilisateur.
-- Mise à jour / versionnage du modèle, vérification d'intégrité par hash.
-- Installeur Windows, code signing (Plan 5 éventuel).
+Pas de système de mise à jour dédié : le besoin est couvert par des mécanismes déjà en place.
+
+- **Épinglage par version** : le modèle est fixé dans le code (`MODEL_NAME = "urchade/gliner_multi-v2.1"`)
+  et le cache est rangé par version (`models--urchade--gliner_multi-v2.1`). Si une future version de
+  l'app change l'épingle, `is_model_available()` renvoie `False` pour la nouvelle version → la carte
+  d'invite réapparaît → l'utilisateur télécharge la nouvelle. Le versionnage est donc obtenu
+  gratuitement, sans logique d'« update » supplémentaire.
+- **Intégrité par hash** : HuggingFace stocke les fichiers par hash de contenu (blobs) et vérifie via
+  etag à chaque `snapshot_download`. Le bouton **« Réparer (re-télécharger) »** relance ce mécanisme
+  et complète/retélécharge tout fichier manquant ou corrompu.
 
 ---
 
-## 10. Décisions verrouillées (récapitulatif)
+## 10. Hors périmètre
+
+- **Qualité de détection GLiNER** — choix multi-modèles (small/medium/large), calibrage du seuil
+  (`threshold`) et des labels. Travail de réglage distinct → fera l'objet d'une **spec « qualité
+  GLiNER »** dédiée.
+- **Installeur Windows de l'application** — emballage du dossier `dist/anonymator/` en un `setup.exe`
+  (Inno Setup / NSIS), raccourcis, désinstallation, code signing anti-SmartScreen. Sujet de packaging
+  distinct → fera l'objet d'une **spec « installeur Windows »** dédiée (« Plan 5 »).
+- Téléchargement en arrière-plan automatique sans action utilisateur.
+
+---
+
+## 11. Décisions verrouillées (récapitulatif)
 
 1. Premier lancement **non bloquant** ; carte d'invite sur l'accueil si modèle absent.
 2. Gestion du modèle dans une **section Paramètres** dédiée.
