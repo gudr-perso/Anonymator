@@ -16,3 +16,11 @@ def test_toggle_switch(qtbot):
     t.toggled.connect(states.append)
     t.setChecked(True)
     assert t.isChecked() is True and states == [True]
+
+from anonymator.ui.components.badge import CategoryBadge
+from anonymator.ui.colors import color_for
+
+def test_category_badge(qtbot):
+    b = CategoryBadge("PERSON", "NOM"); qtbot.addWidget(b)
+    assert b.text() == "NOM"
+    assert color_for("PERSON").lstrip("#").lower() in b.styleSheet().lower()
