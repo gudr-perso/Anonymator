@@ -23,6 +23,10 @@ def sniff_delimiter(sample: str) -> str:
     Priorité aux séparateurs structurels (;, |, tab) ; la virgule (souvent une
     virgule décimale en français) n'est retenue que si aucun structurel ne convient.
     Défaut ";"."""
+    # Un échantillon tronqué (text[:4096]) coupe la dernière ligne en plein milieu :
+    # son décompte de séparateurs fausse le test de consistance. On l'écarte.
+    if "\n" in sample and not sample.endswith("\n"):
+        sample = sample[:sample.rfind("\n")]
     lines = [l for l in sample.splitlines() if l]
     if not lines:
         return ";"
