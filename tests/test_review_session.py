@@ -37,3 +37,11 @@ def test_report_counts_retained_only():
     s.set_type_enabled("ORG", False)
     rows = s.report(REF).to_rows()
     assert {r["type"] for r in rows} == {"PERSON", "EMAIL"}
+
+def test_unconfirmed_not_retained_by_default():
+    text = "IBAN FR00 0000 fin"
+    ents = [Entity("IBAN", "FR00 0000", 5, 14, "deterministic", 1.0, confirmed=False)]
+    s = ReviewSession(text, ents)
+    assert s.retained() == []                       # non confirmé → non retenu
+    s.set_entity_enabled(0, True)
+    assert len(s.retained()) == 1

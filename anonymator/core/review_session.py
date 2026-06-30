@@ -8,7 +8,7 @@ class ReviewSession:
     def __init__(self, text: str, entities: list[Entity]):
         self.text = text
         self._entities = merge_entities(list(entities))
-        self._enabled = [True] * len(self._entities)
+        self._enabled = [e.confirmed for e in self._entities]
         self._disabled_types: set[str] = set()
 
     def entities(self) -> list[Entity]:
@@ -27,7 +27,7 @@ class ReviewSession:
         value = self.text[start:end]
         new = Entity(etype, value, start, end, "manual", 1.0)
         self._entities = merge_entities(self._entities + [new])
-        self._enabled = [True] * len(self._entities)
+        self._enabled = [e.confirmed for e in self._entities]
 
     def retained(self) -> list[Entity]:
         out = []
