@@ -23,3 +23,16 @@ def iban_is_valid(iban: str) -> bool:
     rearranged = s[4:] + s[:4]
     digits = "".join(str(int(ch, 36)) for ch in rearranged)
     return int(digits) % 97 == 1
+
+
+def nir_is_valid(nir: str) -> bool:
+    s = nir.replace(" ", "").upper()
+    m = re.fullmatch(r"([12]\d{2}(?:0[1-9]|1[0-2]|[02-9]\d)"
+                     r"(?:\d{2}|2[AB])\d{3}\d{3})(\d{2})", s)
+    if not m:
+        return False
+    body, key = m.group(1), int(m.group(2))
+    num = body.replace("2A", "19").replace("2B", "18")
+    if not num.isdigit():
+        return False
+    return (97 - (int(num) % 97)) == key
