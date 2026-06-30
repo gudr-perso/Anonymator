@@ -3,6 +3,8 @@ from anonymator.model import Entity
 from anonymator.validators import luhn_is_valid, iban_is_valid, nir_is_valid, bic_is_plausible, postal_code_fr_is_plausible
 
 # (pattern, type, validateur optionnel sur la valeur normalisée)
+_UNCONFIRMABLE = {"IBAN", "NIR"}   # format plausible conservé même si validation KO
+
 _PATTERNS = [
     (re.compile(r"\b[\w.+-]+@[\w-]+\.[\w.-]+\b"), "EMAIL", None),
     (re.compile(r"(?:(?:\+33|0033)\s?|0)[1-9](?:[\s.\-]?\d{2}){4}"),
@@ -26,8 +28,12 @@ def detect_deterministic(text: str) -> list[Entity]:
     for pattern, etype, validator in _PATTERNS:
         for m in pattern.finditer(text):
             value = m.group(0)
+            confirmed = True
             if validator is not None and not validator(value):
-                continue
+                if etype in _UNCONFIRMABLE:
+                    confirmed = False          # format OK, clé/checksum KO → non confirmé
+                else:
+                    continue                   # autres types : rejet pur
             found.append(Entity(etype, value, m.start(), m.end(),
-                                 "deterministic", 1.0))
+                                 "deterministic", 1.0, confirmed))
     return found
