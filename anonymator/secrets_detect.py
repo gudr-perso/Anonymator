@@ -19,6 +19,8 @@ def _matches(regex, text, etype):
     out = []
     for m in regex.finditer(text):
         value = m.group(1)
+        if value.isalpha():            # mot ordinaire (pas de chiffre/point/symbole) → pas un identifiant
+            continue
         out.append(Entity(etype, value, m.start(1), m.end(1), "secret", 1.0))
     return out
 

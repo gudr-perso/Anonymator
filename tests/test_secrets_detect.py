@@ -65,3 +65,14 @@ def test_entropy_no_duplicate_with_contextual():
     ents = [e for e in detect_secrets("mot de passe : T0ulouse*Hugo-90 fin") if e.type == "PASSWORD"]
     vals = [e.value for e in ents]
     assert vals.count("T0ulouse*Hugo-90") == 1
+
+
+def test_login_keyword_not_followed_by_plain_word():
+    # "identifiant administratif" : 'administratif' est un mot ordinaire, pas un identifiant
+    assert all(e.value != "administratif" for e in detect_secrets("identifiant administratif 12345"))
+
+
+def test_password_keyword_not_followed_by_plain_word():
+    # "mot de passe oublié" : 'oublié' n'est pas un mot de passe
+    assert all(e.type != "PASSWORD" or e.value != "oublié"
+               for e in detect_secrets("mot de passe oublié hier"))
