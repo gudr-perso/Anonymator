@@ -93,3 +93,23 @@ def test_run_on_csv_writes_output(qtbot, tmp_path):
     assert result.output_path.exists()
     out = result.output_path.read_bytes().decode("cp1252")
     assert "[PERSONNE]" in out and "Claire Martin" not in out
+
+
+def test_review_disabled_for_xlsx(qtbot, tmp_path):
+    src = tmp_path / "f.xlsx"; src.write_bytes(b"PK\x03\x04stub")   # extension xlsx
+    s = _screen(); qtbot.addWidget(s)
+    s.load_path(str(src))
+    assert s.btn_review.isEnabled() is False
+
+
+def test_txt_routes_to_text_review(qtbot, tmp_path):
+    called = {}
+    ref = Referential.load_default()
+    s = FileScreen(ref, ModelLoader(FakeNer({})), Preferences(),
+                   on_back=lambda: None,
+                   on_text_review=lambda text: called.setdefault("text", text))
+    qtbot.addWidget(s)
+    src = tmp_path / "n.txt"; src.write_text("Bonjour Claire", encoding="utf-8")
+    s.load_path(str(src))
+    s.analyze()
+    assert called.get("text") == "Bonjour Claire"

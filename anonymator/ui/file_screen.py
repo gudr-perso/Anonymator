@@ -84,7 +84,7 @@ class FileScreen(QWidget):
         self.side.hide(); self.pager_widget.hide()
         self.label.setText(self.path.name)
         suffix = self.path.suffix.lower()
-        self.btn_review.setEnabled(suffix == ".csv")   # txt/xlsx routing added in Task 7
+        self.btn_review.setEnabled(suffix in (".csv", ".txt"))
         if suffix == ".csv":
             self.doc = csv_io.read_csv(self.path)
             self._fill_preview(self.doc.rows[:50])
@@ -126,6 +126,12 @@ class FileScreen(QWidget):
 
     # ---------- review mode ----------
     def analyze(self):
+        if self.path and self.path.suffix.lower() == ".txt":
+            from anonymator.files import txt_io
+            text, _enc = txt_io.read_text(self.path)
+            if self.on_text_review:
+                self.on_text_review(text)
+            return
         if self.doc is None:
             return
         cols = default_maskable_columns(self.doc.rows, self.doc.has_header)

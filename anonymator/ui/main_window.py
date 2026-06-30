@@ -38,7 +38,8 @@ class MainWindow(QMainWindow):
         self.setup_screen = SetupScreen()
         self.home = HomeScreen(self.show_text, self.show_file, self.show_settings)
         self.text_screen = TextScreen(self.ref, self.loader, self.prefs, self.show_home)
-        self.file_screen = FileScreen(self.ref, self.loader, self.prefs, self.show_home)
+        self.file_screen = FileScreen(self.ref, self.loader, self.prefs,
+                                      self.show_home, on_text_review=self._review_text)
         self.settings_screen = SettingsScreen(self.ref, self.prefs,
                                               self._apply_prefs, self.show_home)
         for w in (self.setup_screen, self.home, self.text_screen,
@@ -69,6 +70,11 @@ class MainWindow(QMainWindow):
         self.text_screen.ref = self.ref
         self.file_screen.ref = self.ref
         self._apply_theme()
+
+    def _review_text(self, text: str):
+        self.text_screen.input.setPlainText(text)
+        self.stack.setCurrentWidget(self.text_screen)
+        self.text_screen.analyze()
 
     def show_home(self):
         self.stack.setCurrentWidget(self.home)
