@@ -7,12 +7,14 @@ class AuditReport:
     def __init__(self):
         self._entries: dict[tuple[str, str], dict] = {}
 
-    def add(self, etype: str, original: str, tag: str, location: str) -> None:
+    def add(self, etype: str, original: str, tag: str, location: str,
+            confirmed: bool = True) -> None:
         key = (etype, original)
         entry = self._entries.setdefault(
-            key, {"tag": tag, "occurrences": 0, "locations": []})
+            key, {"tag": tag, "occurrences": 0, "locations": [], "confirmed": confirmed})
         entry["occurrences"] += 1
         entry["locations"].append(location)
+        entry["confirmed"] = entry["confirmed"] and confirmed
 
     def to_rows(self) -> list[dict]:
         rows = []
@@ -23,6 +25,7 @@ class AuditReport:
                 "tag": e["tag"],
                 "occurrences": e["occurrences"],
                 "locations": "; ".join(e["locations"]),
+                "confirme": "oui" if e["confirmed"] else "non",
             })
         return rows
 
@@ -32,7 +35,7 @@ class AuditReport:
 
     def export_csv(self, path: Path) -> None:
         rows = self.to_rows()
-        fields = ["type", "original", "tag", "occurrences", "locations"]
+        fields = ["type", "original", "tag", "occurrences", "locations", "confirme"]
         with path.open("w", encoding="utf-8", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=fields)
             writer.writeheader()
