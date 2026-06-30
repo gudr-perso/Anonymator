@@ -49,3 +49,10 @@ def test_override_disables_active_type():
 def test_default_stoplist_loaded():
     ref = Referential.load_default()
     assert "service client" in ref.ner_stoplist()   # normalisé
+
+
+def test_sensitivity_for():
+    ref = Referential.load_default()
+    assert ref.sensitivity_for("PERSON") == "Haute"
+    assert ref.sensitivity_for("POSTAL_CODE") == "Basse"
+    assert ref.sensitivity_for("INCONNU") == "Basse"
