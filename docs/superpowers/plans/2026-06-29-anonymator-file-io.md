@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.11+, pytest, openpyxl ; réutilise `anonymator.pipeline`, `anonymator.anonymize`, `anonymator.dedup`, `anonymator.referential`, `anonymator.ner` du Plan 1.
 
-**Référence spec :** [2026-06-29-anonymator-design.md](../specs/2026-06-29-anonymator-design.md) — §6 (mode fichier), §7 (rapport), §9.1 (nommage sortie).
+**Référence spec :** [2026-06-29-anonymator-design.md](../specs/2026-06-29-anonymator-design.md) — §6 (mode fichier), §6.5 (nommage sortie), §7 (rapport).
 
 ---
 
@@ -880,7 +880,7 @@ git commit -m "feat: dispatcher fichier par extension + refus PDF/non supporté"
 - §6.4 préservation structure CSV / **xlsx en place tous onglets, formules/styles intacts** → Tasks 5,9. ✓
 - §6.5 nouveau fichier suffixé, original intact → Task 1 + Tasks 7-9. ✓
 - §7 rapport d'audit (type, valeur, occurrences, emplacement, CSV/JSON) → Task 6, alimenté par 7-9. ✓
-- §9.1 nommage `<nom>_ano_AAAAMMJJHHMMSS.<ext>` → Task 1. ✓
+- §6.5 nommage `<nom>_ano_AAAAMMJJHHMMSS.<ext>` → Task 1. ✓
 
 **Limites volontaires :** dossier de sortie passé en paramètre (sa persistance = Paramètres, Plan 3) ; chunking texte long (Plan 3) ; aperçu/navigation onglets = UI (Plan 3) ; sélection de colonnes exposée en paramètres `include/exclude` mais l'UI de cases à cocher est en Plan 3. La détection réelle utilise `GlinerDetector` (injecté), non couverte par les tests unitaires (cf. test d'intégration Plan 1).
 ```
