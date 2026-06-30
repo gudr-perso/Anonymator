@@ -15,15 +15,15 @@ Développement piloté par specs + plans, en TDD, exécution par sous-agents ave
 | **Plan 1 — moteur de détection & anonymisation texte** | ✅ **Fait, fusionné dans `main`** |
 | **Plan 2 — E/S fichiers (txt/csv/xlsx) + rapport d'audit** | ✅ **Fait, fusionné dans `main`** |
 | **Plan 3 — application UI PySide6** | ✅ **Fait, fusionné dans `main`** |
-| **Plan 4 — packaging PyInstaller + README + 1er téléchargement modèle** | ⬜ **À écrire** |
+| **Plan 4 — packaging PyInstaller + README + 1er téléchargement modèle** | ✅ **Fait, sur `main`** |
 | Test d'intégration GLiNER (modèle réel) | ⬜ **Jamais lancé** (voir `docs/installation-gliner.md`) |
 
-**Tests : 91 verts + 1 d'intégration déselectionné** (ne nécessite PAS torch tant qu'on ne lance pas `-m integration`).
+**Tests : 101 verts + 1 d'intégration déselectionné** (ne nécessite PAS torch tant qu'on ne lance pas `-m integration`).
 
 ## Prochaine action
 
-**Écrire puis exécuter le Plan 4** (packaging PyInstaller + README + écran 1er téléchargement modèle).
-Ensuite : **lancer une fois le test d'intégration GLiNER** (cf. `docs/installation-gliner.md`).
+**Lancer le test d'intégration GLiNER** (cf. `docs/installation-gliner.md`) pour valider la détection avec le vrai modèle.
+Ensuite : envisager Plan 5 (icône exe, code signing, NSIS installer) ou tester l'exe sur une autre machine.
 
 Méthode utilisée jusqu'ici : skill `superpowers:subagent-driven-development` (un sous-agent par tâche, revue conformité + qualité, branche dédiée puis fusion).
 
@@ -47,7 +47,7 @@ anonymator/
                       txt_io, xlsx_io (openpyxl en place), anonymize_file (orchestrateur + dispatcher)
   report/audit.py     AuditReport (agrégation + export CSV/JSON)
 tests/                un fichier de test par module (TDD)
-docs/superpowers/     specs/ (conception + journal) et plans/ (1, 2, 3)
+docs/superpowers/     specs/ (conception + journal) et plans/ (1, 2, 3, 4)
 ```
 
 ## Décisions verrouillées (rappel)
@@ -68,7 +68,7 @@ docs/superpowers/     specs/ (conception + journal) et plans/ (1, 2, 3)
   `python -m venv .venv` puis `.venv/Scripts/python -m pip install -r requirements.txt`.
 - **Le `.venv/` n'est pas dans git** (voir `.gitignore`). À recréer sur chaque machine.
 - **pCloud + grosses dépendances** : `torch` (via gliner) et `PySide6` pèsent des centaines de Mo. Avant de les installer, **exclure `.venv/` de la synchro pCloud** (ou créer le venv hors du dossier pCloud). Détails : `docs/installation-gliner.md`.
-- **Lancer les tests** : `.venv/Scripts/python -m pytest -q` (le test d'intégration est exclu par défaut). Pour les tests Qt du futur Plan 3 : plateforme offscreen (`QT_QPA_PLATFORM=offscreen`).
+- **Lancer les tests** : `.venv/Scripts/python -m pytest -q` (101 verts, 1 intégration déselectionné). Plateforme offscreen gérée automatiquement via `tests/conftest.py`.
 - **Lancer l'appli** (après Plan 3) : `.venv/Scripts/python -m anonymator`.
 
 ## Git / remote
@@ -82,5 +82,5 @@ docs/superpowers/     specs/ (conception + journal) et plans/ (1, 2, 3)
 
 1. `git clone` (ou ouvrir le dossier déjà synchronisé) puis lire ce fichier.
 2. Recréer le venv et installer : `.venv/Scripts/python -m pip install -r requirements.txt` (penser à l'exclusion pCloud avant si gros téléchargements).
-3. `.venv/Scripts/python -m pytest -q` → doit afficher 68 passed, 1 deselected.
-4. Reprendre l'exécution du **Plan 3** (UI).
+3. `.venv/Scripts/python -m pytest -q` → doit afficher 101 passed, 1 deselected.
+4. Lancer `.venv/Scripts/python -m anonymator` pour l'UI, ou `dist/anonymator/anonymator.exe` si le build PyInstaller est disponible.
