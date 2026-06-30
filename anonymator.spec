@@ -1,8 +1,6 @@
 # anonymator.spec
 # -*- mode: python ; coding: utf-8 -*-
 
-block_cipher = None
-
 a = Analysis(
     ['anonymator/__main__.py'],
     pathex=[],
@@ -21,6 +19,7 @@ a = Analysis(
         'anonymator.ui.settings_screen',
         'anonymator.ui.setup_screen',
         'anonymator.ui.download_worker',
+        'anonymator.ui.main_window',
         'anonymator.core.review_session',
         'anonymator.core.chunking',
         'anonymator.core.model_status',
@@ -48,7 +47,7 @@ a = Analysis(
     optimize=0,
 )
 
-pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+pyz = PYZ(a.pure, a.zipped_data)
 
 exe = EXE(
     pyz,
@@ -59,7 +58,7 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
+    upx=False,
     console=False,    # pas de fenetre console sur Windows
     disable_windowed_traceback=False,
     argv_emulation=False,
@@ -75,7 +74,7 @@ coll = COLLECT(
     a.zipfiles,
     a.datas,
     strip=False,
-    upx=True,
+    upx=False,
     upx_exclude=[],
     name='anonymator',
 )
