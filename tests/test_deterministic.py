@@ -64,5 +64,7 @@ def test_invalid_nir_emitted_unconfirmed():
 
 
 def test_invalid_bic_still_skipped():
-    ents = detect_deterministic("code ZZ99")
+    # "ZZZZZZZZ" a le bon FORMAT BIC mais "ZZ" n'est pas un pays ISO valide :
+    # le validateur échoue → BIC n'est pas "unconfirmable", donc rejeté (pas émis).
+    ents = detect_deterministic("code ZZZZZZZZ")
     assert not [e for e in ents if e.type == "BIC"]
