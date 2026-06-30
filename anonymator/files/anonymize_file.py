@@ -78,3 +78,23 @@ def anonymize_csv(path: Path, ner: NerDetector, ref: Referential,
     out = anonymized_path(path, output_dir, when)
     csv_io.write_csv(doc, out)
     return FileResult(out, report)
+
+
+class UnsupportedFormat(Exception):
+    pass
+
+
+def anonymize_file(path: Path, ner: NerDetector, ref: Referential,
+                   output_dir: Path, when: datetime,
+                   include: set[int] | None = None,
+                   exclude: set[int] | None = None) -> FileResult:
+    suffix = path.suffix.lower()
+    if suffix == ".txt":
+        return anonymize_txt(path, ner, ref, output_dir, when)
+    if suffix == ".csv":
+        return anonymize_csv(path, ner, ref, output_dir, when,
+                             include=include, exclude=exclude)
+    if suffix == ".xlsx":
+        return anonymize_xlsx(path, ner, ref, output_dir, when)
+    raise UnsupportedFormat(
+        f"Format non supporté : {suffix} (formats acceptés : .txt, .csv, .xlsx)")
