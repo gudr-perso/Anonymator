@@ -14,17 +14,18 @@ Développement piloté par specs + plans, en TDD, exécution par sous-agents ave
 |---|---|
 | **Plan 1 — moteur de détection & anonymisation texte** | ✅ **Fait, fusionné dans `main`** |
 | **Plan 2 — E/S fichiers (txt/csv/xlsx) + rapport d'audit** | ✅ **Fait, fusionné dans `main`** |
-| **Plan 3 — application UI PySide6** | 📝 **Plan écrit, PAS encore implémenté** |
+| **Plan 3 — application UI PySide6** | ✅ **Fait, fusionné dans `main`** |
 | **Plan 4 — packaging PyInstaller + README + 1er téléchargement modèle** | ⬜ **À écrire** |
 | Test d'intégration GLiNER (modèle réel) | ⬜ **Jamais lancé** (voir `docs/installation-gliner.md`) |
 
-**Tests : 68 verts + 1 d'intégration déselectionné** (ne nécessite PAS torch tant qu'on ne lance pas `-m integration`).
+**Tests : 91 verts + 1 d'intégration déselectionné** (ne nécessite PAS torch tant qu'on ne lance pas `-m integration`).
 
 ## Prochaine action
 
-**Exécuter le Plan 3** (UI) : [docs/superpowers/plans/2026-06-29-anonymator-ui.md](superpowers/plans/2026-06-29-anonymator-ui.md).
+**Écrire puis exécuter le Plan 4** (packaging PyInstaller + README + écran 1er téléchargement modèle).
+Ensuite : **lancer une fois le test d'intégration GLiNER** (cf. `docs/installation-gliner.md`).
+
 Méthode utilisée jusqu'ici : skill `superpowers:subagent-driven-development` (un sous-agent par tâche, revue conformité + qualité, branche dédiée puis fusion).
-Ensuite : **écrire puis exécuter le Plan 4** (packaging), et **lancer une fois le test d'intégration GLiNER**.
 
 ---
 
