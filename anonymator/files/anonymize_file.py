@@ -30,7 +30,7 @@ def _column_label(doc, col: int) -> str:
 def anonymize_txt(path: Path, ner: NerDetector, ref: Referential,
                   output_dir: Path, when: datetime) -> FileResult:
     text, encoding = txt_io.read_text(path)
-    ents = detect(text, ner, ref)
+    ents = [e for e in detect(text, ner, ref) if e.confirmed]   # direct : pas de non confirmé
     report = AuditReport()
     for e in ents:
         report.add(e.type, e.value, ref.tag_for(e.type), "texte")
@@ -93,6 +93,9 @@ def anonymize_csv(path: Path, ner: NerDetector, ref: Referential,
     if exclude:
         cols -= set(exclude)
     scanned = scan_csv(doc, ner, ref, cols)
+    scanned = {k: [e for e in v if e.confirmed]      # direct : ignore les non confirmés
+               for k, v in scanned.items()}
+    scanned = {k: v for k, v in scanned.items() if v}
     doc, report = apply_csv(doc, scanned, ref)
     out = anonymized_path(path, output_dir, when)
     csv_io.write_csv(doc, out)
