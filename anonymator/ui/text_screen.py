@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
                                QTextEdit, QListWidget, QListWidgetItem, QLabel,
                                QFileDialog, QApplication)
@@ -17,13 +19,22 @@ class TextScreen(QWidget):
         layout.addWidget(QLabel("Texte à anonymiser"))
         self.input = QTextEdit()
         self.entity_list = QListWidget()
-        self.output = QTextEdit(); self.output.setReadOnly(True)
+        self.output = QTextEdit()
+        self.output.setReadOnly(True)
         btns = QHBoxLayout()
-        self.btn_analyze = QPushButton("Analyser"); self.btn_analyze.clicked.connect(self.analyze)
-        self.btn_apply = QPushButton("Appliquer le masquage"); self.btn_apply.clicked.connect(self.apply)
-        self.btn_copy = QPushButton("Copier"); self.btn_copy.setObjectName("ghost"); self.btn_copy.clicked.connect(self._copy)
-        self.btn_export = QPushButton("Exporter .txt"); self.btn_export.setObjectName("ghost"); self.btn_export.clicked.connect(self._export)
-        self.btn_back = QPushButton("Accueil"); self.btn_back.setObjectName("ghost"); self.btn_back.clicked.connect(on_back)
+        self.btn_analyze = QPushButton("Analyser")
+        self.btn_analyze.clicked.connect(self.analyze)
+        self.btn_apply = QPushButton("Appliquer le masquage")
+        self.btn_apply.clicked.connect(self.apply)
+        self.btn_copy = QPushButton("Copier")
+        self.btn_copy.setObjectName("ghost")
+        self.btn_copy.clicked.connect(self._copy)
+        self.btn_export = QPushButton("Exporter .txt")
+        self.btn_export.setObjectName("ghost")
+        self.btn_export.clicked.connect(self._export)
+        self.btn_back = QPushButton("Accueil")
+        self.btn_back.setObjectName("ghost")
+        self.btn_back.clicked.connect(on_back)
         for b in (self.btn_analyze, self.btn_apply, self.btn_copy, self.btn_export, self.btn_back):
             btns.addWidget(b)
         layout.addWidget(self.input)
@@ -39,9 +50,12 @@ class TextScreen(QWidget):
         ner = self.loader.get()
         ents = detect_long(text, ner, self.ref)
         self.session = ReviewSession(text, ents)
-        self._refresh_list(); self._highlight()
+        self._refresh_list()
+        self._highlight()
 
     def _refresh_list(self):
+        if self.session is None:
+            return
         self.entity_list.blockSignals(True)
         self.entity_list.clear()
         for i, e in enumerate(self.session.entities()):
@@ -54,11 +68,15 @@ class TextScreen(QWidget):
         self.entity_list.blockSignals(False)
 
     def _on_item_changed(self, item):
+        if self.session is None:
+            return
         idx = item.data(Qt.UserRole)
         self.session.set_entity_enabled(idx, item.checkState() == Qt.Checked)
         self._highlight()
 
     def _highlight(self):
+        if self.session is None:
+            return
         retained = set(id(e) for e in self.session.retained())
         cursor_doc = self.input.document()
         extra = []
@@ -66,15 +84,21 @@ class TextScreen(QWidget):
             if id(e) not in retained:
                 continue
             fmt = QTextCharFormat()
-            c = QColor(color_for(e.type)); c.setAlpha(70)
+            c = QColor(color_for(e.type))
+            c.setAlpha(70)
             fmt.setBackground(c)
             cur = QTextCursor(cursor_doc)
-            cur.setPosition(e.start); cur.setPosition(e.end, QTextCursor.KeepAnchor)
-            sel = QTextEdit.ExtraSelection(); sel.cursor = cur; sel.format = fmt
+            cur.setPosition(e.start)
+            cur.setPosition(e.end, QTextCursor.KeepAnchor)
+            sel = QTextEdit.ExtraSelection()
+            sel.cursor = cur
+            sel.format = fmt
             extra.append(sel)
         self.input.setExtraSelections(extra)
 
     def apply(self):
+        if self.session is None:
+            return
         self.output.setPlainText(self.session.masked_text(self.ref))
 
     def _copy(self):
@@ -83,5 +107,4 @@ class TextScreen(QWidget):
     def _export(self):
         path, _ = QFileDialog.getSaveFileName(self, "Exporter", "anonymise.txt", "*.txt")
         if path:
-            from pathlib import Path
             Path(path).write_text(self.output.toPlainText(), encoding="utf-8")
