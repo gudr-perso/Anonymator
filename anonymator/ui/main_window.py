@@ -23,7 +23,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Anonymator")
         self.prefs_path = prefs_path
         self.prefs = Preferences.load(prefs_path)
-        self.ref = Referential.load_default()
+        self.ref = self._build_ref()
         self.loader = loader or ModelLoader()
 
         self.stack = QStackedWidget()
@@ -48,11 +48,20 @@ class MainWindow(QMainWindow):
 
         self._apply_theme()
 
+    def _build_ref(self):
+        ref = Referential.load_default(overrides=self.prefs.entity_overrides)
+        if self.prefs.ner_stoplist is not None:
+            ref = ref.with_stoplist(self.prefs.ner_stoplist)
+        return ref
+
     def _apply_theme(self):
         self.setStyleSheet(build_qss(self.prefs.theme))
 
     def _apply_prefs(self):
         self.prefs.save(self.prefs_path)
+        self.ref = self._build_ref()
+        self.text_screen.ref = self.ref
+        self.file_screen.ref = self.ref
         self._apply_theme()
 
     def show_home(self):

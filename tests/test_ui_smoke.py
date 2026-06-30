@@ -38,3 +38,15 @@ def test_home_navcards_trigger_callbacks(qtbot):
     qtbot.addWidget(h)
     h.btn_text._emit(); h.btn_file._emit(); h.btn_settings._emit()
     assert calls == ["t", "f", "s"]
+
+def test_referential_uses_prefs_overrides(qtbot, tmp_path):
+    from anonymator.ui.main_window import MainWindow
+    from anonymator.ui.model_loader import ModelLoader
+    from anonymator.ner import FakeNer
+    prefs_path = tmp_path / "prefs.json"
+    prefs_path.write_text('{"theme":"cuma","entity_overrides":{"BIC":true},'
+                          '"ner_stoplist":["truc"]}', encoding="utf-8")
+    win = MainWindow(loader=ModelLoader(FakeNer({})), prefs_path=prefs_path)
+    qtbot.addWidget(win)
+    assert win.ref.is_active("BIC") is True
+    assert "truc" in win.ref.ner_stoplist()
