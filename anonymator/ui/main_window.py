@@ -14,6 +14,7 @@ from anonymator.core.model_status import is_model_available
 
 PREFS_PATH = Path.home() / ".anonymator" / "preferences.json"
 
+
 class MainWindow(QMainWindow):
     def __init__(self, loader: ModelLoader | None = None,
                  prefs_path: Path = PREFS_PATH,
@@ -39,12 +40,13 @@ class MainWindow(QMainWindow):
             self.stack.addWidget(w)
 
         self.setup_screen.model_ready.connect(self.show_home)
-        self._apply_theme()
 
         if skip_setup or is_model_available():
             self.show_home()
         else:
             self.stack.setCurrentWidget(self.setup_screen)
+
+        self._apply_theme()
 
     def _apply_theme(self):
         self.setStyleSheet(build_qss(self.prefs.theme))
@@ -53,7 +55,14 @@ class MainWindow(QMainWindow):
         self.prefs.save(self.prefs_path)
         self._apply_theme()
 
-    def show_home(self):     self.stack.setCurrentWidget(self.home)
-    def show_text(self):     self.stack.setCurrentWidget(self.text_screen)
-    def show_file(self):     self.stack.setCurrentWidget(self.file_screen)
-    def show_settings(self): self.stack.setCurrentWidget(self.settings_screen)
+    def show_home(self):
+        self.stack.setCurrentWidget(self.home)
+
+    def show_text(self):
+        self.stack.setCurrentWidget(self.text_screen)
+
+    def show_file(self):
+        self.stack.setCurrentWidget(self.file_screen)
+
+    def show_settings(self):
+        self.stack.setCurrentWidget(self.settings_screen)
