@@ -9,3 +9,9 @@ def test_known_types_have_distinct_colors():
 
 def test_unknown_type_falls_back_to_grey():
     assert color_for("ZZZ") == "#8499AB"
+
+
+def test_login_password_have_colors():
+    assert color_for("LOGIN").startswith("#")
+    assert color_for("PASSWORD").startswith("#")
+    assert color_for("LOGIN") != color_for("PASSWORD")

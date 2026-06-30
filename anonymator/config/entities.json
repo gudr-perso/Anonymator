@@ -11,6 +11,8 @@
     {"code": "SIRET",   "label": "SIRET",         "method": "deterministic","active": true,  "tag": "[SIRET]",    "sensitivity": "Moyenne"},
     {"code": "NIR",     "label": "N° sécu",       "method": "deterministic","active": true,  "tag": "[NIR]",      "sensitivity": "Haute"},
     {"code": "POSTAL_CODE", "label": "Code postal",  "method": "deterministic","active": false, "tag": "[CP]",   "sensitivity": "Basse"},
-    {"code": "URL",     "label": "URL",           "method": "deterministic","active": false, "tag": "[URL]",      "sensitivity": "Basse"}
+    {"code": "URL",     "label": "URL",           "method": "deterministic","active": false, "tag": "[URL]",      "sensitivity": "Basse"},
+    {"code": "LOGIN",    "label": "Identifiant",  "method": "contextual",   "active": true,  "tag": "[LOGIN]",   "sensitivity": "Haute"},
+    {"code": "PASSWORD", "label": "Mot de passe", "method": "contextual",   "active": true,  "tag": "[SECRET]",  "sensitivity": "Haute"}
   ]
 }
