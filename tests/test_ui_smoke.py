@@ -30,3 +30,11 @@ def test_main_window_skips_setup_when_model_present(qtbot):
         win = MainWindow()
         qtbot.addWidget(win)
         assert win.stack.currentWidget() is win.home
+
+def test_home_navcards_trigger_callbacks(qtbot):
+    from anonymator.ui.home_screen import HomeScreen
+    calls = []
+    h = HomeScreen(lambda: calls.append("t"), lambda: calls.append("f"), lambda: calls.append("s"))
+    qtbot.addWidget(h)
+    h.btn_text._emit(); h.btn_file._emit(); h.btn_settings._emit()
+    assert calls == ["t", "f", "s"]
