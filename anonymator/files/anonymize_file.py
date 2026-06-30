@@ -10,6 +10,7 @@ from anonymator.report.audit import AuditReport
 from anonymator.output_naming import anonymized_path
 from anonymator.files import csv_io
 from anonymator.files import txt_io
+from anonymator.files import xlsx_io
 from anonymator.files.columns import default_maskable_columns
 
 
@@ -35,6 +36,12 @@ def anonymize_txt(path: Path, ner: NerDetector, ref: Referential,
     masked = apply_masking(text, ents, ref)
     out = anonymized_path(path, output_dir, when)
     txt_io.write_text(masked, encoding, out)
+    return FileResult(out, report)
+
+
+def anonymize_xlsx(path: Path, ner: NerDetector, ref: Referential,
+                   output_dir: Path, when: datetime) -> FileResult:
+    out, report = xlsx_io.anonymize_workbook(path, ner, ref, output_dir, when)
     return FileResult(out, report)
 
 
