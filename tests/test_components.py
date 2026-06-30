@@ -42,3 +42,13 @@ def test_nav_card_clicked(qtbot):
 def test_card_title(qtbot):
     c = Card("shield", "Entités détectées"); qtbot.addWidget(c)
     assert "Entités détectées" in c.title_label.text()
+
+from PySide6.QtWidgets import QLabel
+from anonymator.ui.components.header import HeaderBand
+
+def test_header_band(qtbot):
+    h = HeaderBand(); qtbot.addWidget(h)
+    assert h.objectName() == "HeaderBand"
+    labels = [w.text() for w in h.findChildren(QLabel)]
+    assert "Anonymator" in labels
+    assert any("CUMA" in t for t in labels)
