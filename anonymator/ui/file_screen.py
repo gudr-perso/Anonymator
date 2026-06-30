@@ -5,8 +5,9 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
                                QMessageBox, QTreeWidget, QTreeWidgetItem, QLineEdit)
 from PySide6.QtGui import QColor
 from PySide6.QtCore import Qt
-from anonymator.files.anonymize_file import (anonymize_file, UnsupportedFormat)
+from anonymator.files.anonymize_file import (anonymize_file, UnsupportedFormat, FileResult)
 from anonymator.files import csv_io
+from anonymator.output_naming import anonymized_path
 from anonymator.files.columns import default_maskable_columns
 from anonymator.core.file_review_session import FileReviewSession
 from anonymator.ui.file_scan_worker import FileScanWorker
@@ -110,8 +111,6 @@ class FileScreen(QWidget):
         out_dir = Path(self.prefs.output_dir) if self.prefs.output_dir else self.path.parent
         when = when or datetime.now()
         if self.session is not None:
-            from anonymator.output_naming import anonymized_path
-            from anonymator.files.anonymize_file import FileResult
             masked = self.session.masked_document()
             report = self.session.report()
             out = anonymized_path(self.path, out_dir, when)
