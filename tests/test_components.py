@@ -24,3 +24,21 @@ def test_category_badge(qtbot):
     b = CategoryBadge("PERSON", "NOM"); qtbot.addWidget(b)
     assert b.text() == "NOM"
     assert color_for("PERSON").lstrip("#").lower() in b.styleSheet().lower()
+
+from anonymator.ui.components.cards import Card, StatCard, NavCard
+
+def test_stat_card(qtbot):
+    s = StatCard("layers", "Catégories"); qtbot.addWidget(s)
+    s.set_value("6")
+    assert s.value_label.text() == "6"
+
+def test_nav_card_clicked(qtbot):
+    clicks = []
+    n = NavCard("document", "Coller du texte", "Analyser un texte", on_click=lambda: clicks.append(1))
+    qtbot.addWidget(n)
+    n._emit()
+    assert clicks == [1]
+
+def test_card_title(qtbot):
+    c = Card("shield", "Entités détectées"); qtbot.addWidget(c)
+    assert "Entités détectées" in c.title_label.text()
