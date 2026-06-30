@@ -1,5 +1,6 @@
 # anonymator/ui/main_window.py
 from pathlib import Path
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QMainWindow, QStackedWidget
 from anonymator.referential import Referential
 from anonymator.ui.preferences import Preferences
@@ -12,6 +13,8 @@ from anonymator.ui.settings_screen import SettingsScreen
 from anonymator.ui.setup_screen import SetupScreen
 from anonymator.core.model_status import is_model_available
 
+_ASSETS = Path(__file__).parent / "assets"
+
 PREFS_PATH = Path.home() / ".anonymator" / "preferences.json"
 
 
@@ -21,6 +24,9 @@ class MainWindow(QMainWindow):
                  skip_setup: bool = False):
         super().__init__()
         self.setWindowTitle("Anonymator")
+        ico = _ASSETS / "anonymator.ico"
+        if ico.exists():
+            self.setWindowIcon(QIcon(str(ico)))
         self.prefs_path = prefs_path
         self.prefs = Preferences.load(prefs_path)
         self.ref = self._build_ref()
