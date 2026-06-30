@@ -66,6 +66,21 @@ def test_pagination_navigates(qtbot, tmp_path):
     assert s.table.rowCount() == 20
 
 
+def test_apply_review_writes_user_choices(qtbot, tmp_path):
+    src = tmp_path / "f.csv"
+    src.write_bytes("Nom;Montant\nClaire Martin;100,00\nPaul Durand;50,00\n".encode("cp1252"))
+    ref = Referential.load_default()
+    loader = ModelLoader(FakeNer({"Claire Martin": "PERSON", "Paul Durand": "PERSON"}))
+    s = FileScreen(ref, loader, Preferences(output_dir=str(tmp_path)), on_back=lambda: None)
+    qtbot.addWidget(s)
+    s.load_path(str(src)); s.analyze()
+    qtbot.waitUntil(lambda: s.session is not None, timeout=5000)
+    s.session.set_value_enabled("PERSON", "Paul Durand", False)   # keep Paul in clear
+    res = s.run(when=datetime(2026, 1, 2, 3, 4, 5))
+    out = res.output_path.read_bytes().decode("cp1252")
+    assert "[PERSONNE]" in out and "Paul Durand" in out and "Claire Martin" not in out
+
+
 def test_run_on_csv_writes_output(qtbot, tmp_path):
     src = tmp_path / "f.csv"
     src.write_bytes("Nom;Montant\nClaire Martin;100,00\n".encode("cp1252"))

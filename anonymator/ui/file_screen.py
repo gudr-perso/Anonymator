@@ -109,6 +109,14 @@ class FileScreen(QWidget):
             return None
         out_dir = Path(self.prefs.output_dir) if self.prefs.output_dir else self.path.parent
         when = when or datetime.now()
+        if self.session is not None:
+            from anonymator.output_naming import anonymized_path
+            from anonymator.files.anonymize_file import FileResult
+            masked = self.session.masked_document()
+            report = self.session.report()
+            out = anonymized_path(self.path, out_dir, when)
+            csv_io.write_csv(masked, out)
+            return FileResult(out, report)
         try:
             ner = self.loader.get()
             result = anonymize_file(self.path, ner, self.ref, out_dir, when)
