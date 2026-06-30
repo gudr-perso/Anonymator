@@ -48,3 +48,28 @@ def test_luhn_valid_real_sirens():
 
 def test_luhn_detects_single_digit_error():
     assert luhn_is_valid("542107652") is False  # un chiffre changé → invalide
+
+
+from anonymator.validators import bic_is_plausible, postal_code_fr_is_plausible
+
+
+def test_bic_plausible_8_and_11():
+    assert bic_is_plausible("BNPAFRPP") is True       # 8 chars
+    assert bic_is_plausible("BNPAFRPPXXX") is True     # 11 chars (branche)
+
+
+def test_bic_rejects_unknown_country():
+    # "VIREMENT" : pays "ME" est ISO valide -> on ne peut pas l'exclure ; mais
+    # "FACTURES" -> pays "UR" inexistant -> rejeté
+    assert bic_is_plausible("FACTURES") is False
+
+
+def test_bic_rejects_bad_shape():
+    assert bic_is_plausible("ABC123") is False
+
+
+def test_postal_plausible():
+    assert postal_code_fr_is_plausible("75008") is True
+    assert postal_code_fr_is_plausible("20000") is True   # Corse
+    assert postal_code_fr_is_plausible("00123") is False   # dept 00
+    assert postal_code_fr_is_plausible("1234") is False    # pas 5 chiffres
