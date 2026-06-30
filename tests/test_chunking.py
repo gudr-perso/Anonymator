@@ -13,7 +13,9 @@ def test_chunk_spans_cover_text_without_overlap():
 def test_detect_long_rebases_offsets():
     ref = Referential.load_default()
     ner = FakeNer({"Claire Martin": "PERSON"})
-    text = ("x " * 40) + "Claire Martin"      # le nom est loin dans le texte
-    ents = detect_long(text, ner, ref, max_len=50)
+    # "x " * 14 = 28 chars, puis "Claire Martin" débute au char 28 — tient
+    # entier dans le 2ème chunk (max_len=30), ce qui teste le rebase d'offset
+    text = ("x " * 14) + "Claire Martin"
+    ents = detect_long(text, ner, ref, max_len=30)
     person = next(e for e in ents if e.type == "PERSON")
     assert text[person.start:person.end] == "Claire Martin"
