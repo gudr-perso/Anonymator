@@ -56,10 +56,9 @@ cohérent avec `TextScreen` / `FileScreen` / `PdfScreen`.
 ### `anonymator/ui/home_screen.py`
 - `HomeScreen.__init__` gagne `on_rules` et `on_about`.
 - Deux `NavCard` ajoutées après « Paramètres » :
-  - « Gestion des règles » / sous-titre « Vos règles métier (garder / masquer) » /
-    icône `shield` → `on_rules`.
-  - « À propos » / sous-titre « Licence, version et mentions » / icône
-    `sparkle` → `on_about`.
+  - « Gestion des règles » / sous-titre « Règles métier » / icône `shield` →
+    `on_rules`.
+  - « À propos » / sous-titre « À propos » / icône `sparkle` → `on_about`.
 - Sous-titre de « Paramètres » reformulé : « Thème, dossier, types, modèle ».
 
 ### `anonymator/ui/main_window.py`
