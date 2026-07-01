@@ -139,9 +139,15 @@ class SettingsScreen(QWidget):
         self.btn_model.setEnabled(True)
         self.model_dl_status.setText(f"Erreur : {msg}")
 
-    def closeEvent(self, event):
+    def stop_download(self):
+        """Arrête proprement le worker de téléchargement s'il tourne encore.
+        Appelable depuis MainWindow (ce widget est un enfant du QStackedWidget,
+        donc son closeEvent ne se déclenche pas à la fermeture de la fenêtre)."""
         if self._dl_worker is not None and self._dl_worker.isRunning():
             self._dl_worker.quit(); self._dl_worker.wait()
+
+    def closeEvent(self, event):
+        self.stop_download()
         super().closeEvent(event)
 
     def select_theme(self, theme: str):

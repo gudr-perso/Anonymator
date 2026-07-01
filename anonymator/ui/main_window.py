@@ -76,6 +76,12 @@ class MainWindow(QMainWindow):
         self.text_screen.hide_degraded()
         self.file_screen.hide_degraded()
 
+    def closeEvent(self, event):
+        # SettingsScreen est un enfant du QStackedWidget : son closeEvent ne se
+        # déclenche pas ici → on arrête explicitement un éventuel téléchargement.
+        self.settings_screen.stop_download()
+        super().closeEvent(event)
+
     def _review_text(self, text: str):
         self.text_screen.input.setPlainText(text)
         self.stack.setCurrentWidget(self.text_screen)

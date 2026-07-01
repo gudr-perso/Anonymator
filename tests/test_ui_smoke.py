@@ -47,6 +47,15 @@ def test_model_ready_hides_invite(qtbot):
         assert win.home.model_card.isVisibleTo(win.home) is False
 
 
+def test_close_stops_download(qtbot):
+    with patch("anonymator.ui.main_window.is_model_available", return_value=False):
+        win = MainWindow()
+        qtbot.addWidget(win)
+        with patch.object(win.settings_screen, "stop_download") as stop:
+            win.close()
+            stop.assert_called_once()
+
+
 def test_home_navcards_trigger_callbacks(qtbot):
     from anonymator.ui.home_screen import HomeScreen
     calls = []
