@@ -36,3 +36,21 @@ def test_unavailable_when_dir_absent(tmp_path):
     with patch("anonymator.core.model_status.model_cache_dir",
                return_value=tmp_path / "absent"):
         assert is_model_available() is False
+
+
+def test_installed_size_none_when_absent(tmp_path):
+    from anonymator.core.model_status import installed_size
+    with patch("anonymator.core.model_status.model_cache_dir",
+               return_value=tmp_path / "absent"):
+        assert installed_size() is None
+
+
+def test_installed_size_sums_blobs(tmp_path):
+    from anonymator.core.model_status import installed_size
+    cache = tmp_path / "models--urchade--gliner_multi-v2.1"
+    (cache / "snapshots" / "abc").mkdir(parents=True)
+    blobs = cache / "blobs"; blobs.mkdir()
+    (blobs / "a").write_bytes(b"x" * 100)
+    (blobs / "b").write_bytes(b"y" * 50)
+    with patch("anonymator.core.model_status.model_cache_dir", return_value=cache):
+        assert installed_size() == 150

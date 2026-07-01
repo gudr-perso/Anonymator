@@ -21,7 +21,6 @@ a = Analysis(
         'anonymator.ui.text_screen',
         'anonymator.ui.file_screen',
         'anonymator.ui.settings_screen',
-        'anonymator.ui.setup_screen',
         'anonymator.ui.download_worker',
         'anonymator.ui.main_window',
         'anonymator.ui.text_analyze_worker',

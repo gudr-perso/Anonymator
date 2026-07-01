@@ -8,6 +8,10 @@ class ModelLoader:
     def __init__(self, detector: NerDetector | None = None):
         self._detector = detector
 
+    def has_detector(self) -> bool:
+        """True si un détecteur est déjà disponible (injecté), sans charger GLiNER."""
+        return self._detector is not None
+
     def get(self) -> NerDetector:
         if self._detector is None:
             from anonymator.ner import GlinerDetector

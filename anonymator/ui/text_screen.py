@@ -13,17 +13,25 @@ from anonymator.ui.components.header import HeaderBand
 from anonymator.ui.components.cards import Card, StatCard
 from anonymator.ui.components.badge import CategoryBadge
 from anonymator.ui.components.toggle import ToggleSwitch
+from anonymator.core.model_status import is_model_available
+from anonymator.ner import NullNer
+from anonymator.ui.model_loader import ModelLoader
+from anonymator.ui.components.banner import ModelBanner
 
 
 class TextScreen(QWidget):
-    def __init__(self, ref, loader, prefs, on_back):
+    def __init__(self, ref, loader, prefs, on_back, on_request_model=None):
         super().__init__()
         self.ref, self.loader, self.prefs = ref, loader, prefs
+        self.on_request_model = on_request_model
         self.session: ReviewSession | None = None
         self._worker: TextAnalyzeWorker | None = None
+        self._degraded = False
 
         root = QVBoxLayout(self)
         root.addWidget(HeaderBand())
+        self.banner = ModelBanner(on_install=self._request_model)
+        root.addWidget(self.banner)
 
         crumb = QWidget(); crumb.setObjectName("Crumb")
         cb = QHBoxLayout(crumb); cb.setContentsMargins(4, 4, 4, 4); cb.setSpacing(4)
@@ -90,8 +98,10 @@ class TextScreen(QWidget):
         if self._worker is not None and self._worker.isRunning():
             return
         text = self.input.toPlainText()
+        self._degraded = not (self.loader.has_detector() or is_model_available())
+        loader = ModelLoader(NullNer()) if self._degraded else self.loader
         self._set_busy(True)
-        self._worker = TextAnalyzeWorker(text, self.loader, self.ref)
+        self._worker = TextAnalyzeWorker(text, loader, self.ref)
         self._worker.done.connect(self._on_analyzed)
         self._worker.error.connect(self._on_analyze_error)
         self._worker.finished.connect(self._worker.deleteLater)
@@ -99,6 +109,7 @@ class TextScreen(QWidget):
 
     def _on_analyzed(self, text, ents):
         self.session = ReviewSession(text, ents)
+        self.banner.setVisible(self._degraded)
         self._refresh_entities(); self._highlight(); self._refresh_stats()
         self._set_busy(False)
 
@@ -195,3 +206,11 @@ class TextScreen(QWidget):
         path, _ = QFileDialog.getSaveFileName(self, "Exporter", "anonymise.txt", "*.txt")
         if path:
             Path(path).write_text(self.output.toPlainText(), encoding="utf-8")
+
+    def _request_model(self):
+        if self.on_request_model is not None:
+            self.on_request_model()
+
+    def hide_degraded(self):
+        self._degraded = False
+        self.banner.setVisible(False)

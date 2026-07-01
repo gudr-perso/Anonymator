@@ -1,4 +1,5 @@
 from datetime import datetime
+from unittest.mock import patch
 from anonymator.referential import Referential
 from anonymator.ner import FakeNer
 from anonymator.ui.model_loader import ModelLoader
@@ -113,3 +114,31 @@ def test_txt_routes_to_text_review(qtbot, tmp_path):
     s.load_path(str(src))
     s.analyze()
     assert called.get("text") == "Bonjour Claire"
+
+
+def test_file_degraded_banner_when_model_absent(qtbot, tmp_path):
+    src = tmp_path / "f.csv"
+    src.write_bytes("Nom;IBAN\nClaire Martin;FR7630006000011234567890189\n".encode("cp1252"))
+    with patch("anonymator.ui.file_screen.is_model_available", return_value=False):
+        s = FileScreen(Referential.load_default(), ModelLoader(), Preferences(),
+                       on_back=lambda: None, on_request_model=lambda: None)
+        qtbot.addWidget(s)
+        s.load_path(str(src))
+        s.analyze()
+        qtbot.waitUntil(lambda: s.session is not None, timeout=5000)
+        assert s._degraded is True
+        assert s.banner.isVisibleTo(s) is True
+
+
+def test_file_no_banner_with_injected_detector(qtbot, tmp_path):
+    src = tmp_path / "f.csv"
+    src.write_bytes("Nom;Montant\nClaire Martin;100,00\n".encode("cp1252"))
+    with patch("anonymator.ui.file_screen.is_model_available", return_value=False):
+        s = FileScreen(Referential.load_default(),
+                       ModelLoader(FakeNer({"Claire Martin": "PERSON"})),
+                       Preferences(), on_back=lambda: None)
+        qtbot.addWidget(s)
+        s.load_path(str(src)); s.analyze()
+        qtbot.waitUntil(lambda: s.session is not None, timeout=5000)
+        assert s._degraded is False
+        assert s.banner.isVisibleTo(s) is False

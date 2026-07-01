@@ -52,3 +52,11 @@ def test_header_band(qtbot):
     labels = [w.text() for w in h.findChildren(QLabel)]
     assert "Anonymator" in labels
     assert any("CUMA" in t for t in labels)
+
+def test_model_banner_install_callback(qtbot):
+    from anonymator.ui.components.banner import ModelBanner
+    called = []
+    b = ModelBanner(on_install=lambda: called.append(True))
+    qtbot.addWidget(b)
+    b.btn.click()
+    assert called == [True]

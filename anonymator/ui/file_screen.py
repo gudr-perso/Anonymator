@@ -15,6 +15,9 @@ from anonymator.ui.colors import color_for
 from anonymator.ui.icons import icon
 from anonymator.ui.components.header import HeaderBand
 from anonymator.ui.components.cards import Card
+from anonymator.core.model_status import is_model_available
+from anonymator.ner import NullNer
+from anonymator.ui.components.banner import ModelBanner
 
 PAGE_SIZE = 20
 
@@ -24,20 +27,25 @@ def _fmt_int(n: int) -> str:
 
 
 class FileScreen(QWidget):
-    def __init__(self, ref, loader, prefs, on_back, on_text_review=None):
+    def __init__(self, ref, loader, prefs, on_back, on_text_review=None, on_request_model=None):
         super().__init__()
         self.ref, self.loader, self.prefs = ref, loader, prefs
         self.on_text_review = on_text_review
+        self.on_request_model = on_request_model
         self.path: Path | None = None
         self.doc = None
         self.session: FileReviewSession | None = None
         self.page = 0
         self._busy = False
+        self._degraded = False
         self._worker: FileScanWorker | None = None
 
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0); root.setSpacing(0)
         root.addWidget(HeaderBand())
+
+        self.banner = ModelBanner(on_install=self._request_model)
+        root.addWidget(self.banner)
 
         # ---- barre d'action : infos fichier (gauche) + actions (droite) ----
         bar = QHBoxLayout(); bar.setContentsMargins(18, 14, 18, 8); bar.setSpacing(12)
@@ -213,8 +221,9 @@ class FileScreen(QWidget):
             return
         cols = default_maskable_columns(self.doc.rows, self.doc.has_header)
         self._cols = cols
+        self._degraded = not (self.loader.has_detector() or is_model_available())
+        ner = NullNer() if self._degraded else self.loader.get()
         self._set_busy(True)
-        ner = self.loader.get()
         self._worker = FileScanWorker(self.doc, ner, self.ref, cols)
         self._worker.scan_finished.connect(self._on_scanned)
         self._worker.error.connect(self._on_scan_error)
@@ -236,6 +245,7 @@ class FileScreen(QWidget):
     def _on_scanned(self, scanned):
         self.session = FileReviewSession(self.doc, scanned, self.ref, self._cols)
         self._set_busy(False)
+        self.banner.setVisible(self._degraded)
         self.occ_badge.setText(f"{_fmt_int(self.session.total_occurrences())} occ.")
         self.occ_badge.show(); self._hint.show()
         self.page = 0
@@ -335,3 +345,11 @@ class FileScreen(QWidget):
         self.btn_prev.setEnabled(self.page > 0)
         self.btn_next.setEnabled(self.page < last)
         self.btn_last.setEnabled(self.page < last)
+
+    def _request_model(self):
+        if self.on_request_model is not None:
+            self.on_request_model()
+
+    def hide_degraded(self):
+        self._degraded = False
+        self.banner.setVisible(False)

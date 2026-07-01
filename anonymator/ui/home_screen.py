@@ -1,5 +1,5 @@
 from pathlib import Path
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QLabel
+from PySide6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QLabel, QPushButton
 from PySide6.QtGui import QPainter, QPen, QColor, QPixmap
 from PySide6.QtCore import Qt
 from anonymator.ui.components.cards import NavCard
@@ -33,8 +33,10 @@ class HeroPanel(QWidget):
 
 
 class HomeScreen(QWidget):
-    def __init__(self, on_text, on_file, on_settings):
+    def __init__(self, on_text, on_file, on_settings,
+                 model_available: bool = True, on_download=None, on_dismiss=None):
         super().__init__()
+        self._on_dismiss = on_dismiss
         root = QHBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
@@ -66,6 +68,27 @@ class HomeScreen(QWidget):
         right = QWidget()
         rv = QVBoxLayout(right)
         rv.setContentsMargins(40, 60, 40, 40)
+        self.model_card = QWidget(); self.model_card.setObjectName("modelInvite")
+        mc = QVBoxLayout(self.model_card); mc.setContentsMargins(16, 14, 16, 14); mc.setSpacing(8)
+        mc_title = QLabel("🧠  Activer la détection intelligente")
+        mc_title.setStyleSheet("font-weight: 700; font-size: 15px;")
+        mc_desc = QLabel("Noms, adresses et organisations — téléchargement unique (~300 Mo). "
+                         "Les détections par règles (IBAN, e-mail, téléphone…) fonctionnent déjà sans elle.")
+        mc_desc.setWordWrap(True); mc_desc.setObjectName("muted")
+        mc_btns = QHBoxLayout()
+        self.btn_model_download = QPushButton("Télécharger maintenant")
+        self.btn_model_download.setObjectName("primary")
+        if on_download is not None:
+            self.btn_model_download.clicked.connect(on_download)
+        self.btn_model_later = QPushButton("Plus tard"); self.btn_model_later.setObjectName("ghost")
+        self.btn_model_later.clicked.connect(self._dismiss)
+        mc_btns.addWidget(self.btn_model_download); mc_btns.addWidget(self.btn_model_later); mc_btns.addStretch()
+        mc.addWidget(mc_title); mc.addWidget(mc_desc); mc.addLayout(mc_btns)
+        self.model_card.setStyleSheet(
+            "#modelInvite { background: rgba(0, 150, 94, 0.08); "
+            "border: 1px solid rgba(0, 150, 94, 0.45); border-radius: 10px; }")
+        self.model_card.setVisible(not model_available)
+        rv.addWidget(self.model_card); rv.addSpacing(12)
         label = QLabel("PAR OÙ COMMENCER ?"); label.setObjectName("sectionLabel")
         rv.addWidget(label); rv.addSpacing(12)
         self.btn_text = NavCard("document", "Coller du texte",
@@ -80,3 +103,11 @@ class HomeScreen(QWidget):
 
         root.addWidget(hero, 5)
         root.addWidget(right, 6)
+
+    def _dismiss(self):
+        self.model_card.setVisible(False)
+        if self._on_dismiss is not None:
+            self._on_dismiss()
+
+    def set_model_available(self, available: bool):
+        self.model_card.setVisible(not available)

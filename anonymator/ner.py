@@ -20,6 +20,13 @@ class FakeNer:
         return sorted(out)
 
 
+class NullNer:
+    """Détecteur NER vide : aucune détection floue. Sert le mode dégradé
+    (modèle GLiNER absent) — les règles déterministes restent actives."""
+    def detect(self, text: str, labels: list[str]) -> list[Entity]:
+        return []
+
+
 # Carte label GLiNER (français) → code d'entité interne
 _LABEL_TO_TYPE = {
     "personne": "PERSON",
