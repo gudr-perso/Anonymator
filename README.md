@@ -86,3 +86,5 @@ Attributions :
 
 - Embarque **PyMuPDF** © Artifex Software — AGPL-3.0.
 - Embarque **GLiNER** — modèle `urchade/gliner_multi-v2.1`, Apache-2.0 (usage commercial autorisé).
+- Interface **Qt/PySide6** sous LGPL-3.0 et autres composants tiers : voir
+  [`third-party-licenses/`](third-party-licenses/README.md) (inclus dans le zip distribué).

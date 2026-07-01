@@ -7,6 +7,7 @@ a = Analysis(
     binaries=[],
     datas=[
         ('LICENSE', '.'),
+        ('third-party-licenses', 'third-party-licenses'),
         ('anonymator/config/entities.json', 'anonymator/config'),
         ('anonymator/ui/assets/anonymator.ico', 'anonymator/ui/assets'),
         ('anonymator/ui/assets/logo.png', 'anonymator/ui/assets'),
