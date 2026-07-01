@@ -32,7 +32,13 @@ incrémenter la version à chaque commit.
    `.venv/Scripts/python -m PyInstaller anonymator.spec` → l'exe affiche `vX.Y.Z`
    (écran Paramètres → « À propos »), le dépôt public contient le source du même tag.
    ✅ Conformité AGPL.
-7. Zipper `dist/anonymator/` (le dossier contient `LICENSE`) → `Anonymator-vX.Y.Z.zip`.
+7. **Layout PyInstaller 6** : les `datas` (dont `LICENSE`) sont placés dans
+   `dist/anonymator/_internal/`, pas à la racine du dossier. Le `LICENSE` est donc
+   bien distribué (`_internal/LICENSE`). Pour le rendre visible à côté de l'exe,
+   le copier à la racine avant de zipper :
+   `cp dist/anonymator/_internal/LICENSE dist/anonymator/LICENSE`.
+8. Zipper `dist/anonymator/` (contient `anonymator.exe` + `LICENSE` racine + `_internal/`)
+   → `Anonymator-vX.Y.Z.zip`.
 
 ## Builds de développement (optionnel)
 
@@ -48,4 +54,6 @@ Après une release de test `vX.Y.Z` :
 2. `git show vX.Y.Z` → le tag pointe sur le commit buildé.
 3. Le dépôt public expose ce tag et le `LICENSE`.
    → Correspondance exe ↔ tag ↔ source publique démontrée.
-4. Vérifier que `dist/anonymator/LICENSE` existe bien dans le dossier distribué.
+4. Vérifier que le `LICENSE` AGPL existe bien dans le dossier distribué :
+   `dist/anonymator/_internal/LICENSE` (embarqué par le `.spec`) et, après copie,
+   `dist/anonymator/LICENSE` (visible à côté de l'exe).
