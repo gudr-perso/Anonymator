@@ -1,3 +1,5 @@
+import io
+import sys
 from huggingface_hub import HfApi, snapshot_download
 from tqdm import tqdm as _base_tqdm
 from anonymator.core.model_status import MODEL_NAME
@@ -26,8 +28,17 @@ def repo_total_size(model_name: str = MODEL_NAME) -> int | None:
 
 
 def make_tqdm_class(tracker: ProgressTracker):
-    """Sous-classe tqdm qui pousse chaque incrément d'octets dans le tracker."""
+    """Sous-classe tqdm qui pousse chaque incrément d'octets dans le tracker.
+
+    Défense pour l'exe *windowed* : si `sys.stderr` est None (pas de console),
+    tqdm écrirait sur None → « 'NoneType' object has no attribute 'write' ».
+    On lui fournit alors un flux poubelle."""
     class _Tqdm(_base_tqdm):
+        def __init__(self, *args, **kwargs):
+            if kwargs.get("file") is None and sys.stderr is None:
+                kwargs["file"] = io.StringIO()
+            super().__init__(*args, **kwargs)
+
         def update(self, n=1):
             tracker.add(n or 0)
             return super().update(n)

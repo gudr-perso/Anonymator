@@ -1,7 +1,7 @@
 # Anonymator — État du projet & comment continuer
 
 > Point de reprise. Lis ce fichier en premier quand tu rouvres le projet (y compris depuis un autre PC).
-> Dernière mise à jour : 2026-06-30.
+> Dernière mise à jour : 2026-07-01.
 
 ---
 
@@ -16,14 +16,17 @@ Développement piloté par specs + plans, en TDD, exécution par sous-agents ave
 | **Plan 2 — E/S fichiers (txt/csv/xlsx) + rapport d'audit** | ✅ **Fait, fusionné dans `main`** |
 | **Plan 3 — application UI PySide6** | ✅ **Fait, fusionné dans `main`** |
 | **Plan 4 — packaging PyInstaller + README + 1er téléchargement modèle** | ✅ **Fait, sur `main`** |
+| **Expérience GLiNER « zéro friction » (non bloquant + mode dégradé)** | ✅ **Fait, fusionné dans `main`** |
 | Test d'intégration GLiNER (modèle réel) | ⬜ **Jamais lancé** (voir `docs/installation-gliner.md`) |
 
-**Tests : 101 verts + 1 d'intégration déselectionné** (ne nécessite PAS torch tant qu'on ne lance pas `-m integration`).
+**Tests : 194 verts + 1 d'intégration déselectionné** (ne nécessite PAS torch tant qu'on ne lance pas `-m integration`).
 
 ## Prochaine action
 
-**Lancer le test d'intégration GLiNER** (cf. `docs/installation-gliner.md`) pour valider la détection avec le vrai modèle.
-Ensuite : envisager Plan 5 (icône exe, code signing, NSIS installer) ou tester l'exe sur une autre machine.
+**Validation manuelle de l'exe** : lancer `dist/anonymator/anonymator.exe` et dérouler le scénario du plan
+[2026-06-30-experience-gliner.md](superpowers/plans/2026-06-30-experience-gliner.md) §Task 12 (accueil direct → mode
+dégradé → téléchargement du modèle avec barre % → détection complète qui reprend).
+Ensuite : **installeur Windows** (setup.exe + raccourcis + code signing — brainstorming dédié à faire, « Plan 5 »).
 
 Méthode utilisée jusqu'ici : skill `superpowers:subagent-driven-development` (un sous-agent par tâche, revue conformité + qualité, branche dédiée puis fusion).
 
@@ -37,7 +40,7 @@ anonymator/
   validators.py       Luhn, IBAN mod97, NIR, BIC (pays ISO), code postal FR
   deterministic.py    détecteurs regex+checksum -> Entities
   merge.py            résolution des chevauchements (déterministe > confiance > longueur)
-  ner.py              NerDetector (protocole), FakeNer (tests), GlinerDetector (réel, import torch paresseux)
+  ner.py              NerDetector (protocole), FakeNer (tests), NullNer (mode dégradé), GlinerDetector (réel, torch paresseux)
   dedup.py            détecte une fois par valeur unique
   referential.py      référentiel JSON (anonymator/config/entities.json)
   pipeline.py         detect(text, ner, ref) : déterministe ∥ NER -> merge
@@ -46,8 +49,14 @@ anonymator/
   files/              encoding, csv_io (sniff robuste virgules décimales), columns (règle D),
                       txt_io, xlsx_io (openpyxl en place), anonymize_file (orchestrateur + dispatcher)
   report/audit.py     AuditReport (agrégation + export CSV/JSON)
+  core/model_status.py    disponibilité + taille du modèle GLiNER en cache (non-Qt)
+  core/model_download.py  téléchargement HuggingFace avec progression agrégée (non-Qt)
+  ui/                 PySide6 : main_window (démarrage non bloquant + orchestration modèle),
+                      home_screen (carte d'invite), settings_screen (section « Modèle de détection »),
+                      text_screen / file_screen (mode dégradé + bannière), download_worker (QThread),
+                      components/ (banner, cards, header, toggle, badge)
 tests/                un fichier de test par module (TDD)
-docs/superpowers/     specs/ (conception + journal) et plans/ (1, 2, 3, 4)
+docs/superpowers/     specs/ (conception + journal) et plans/ (1-4 + expérience GLiNER)
 ```
 
 ## Décisions verrouillées (rappel)
@@ -58,6 +67,8 @@ docs/superpowers/     specs/ (conception + journal) et plans/ (1, 2, 3, 4)
 - Couleurs **fonctionnelles** par type d'entité = jeu **fixe** (indépendant du thème).
 - **BIC** et **code postal** implémentés mais **inactifs par défaut** (bruyants sur FEC ; activables).
 - **ORG masqué par défaut** (banques incluses).
+- **GLiNER non bloquant** : l'app démarre toujours ; sans le modèle → **mode dégradé** (règles déterministes seules + bannière). Téléchargement guidé (barre % réelle) depuis l'accueil ou Paramètres ; reprise sans redémarrage.
+- **Exe windowed** : `sys.stdout`/`sys.stderr` sont `None` → garde-fou dans `anonymator/__main__.py` (sinon `tqdm`/libs plantent avec `'NoneType' object has no attribute 'write'`).
 - PDF = piste pour version ultérieure (module caviardage/OCR dédié), hors v1.
 
 ---

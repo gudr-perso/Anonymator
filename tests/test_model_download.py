@@ -1,4 +1,5 @@
 # tests/test_model_download.py
+import sys
 from anonymator.core import model_download
 
 
@@ -26,3 +27,18 @@ def test_download_model_aggregates_progress_across_files(monkeypatch):
 
     assert received[-1] == (300, 300)         # cumul final sur tous les fichiers
     assert "Téléchargement…" in statuses
+
+
+def test_download_model_survives_none_stderr(monkeypatch):
+    # Reproduit l'exe windowed : sys.stderr est None → tqdm ne doit PAS planter.
+    monkeypatch.setattr(sys, "stderr", None)
+
+    def fake_snapshot(model_name, tqdm_class=None, **kwargs):
+        bar = tqdm_class(total=10, unit="B"); bar.update(10); bar.close()
+
+    monkeypatch.setattr(model_download, "snapshot_download", fake_snapshot)
+    monkeypatch.setattr(model_download, "repo_total_size", lambda model_name=None: 10)
+
+    received = []
+    model_download.download_model(on_progress=lambda r, t: received.append((r, t)))
+    assert received[-1] == (10, 10)
