@@ -68,3 +68,28 @@ def test_invalid_bic_still_skipped():
     # le validateur échoue → BIC n'est pas "unconfirmable", donc rejeté (pas émis).
     ents = detect_deterministic("code ZZZZZZZZ")
     assert not [e for e in ents if e.type == "BIC"]
+
+
+def test_detects_address_street_line():
+    assert ("ADDRESS", "16 RUE JEROME BONAPARTE") in types_at(
+        "16 RUE JEROME BONAPARTE")
+
+
+def test_detects_address_case_insensitive():
+    vals = {v for (t, v) in types_at("12 avenue des Champs") if t == "ADDRESS"}
+    assert "12 avenue des Champs" in vals
+
+
+def test_detects_address_with_bis():
+    vals = {v for (t, v) in types_at("5 bis rue du Four") if t == "ADDRESS"}
+    assert "5 bis rue du Four" in vals
+
+
+def test_address_stops_at_newline():
+    vals = {v for (t, v) in types_at("16 RUE JEROME BONAPARTE\n91300 MASSY")
+            if t == "ADDRESS"}
+    assert "16 RUE JEROME BONAPARTE" in vals
+
+
+def test_postal_city_not_matched_as_address():
+    assert all(t != "ADDRESS" for (t, v) in types_at("91300 MASSY"))

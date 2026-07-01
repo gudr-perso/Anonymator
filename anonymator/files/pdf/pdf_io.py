@@ -12,7 +12,7 @@ from anonymator.report.audit import AuditReport
 from anonymator.output_naming import anonymized_path
 from anonymator.files import txt_io
 from anonymator.files.anonymize_file import FileResult
-from anonymator.files.pdf import extract, redact, render
+from anonymator.files.pdf import extract, redact, render, propagate
 from anonymator.files.pdf.extract import WordBox
 
 Rect = tuple[float, float, float, float]
@@ -35,8 +35,10 @@ def scan_pdf(path: Path, ner: NerDetector, ref: Referential) -> list[PageScan]:
         pages = extract.extract_pages(doc)
     finally:
         doc.close()
-    return [PageScan(pt.page_index, pt.text, pt.words, detect(pt.text, ner, ref))
-            for pt in pages]
+    per_page = [detect(pt.text, ner, ref) for pt in pages]
+    per_page = propagate.propagate_across_pages(pages, per_page)
+    return [PageScan(pt.page_index, pt.text, pt.words, ents)
+            for pt, ents in zip(pages, per_page)]
 
 
 def anonymize_pdf_text(path: Path, ner: NerDetector, ref: Referential,

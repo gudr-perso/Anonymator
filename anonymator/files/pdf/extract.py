@@ -53,15 +53,46 @@ def ensure_native(doc: "fitz.Document") -> None:
         "PDF scanné : reconnaissance de texte (OCR) non supportée pour l'instant")
 
 
+def _block_is_vertical(block_words) -> bool:
+    """Vrai si les mots (≥2 car.) du bloc sont majoritairement plus hauts
+    que larges — signe d'un texte de marge pivoté."""
+    votes = total = 0
+    for x0, y0, x1, y1, text, *_ in block_words:
+        if len(text) < 2:
+            continue
+        total += 1
+        if (y1 - y0) > (x1 - x0):
+            votes += 1
+    return total > 0 and votes * 2 > total
+
+
+def _ordered_words(words):
+    """Regroupe par bloc, ordonne les blocs horizontaux haut→bas/gauche→droite,
+    relègue les blocs verticaux en fin, conserve (ligne, mot) dans chaque bloc."""
+    blocks: dict[int, list] = {}
+    for w in words:
+        blocks.setdefault(w[5], []).append(w)
+    horizontal, vertical = [], []
+    for bw in blocks.values():
+        y0 = min(w[1] for w in bw)
+        x0 = min(w[0] for w in bw)
+        (vertical if _block_is_vertical(bw) else horizontal).append((y0, x0, bw))
+    horizontal.sort(key=lambda e: (round(e[0] / 10) * 10, e[1]))
+    vertical.sort(key=lambda e: (e[1], e[0]))
+    ordered: list = []
+    for _y, _x, bw in horizontal + vertical:
+        ordered.extend(sorted(bw, key=lambda w: (w[6], w[7])))
+    return ordered
+
+
 def extract_page(page: "fitz.Page", page_index: int) -> PageText:
     """Reconstruit le texte plat en ordre de lecture + une WordBox par mot."""
-    words = page.get_text("words")            # (x0,y0,x1,y1, mot, bloc, ligne, n°mot)
-    words.sort(key=lambda w: (w[5], w[6], w[7]))
+    ordered = _ordered_words(page.get_text("words"))  # (x0,y0,x1,y1,mot,bloc,ligne,n°)
     parts: list[str] = []
     boxes: list[WordBox] = []
     cursor = 0
     prev_line: tuple[int, int] | None = None
-    for x0, y0, x1, y1, text, block, line, _wno in words:
+    for x0, y0, x1, y1, text, block, line, _wno in ordered:
         line_key = (block, line)
         if prev_line is not None and line_key != prev_line:
             parts.append("\n"); cursor += 1

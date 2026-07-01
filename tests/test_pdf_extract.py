@@ -1,6 +1,7 @@
 # tests/test_pdf_extract.py
 import pytest
-from tests.pdf_fixtures import make_native_pdf, make_scanned_pdf, make_encrypted_pdf
+from tests.pdf_fixtures import (make_native_pdf, make_scanned_pdf,
+                                make_encrypted_pdf, make_layout_pdf)
 from anonymator.files.pdf import extract
 from anonymator.files.pdf.extract import (
     ScannedPdfNotSupported, EncryptedPdfError, CorruptPdfError)
@@ -52,6 +53,36 @@ def test_extract_page_flat_text_and_boxes(tmp_path):
     assert pt.text[w.char_start:w.char_end] == w.text
     x0, y0, x1, y1 = w.rect
     assert x1 > x0 and y1 > y0
+
+
+def test_block_is_vertical_detects_rotated():
+    words = [(0, 0, 5, 40, "Vagram", 0, 0, 0),
+             (0, 45, 5, 90, "Paris", 0, 1, 0)]
+    assert extract._block_is_vertical(words) is True
+
+
+def test_block_is_vertical_false_for_normal_text():
+    words = [(0, 0, 60, 12, "Titulaire", 0, 0, 0),
+             (65, 0, 140, 12, "DROGLAND", 0, 0, 1)]
+    assert extract._block_is_vertical(words) is False
+
+
+def test_extract_page_keeps_phrase_contiguous(tmp_path):
+    p = make_layout_pdf(tmp_path / "l.pdf")
+    doc = extract.open_document(p)
+    pt = extract.extract_page(doc[0], 0)
+    doc.close()
+    assert "GUILLAUME DROGLAND" in pt.text
+
+
+def test_extract_page_relegates_vertical_margin(tmp_path):
+    p = make_layout_pdf(tmp_path / "l.pdf")
+    doc = extract.open_document(p)
+    pt = extract.extract_page(doc[0], 0)
+    doc.close()
+    assert "Vagram" in pt.text
+    assert pt.text.index("Titulaire") < pt.text.index("Vagram")
+    assert pt.text.index("Montant") < pt.text.index("Vagram")
 
 
 def test_extract_pages_returns_one_per_page(tmp_path):

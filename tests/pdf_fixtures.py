@@ -16,6 +16,17 @@ def make_native_pdf(path: Path, text: str = "Contact Claire Martin claire@exampl
     return path
 
 
+def make_repeat_pdf(path: Path) -> Path:
+    """Une même phrase présente deux fois, sur deux lignes distinctes."""
+    doc = fitz.open()
+    page = doc.new_page()
+    page.insert_text((72, 100), "GUILLAUME DROGLAND habite ici", fontsize=11)
+    page.insert_text((72, 200), "Titulaire GUILLAUME DROGLAND", fontsize=11)
+    doc.save(str(path))
+    doc.close()
+    return path
+
+
 def make_scanned_pdf(path: Path) -> Path:
     """PDF « scanné » : une page avec seulement une image, aucune couche texte."""
     doc = fitz.open()
@@ -23,6 +34,18 @@ def make_scanned_pdf(path: Path) -> Path:
     pix = fitz.Pixmap(fitz.csRGB, fitz.IRect(0, 0, 200, 200))
     pix.clear_with(220)
     page.insert_image(fitz.Rect(50, 50, 250, 250), pixmap=pix)
+    doc.save(str(path))
+    doc.close()
+    return path
+
+
+def make_layout_pdf(path: Path) -> Path:
+    """Deux colonnes horizontales + un bloc de marge pivoté (vertical)."""
+    doc = fitz.open()
+    page = doc.new_page()
+    page.insert_text((72, 120), "Titulaire GUILLAUME DROGLAND", fontsize=11)
+    page.insert_text((330, 120), "Montant total", fontsize=11)
+    page.insert_text((40, 400), "Vagram Paris Cedex", fontsize=9, rotate=90)
     doc.save(str(path))
     doc.close()
     return path
