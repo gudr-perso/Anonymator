@@ -32,9 +32,14 @@ Développement piloté par specs + plans, en TDD, exécution par sous-agents ave
    - écran PDF **dédié** vs extension de `FileScreen` (le canevas image + overlays diffère du tableau CSV) ;
    - **sélection de zone manuelle** (caviarder un tampon/signature non détecté) : *non* incluse en v1 par défaut —
      si on la veut, ça change le canevas, à décider maintenant.
-3. En parallèle et indépendant : implémenter la **conformité AGPL** (spec dédié) — LICENSE AGPL-3.0, écran
-   « À propos », README, `__version__` unique + tag git par release. **Prérequis avant de distribuer un exe
-   embarquant PyMuPDF.**
+3. ~~En parallèle et indépendant : implémenter la **conformité AGPL**~~ **✅ FAIT** (branche
+   `feat/conformite-agpl`, plan [2026-07-01-conformite-agpl.md](superpowers/plans/2026-07-01-conformite-agpl.md)) :
+   `LICENSE` AGPL-3.0 (racine + embarqué dans le zip via `.spec`), SPDX dans `pyproject.toml`, section
+   « À propos » dans les Paramètres (`anonymator/ui/about.py` + `settings_screen`), section Licence du README,
+   `__version__` unique lu par l'UI (sans git au runtime) + garde-fou de synchro, procédure de release
+   [docs/RELEASE.md](RELEASE.md). Licence GLiNER tranchée : `urchade/gliner_multi-v2.1` = Apache-2.0 (usage
+   commercial OK). **Reste à faire** (validation manuelle) : poser un vrai tag `vX.Y.Z` et démontrer la
+   correspondance exe ↔ tag ↔ source (cf. `docs/RELEASE.md`).
 
 Rappel modèle : Anonymator devient **open source AGPL-3.0** (repo public) à cause de PyMuPDF ; monétisation par
 **prestation** (install/formation/support), pas par vente de licence/clé (inopposable en AGPL).
