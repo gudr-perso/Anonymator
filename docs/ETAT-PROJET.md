@@ -18,15 +18,29 @@ Développement piloté par specs + plans, en TDD, exécution par sous-agents ave
 | **Plan 4 — packaging PyInstaller + README + 1er téléchargement modèle** | ✅ **Fait, sur `main`** |
 | **Expérience GLiNER « zéro friction » (non bloquant + mode dégradé)** | ✅ **Fait, fusionné dans `main`** |
 | Test d'intégration GLiNER (modèle réel) | ⬜ **Jamais lancé** (voir `docs/installation-gliner.md`) |
+| **Support PDF (rédaction juridique + extraction texte)** | 🟡 **Design validé, plan à écrire** — spec [2026-07-01-support-pdf-design.md](superpowers/specs/2026-07-01-support-pdf-design.md) |
+| **Conformité AGPL + versionnage** (déclenché par PyMuPDF) | 🟡 **Design validé, à implémenter** — spec [2026-07-01-conformite-agpl-design.md](superpowers/specs/2026-07-01-conformite-agpl-design.md) |
 
 **Tests : 194 verts + 1 d'intégration déselectionné** (ne nécessite PAS torch tant qu'on ne lance pas `-m integration`).
 
 ## Prochaine action
 
-**Validation manuelle de l'exe** : lancer `dist/anonymator/anonymator.exe` et dérouler le scénario du plan
-[2026-06-30-experience-gliner.md](superpowers/plans/2026-06-30-experience-gliner.md) §Task 12 (accueil direct → mode
-dégradé → téléchargement du modèle avec barre % → détection complète qui reprend).
-Ensuite : **installeur Windows** (setup.exe + raccourcis + code signing — brainstorming dédié à faire, « Plan 5 »).
+**Chantier PDF** (brainstorming terminé le 2026-07-01, 2 specs validés et poussés) :
+1. Écrire le **plan d'implémentation** du support PDF (skill `superpowers:writing-plans`) à partir du
+   spec [2026-07-01-support-pdf-design.md](superpowers/specs/2026-07-01-support-pdf-design.md).
+2. **Deux points ouverts à trancher avant/pendant le plan** :
+   - écran PDF **dédié** vs extension de `FileScreen` (le canevas image + overlays diffère du tableau CSV) ;
+   - **sélection de zone manuelle** (caviarder un tampon/signature non détecté) : *non* incluse en v1 par défaut —
+     si on la veut, ça change le canevas, à décider maintenant.
+3. En parallèle et indépendant : implémenter la **conformité AGPL** (spec dédié) — LICENSE AGPL-3.0, écran
+   « À propos », README, `__version__` unique + tag git par release. **Prérequis avant de distribuer un exe
+   embarquant PyMuPDF.**
+
+Rappel modèle : Anonymator devient **open source AGPL-3.0** (repo public) à cause de PyMuPDF ; monétisation par
+**prestation** (install/formation/support), pas par vente de licence/clé (inopposable en AGPL).
+
+Autres pistes en attente : **installeur Windows** (setup.exe + raccourcis + code signing — brainstorming dédié,
+« Plan 5 »), validation manuelle de l'exe (scénario GLiNER zéro friction).
 
 Méthode utilisée jusqu'ici : skill `superpowers:subagent-driven-development` (un sous-agent par tâche, revue conformité + qualité, branche dédiée puis fusion).
 
@@ -56,7 +70,8 @@ anonymator/
                       text_screen / file_screen (mode dégradé + bannière), download_worker (QThread),
                       components/ (banner, cards, header, toggle, badge)
 tests/                un fichier de test par module (TDD)
-docs/superpowers/     specs/ (conception + journal) et plans/ (1-4 + expérience GLiNER)
+docs/superpowers/     specs/ (conception + journal, dont support-pdf & conformité-agpl 2026-07-01)
+                      et plans/ (1-4 + expérience GLiNER ; plan PDF à écrire)
 ```
 
 ## Décisions verrouillées (rappel)
@@ -69,7 +84,8 @@ docs/superpowers/     specs/ (conception + journal) et plans/ (1-4 + expérience
 - **ORG masqué par défaut** (banques incluses).
 - **GLiNER non bloquant** : l'app démarre toujours ; sans le modèle → **mode dégradé** (règles déterministes seules + bannière). Téléchargement guidé (barre % réelle) depuis l'accueil ou Paramètres ; reprise sans redémarrage.
 - **Exe windowed** : `sys.stdout`/`sys.stderr` sont `None` → garde-fou dans `anonymator/__main__.py` (sinon `tqdm`/libs plantent avec `'NoneType' object has no attribute 'write'`).
-- PDF = piste pour version ultérieure (module caviardage/OCR dédié), hors v1.
+- **PDF** (design validé 2026-07-01) : PDF **natifs uniquement** en v1 (scannés refusés, OCR plus tard), **2 modes** (rédaction juridique = destruction réelle via PyMuPDF + extraction texte), **revue visuelle obligatoire** avant destruction. PyMuPDF isolé dans `anonymator/files/pdf/`.
+- **Licence** : passage en **AGPL-3.0** (imposé par PyMuPDF) → repo public + `LICENSE` AGPL ; **pas** de licence commerciale Artifex (closed source seulement). Versionnage : **tag `vX.Y.Z` par release**, pas par commit, `__version__` unique lu par l'UI.
 
 ---
 
