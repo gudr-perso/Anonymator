@@ -6,6 +6,7 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[
+        ('LICENSE', '.'),
         ('anonymator/config/entities.json', 'anonymator/config'),
         ('anonymator/ui/assets/anonymator.ico', 'anonymator/ui/assets'),
         ('anonymator/ui/assets/logo.png', 'anonymator/ui/assets'),
