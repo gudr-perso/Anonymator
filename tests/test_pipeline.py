@@ -39,3 +39,23 @@ def test_pipeline_filters_stoplist():
     types_values = {(e.type, e.value) for e in ents}
     assert ("ORG", "service client") not in types_values
     assert ("PERSON", "Claire Martin") in types_values
+
+
+from anonymator.user_rules import UserRules, Rule
+
+
+def test_pipeline_forces_mask_rule():
+    ref = Referential.load_default().with_user_rules(
+        UserRules([Rule("simple", "PRJ-####", "mask", True, "projet")]))
+    ner = FakeNer({})
+    ents = detect("dossier PRJ-2024", ner, ref)
+    assert any(e.type == "REGLE_INTERNE" and e.value == "PRJ-2024" for e in ents)
+
+
+def test_pipeline_keep_rule_shields_detection():
+    # une valeur qu'un détecteur aurait masquée est conservée grâce à keep
+    ref = Referential.load_default().with_user_rules(
+        UserRules([Rule("simple", "A#######", "keep", True, "codes")]))
+    ner = FakeNer({"A0000015": "ADDRESS"})
+    ents = detect("code A0000015", ner, ref)
+    assert all(e.value != "A0000015" for e in ents)
