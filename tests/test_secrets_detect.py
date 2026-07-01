@@ -76,3 +76,18 @@ def test_password_keyword_not_followed_by_plain_word():
     # "mot de passe oublié" : 'oublié' n'est pas un mot de passe
     assert all(e.type != "PASSWORD" or e.value != "oublié"
                for e in detect_secrets("mot de passe oublié hier"))
+
+
+def test_entropy_ignores_naming_convention_no_lowercase():
+    # FACT.01/01/2023 : majuscules + chiffres + ponctuation, PAS de minuscule
+    assert all(e.type != "PASSWORD" for e in detect_secrets("piece FACT.01/01/2023 reglee"))
+
+
+def test_entropy_ignores_internal_code_no_lowercase():
+    assert all(e.type != "PASSWORD" for e in detect_secrets("code A0000015 interne"))
+
+
+def test_entropy_still_detects_mixed_case_secret():
+    # min + MAJ + chiffre → vraie signature de secret
+    r = _by_type("cle Xk9mPq2aZ ailleurs")
+    assert "Xk9mPq2aZ" in r.get("PASSWORD", [])
