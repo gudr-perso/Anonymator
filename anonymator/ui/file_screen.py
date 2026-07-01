@@ -1,10 +1,11 @@
 from datetime import datetime
 from pathlib import Path
-from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
+from PySide6.QtWidgets import (QWidget, QFrame, QVBoxLayout, QHBoxLayout, QPushButton,
                                QLabel, QTableWidget, QTableWidgetItem, QFileDialog,
                                QMessageBox, QTreeWidget, QTreeWidgetItem, QLineEdit)
 from PySide6.QtGui import QColor
 from PySide6.QtCore import Qt
+from anonymator.ui.components.grid import paint_grid, GRID_BG
 from anonymator.files.anonymize_file import (anonymize_file, UnsupportedFormat, FileResult)
 from anonymator.files import csv_io
 from anonymator.output_naming import anonymized_path
@@ -29,6 +30,8 @@ def _fmt_int(n: int) -> str:
 class FileScreen(QWidget):
     def __init__(self, ref, loader, prefs, on_back, on_text_review=None, on_request_model=None):
         super().__init__()
+        self.setObjectName("FileBg")
+        self.setStyleSheet(f"#FileBg {{ background: {GRID_BG}; }}")
         self.ref, self.loader, self.prefs = ref, loader, prefs
         self.on_text_review = on_text_review
         self.on_request_model = on_request_model
@@ -57,18 +60,20 @@ class FileScreen(QWidget):
         info_col.addWidget(self.name_label); info_col.addWidget(self.meta_label)
         bar.addWidget(self._file_ic); bar.addLayout(info_col); bar.addStretch()
 
-        self.btn_open = QPushButton("  Ouvrir"); self.btn_open.setObjectName("ghost")
-        self.btn_open.setIcon(icon("folder", "#00965E")); self.btn_open.clicked.connect(self._open)
+        self.btn_open = QPushButton("  Ouvrir"); self.btn_open.setObjectName("navOpen")
+        self.btn_open.setIcon(icon("folder", "white")); self.btn_open.clicked.connect(self._open)
         self.btn_review = QPushButton("  Analyser"); self.btn_review.setObjectName("primary")
         self.btn_review.setIcon(icon("scan", "white"))
         self.btn_review.setEnabled(False); self.btn_review.clicked.connect(self.analyze)
         self.btn_run = QPushButton("  Anonymiser && enregistrer"); self.btn_run.setObjectName("info")
         self.btn_run.setIcon(icon("shield", "white")); self.btn_run.clicked.connect(self._run_clicked)
-        self.btn_back = QPushButton("  Accueil"); self.btn_back.setObjectName("ghost")
-        self.btn_back.setIcon(icon("home", "#6B7C72")); self.btn_back.clicked.connect(on_back)
+        self.btn_back = QPushButton("  Accueil"); self.btn_back.setObjectName("navHome")
+        self.btn_back.setIcon(icon("home", "white")); self.btn_back.clicked.connect(on_back)
         for b in (self.btn_open, self.btn_review, self.btn_run, self.btn_back):
             bar.addWidget(b)
-        root.addLayout(bar)
+        action_band = QFrame(); action_band.setObjectName("ActionBand")
+        action_band.setLayout(bar)
+        root.addWidget(action_band)
 
         # ---- corps : extrait (gauche) + entités (droite) ----
         self.table = QTableWidget()
@@ -120,7 +125,8 @@ class FileScreen(QWidget):
         self.pager.addStretch(); self.pager.addWidget(self.lbl_page); self.pager.addStretch()
         self.pager.addWidget(self.btn_next); self.pager.addWidget(self.btn_last)
         self.pager.addWidget(self.goto)
-        self.pager_widget = QWidget(); self.pager_widget.setLayout(self.pager); self.pager_widget.hide()
+        self.pager_widget = QWidget(); self.pager_widget.setObjectName("PagerBar")
+        self.pager_widget.setLayout(self.pager); self.pager_widget.hide()
         root.addWidget(self.pager_widget)
 
         # Voile "travail en cours" superposé (masqué par défaut)
@@ -133,6 +139,9 @@ class FileScreen(QWidget):
         super().resizeEvent(event)
         if self._overlay.isVisible():
             self._overlay.setGeometry(self.rect())
+
+    def paintEvent(self, _event):
+        paint_grid(self)
 
     # ---------- file-info meta ----------
     def _set_meta(self, status: str | None = None):

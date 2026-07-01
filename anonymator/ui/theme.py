@@ -2,12 +2,14 @@ DEFAULT_THEME = "cuma"
 
 THEMES = {
     "cuma": {"primary": "#31B700", "action": "#00965E", "dark": "#063b27",
-             "accent": "#E8621A", "bg": "#FFFFFF", "text": "#10331F",
+             "accent": "#E8621A", "accent_hover": "#C9500F", "bg": "#FFFFFF",
+             "text": "#10331F",
              "bg_hero": "#E8F3EA", "surface": "#FFFFFF", "surface_alt": "#F3FAF4",
              "border": "#E2E8E4", "text_muted": "#6B7C72",
              "info": "#4FA8D8", "info_hover": "#3D93C2"},
     "cap":  {"primary": "#1DA8E2", "action": "#1570B8", "dark": "#0D1A35",
-             "accent": "#E8621A", "bg": "#FFFFFF", "text": "#1E1E2E",
+             "accent": "#E8621A", "accent_hover": "#C9500F", "bg": "#FFFFFF",
+             "text": "#1E1E2E",
              "bg_hero": "#EAF4FB", "surface": "#FFFFFF", "surface_alt": "#F4F9FD",
              "border": "#E1E8EF", "text_muted": "#6B7280",
              "info": "#5BBCEC", "info_hover": "#3FA3D6"},
@@ -36,6 +38,20 @@ QPushButton#info:hover {{ background: {info_hover}; }}
 QPushButton#secondary {{ background: transparent; color: {text};
                         border: 1px solid {border}; border-radius: 8px; padding: 10px 18px; }}
 QPushButton#ghost {{ background: transparent; color: {action}; border: none; padding: 8px 14px; }}
+/* Boutons de la barre d'action (écrans Fichier & PDF) — aplats pleins charte */
+QPushButton#navHome {{ background: {accent}; color: white; border: none;
+                      border-radius: 8px; padding: 10px 18px; font-weight: 600; }}
+QPushButton#navHome:hover {{ background: {accent_hover}; }}
+QPushButton#navOpen {{ background: {dark}; color: white; border: none;
+                      border-radius: 8px; padding: 10px 18px; font-weight: 600; }}
+QPushButton#navOpen:hover {{ background: {action}; }}
+QPushButton#navTool {{ background: {primary}; color: white; border: none;
+                      border-radius: 8px; padding: 10px 18px; font-weight: 600; }}
+QPushButton#navTool:hover {{ background: {action}; }}
+QPushButton#navTool:checked {{ background: {dark}; }}
+/* Bandeau blanc (barre fichier + boutons) posé sur la grille */
+#ActionBand {{ background: {surface}; border-bottom: 1px solid {border}; }}
+#PagerBar {{ background: transparent; }}
 #Crumb {{ background: {surface_alt}; border: 1px solid {border}; border-radius: 18px; }}
 QPushButton#crumb {{ background: transparent; color: {text_muted}; border: none;
                     padding: 6px 14px; border-radius: 14px; }}

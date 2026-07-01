@@ -1,11 +1,12 @@
 # anonymator/ui/pdf_screen.py
 from datetime import datetime
 from pathlib import Path
-from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
+from PySide6.QtWidgets import (QWidget, QFrame, QVBoxLayout, QHBoxLayout, QPushButton,
                                QLabel, QFileDialog, QMessageBox, QTreeWidget,
                                QTreeWidgetItem, QHeaderView)
 from PySide6.QtGui import QColor, QFont
 from PySide6.QtCore import Qt
+from anonymator.ui.components.grid import paint_grid, GRID_BG
 from anonymator.files.pdf import pdf_io
 from anonymator.files.pdf.extract import (
     ScannedPdfNotSupported, EncryptedPdfError, CorruptPdfError)
@@ -26,6 +27,8 @@ from anonymator.ner import NullNer
 class PdfScreen(QWidget):
     def __init__(self, ref, loader, prefs, on_back, on_request_model=None):
         super().__init__()
+        self.setObjectName("PdfBg")
+        self.setStyleSheet(f"#PdfBg {{ background: {GRID_BG}; }}")
         self.ref, self.loader, self.prefs = ref, loader, prefs
         self.on_request_model = on_request_model
         self.path: Path | None = None
@@ -53,24 +56,26 @@ class PdfScreen(QWidget):
         info_col.addWidget(self.name_label); info_col.addWidget(self.meta_label)
         bar.addWidget(self._file_ic); bar.addLayout(info_col); bar.addStretch()
 
-        self.btn_open = QPushButton("  Ouvrir"); self.btn_open.setObjectName("ghost")
-        self.btn_open.setIcon(icon("folder", "#00965E")); self.btn_open.clicked.connect(self._open)
+        self.btn_open = QPushButton("  Ouvrir"); self.btn_open.setObjectName("navOpen")
+        self.btn_open.setIcon(icon("folder", "white")); self.btn_open.clicked.connect(self._open)
         self.btn_review = QPushButton("  Analyser"); self.btn_review.setObjectName("primary")
         self.btn_review.setIcon(icon("scan", "white"))
         self.btn_review.setEnabled(False); self.btn_review.clicked.connect(self.analyze)
-        self.btn_zone = QPushButton("  Zone manuelle"); self.btn_zone.setObjectName("ghost")
-        self.btn_zone.setCheckable(True); self.btn_zone.setIcon(icon("scan", "#6B7C72"))
+        self.btn_zone = QPushButton("  Zone manuelle"); self.btn_zone.setObjectName("navTool")
+        self.btn_zone.setCheckable(True); self.btn_zone.setIcon(icon("scan", "white"))
         self.btn_zone.toggled.connect(self._toggle_zone)
         self.btn_redact = QPushButton("  Caviarder (PDF)"); self.btn_redact.setObjectName("info")
         self.btn_redact.setIcon(icon("shield", "white")); self.btn_redact.clicked.connect(self._redact_clicked)
-        self.btn_text = QPushButton("  Extraire en .txt"); self.btn_text.setObjectName("ghost")
-        self.btn_text.setIcon(icon("document", "#6B7C72")); self.btn_text.clicked.connect(self._text_clicked)
-        self.btn_back = QPushButton("  Accueil"); self.btn_back.setObjectName("ghost")
-        self.btn_back.setIcon(icon("home", "#6B7C72")); self.btn_back.clicked.connect(on_back)
+        self.btn_text = QPushButton("  Extraire en .txt"); self.btn_text.setObjectName("navTool")
+        self.btn_text.setIcon(icon("document", "white")); self.btn_text.clicked.connect(self._text_clicked)
+        self.btn_back = QPushButton("  Accueil"); self.btn_back.setObjectName("navHome")
+        self.btn_back.setIcon(icon("home", "white")); self.btn_back.clicked.connect(on_back)
         for b in (self.btn_open, self.btn_review, self.btn_zone,
                   self.btn_redact, self.btn_text, self.btn_back):
             bar.addWidget(b)
-        root.addLayout(bar)
+        action_band = QFrame(); action_band.setObjectName("ActionBand")
+        action_band.setLayout(bar)
+        root.addWidget(action_band)
 
         # ---- corps : canevas (gauche) + entités (droite) ----
         self.canvas = PdfCanvas()
@@ -107,7 +112,8 @@ class PdfScreen(QWidget):
         self.pager.addWidget(self.btn_prev); self.pager.addStretch()
         self.pager.addWidget(self.lbl_page); self.pager.addStretch()
         self.pager.addWidget(self.btn_next)
-        self.pager_widget = QWidget(); self.pager_widget.setLayout(self.pager); self.pager_widget.hide()
+        self.pager_widget = QWidget(); self.pager_widget.setObjectName("PagerBar")
+        self.pager_widget.setLayout(self.pager); self.pager_widget.hide()
         root.addWidget(self.pager_widget)
 
         # Voile "travail en cours" superposé (masqué par défaut)
@@ -120,6 +126,9 @@ class PdfScreen(QWidget):
         super().resizeEvent(event)
         if self._overlay.isVisible():
             self._overlay.setGeometry(self.rect())
+
+    def paintEvent(self, _event):
+        paint_grid(self)
 
     # ---------- ouverture ----------
     def _open(self):
