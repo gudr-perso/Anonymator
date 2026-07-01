@@ -49,7 +49,7 @@ Détecte et remplace les données personnelles (noms, emails, IBAN, numéros de 
 | `.txt` | ✅ Texte intégral |
 | `.csv` | ✅ Par colonnes (séparateur auto-détecté, encodage préservé) |
 | `.xlsx` | ✅ Édition en place (styles, formules et onglets conservés) |
-| `.pdf` | ❌ Non supporté en v1 |
+| `.pdf` | ✅ PDF natifs : caviardage (destruction réelle) ou extraction .txt. Scannés (image seule) non supportés. |
 
 ---
 
@@ -68,7 +68,7 @@ Détecte et remplace les données personnelles (noms, emails, IBAN, numéros de 
 |----------|----------|
 | Téléchargement très lent au 1er lancement | Connexion Internet requise (~300 Mo) ; patienter |
 | Fichier CSV mal parsé | Vérifier encodage (Latin-1/UTF-8) et séparateur |
-| `.pdf` refusé | Non supporté en v1 |
+| `.pdf` scanné (image seule) | OCR non supporté en v1 — message clair, aucun plantage |
 | Nom manqué lors de la détection | Ajouter manuellement via la sélection de texte (mode Texte) |
 
 ---
