@@ -53,6 +53,27 @@ def test_anonymize_pdf_redact_destroys_and_saves(tmp_path):
     check.close()
 
 
+def test_anonymize_pdf_text_from_session_honors_decochage(tmp_path):
+    """Mode texte via la session : une valeur décochée reste en clair dans le .txt."""
+    from anonymator.core.pdf_review_session import PdfReviewSession
+    src = make_native_pdf(tmp_path / "n.pdf",
+                          "Contact Claire Martin et Jean Dupont ici")
+    pages = pdf_io.scan_pdf(
+        src, FakeNer({"Claire Martin": "PERSON", "Jean Dupont": "PERSON"}), _ref())
+    session = PdfReviewSession(pages, _ref())
+    session.set_value_enabled("PERSON", "Jean Dupont", False)
+    res = pdf_io.anonymize_pdf_text_from_session(
+        src, session, tmp_path, datetime(2026, 1, 2, 3, 4, 5))
+    assert res.output_path.suffix == ".txt"
+    out = res.output_path.read_text(encoding="utf-8")
+    assert "Jean Dupont" in out            # décoché → conservé en clair
+    assert "Claire Martin" not in out      # coché → masqué
+    assert "[PERSONNE]" in out
+    # le rapport ne liste que l'entité réellement masquée
+    originals = [r["original"] for r in res.report.to_rows()]
+    assert "Claire Martin" in originals and "Jean Dupont" not in originals
+
+
 def _page_text(ps):
     """Reconstruit un PageText à partir d'un PageScan pour appeler mapping."""
     from anonymator.files.pdf.extract import PageText

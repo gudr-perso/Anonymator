@@ -20,6 +20,19 @@ def _session():
     return PdfReviewSession([_pagescan()], Referential.load_default())
 
 
+def _pagescan_two():
+    # "Claire Martin\nJean Dupont" — deux valeurs PERSON distinctes sur une page
+    words = [
+        WordBox("Claire", (10, 10, 60, 20), 0, 6),
+        WordBox("Martin", (62, 10, 110, 20), 7, 13),
+        WordBox("Jean", (10, 30, 50, 40), 14, 18),
+        WordBox("Dupont", (52, 30, 100, 40), 19, 25),
+    ]
+    ents = [Entity("PERSON", "Claire Martin", 0, 13, "ner"),
+            Entity("PERSON", "Jean Dupont", 14, 25, "ner")]
+    return PageScan(0, "Claire Martin\nJean Dupont", words, ents)
+
+
 def test_types_and_values():
     s = _session()
     assert s.types() == ["PERSON"]
@@ -71,6 +84,15 @@ def test_clear_manual_rects():
     assert s.manual_rects(0) == []
 
 
+def test_has_manual_rects():
+    s = _session()
+    assert s.has_manual_rects() is False
+    s.add_manual_rect(0, (200, 200, 260, 230))
+    assert s.has_manual_rects() is True
+    s.clear_manual_rects(0)
+    assert s.has_manual_rects() is False
+
+
 def test_occurrence_exclusion():
     s = _session()
     s.set_occurrence_excluded(0, 0, True)
@@ -90,3 +112,27 @@ def test_retained_entity_rects_carries_type_for_overlay():
     overlay = s.retained_entity_rects(0)
     assert all(len(item) == 2 for item in overlay)     # (rect, type)
     assert any(t == "PERSON" for _rect, t in overlay)
+
+
+def test_page_texts_returns_flat_text_in_order():
+    s = PdfReviewSession([_pagescan_two()], Referential.load_default())
+    assert s.page_texts() == [(0, "Claire Martin\nJean Dupont")]
+
+
+def test_retained_entities_by_page_default():
+    s = PdfReviewSession([_pagescan_two()], Referential.load_default())
+    ents = s.retained_entities_by_page()
+    assert {e.value for e in ents[0]} == {"Claire Martin", "Jean Dupont"}
+
+
+def test_retained_entities_by_page_honors_value_decochage():
+    s = PdfReviewSession([_pagescan_two()], Referential.load_default())
+    s.set_value_enabled("PERSON", "Jean Dupont", False)
+    ents = s.retained_entities_by_page()
+    assert {e.value for e in ents[0]} == {"Claire Martin"}
+
+
+def test_retained_entities_by_page_honors_type_decochage():
+    s = PdfReviewSession([_pagescan_two()], Referential.load_default())
+    s.set_type_enabled("PERSON", False)
+    assert s.retained_entities_by_page() == {}

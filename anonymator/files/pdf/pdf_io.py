@@ -59,6 +59,30 @@ def anonymize_pdf_text(path: Path, ner: NerDetector, ref: Referential,
     return FileResult(out, report)
 
 
+def anonymize_pdf_text_from_session(path: Path, session, output_dir: Path,
+                                    when: datetime) -> FileResult:
+    """Mode extraction cohérent avec la revue visuelle : masque page par page
+    uniquement l'ensemble retenu de la session (décochages type/valeur honorés),
+    puis joint les pages comme anonymize_pdf_text. Contrairement à celui-ci, ne
+    re-détecte pas — une valeur décochée reste en clair dans le .txt.
+
+    `session` est un PdfReviewSession (typage canard pour éviter un import
+    circulaire : pdf_review_session importe déjà PageScan depuis ce module)."""
+    ref = session.ref
+    ents_by_page = session.retained_entities_by_page()
+    report = AuditReport()
+    parts: list[str] = []
+    for page_index, text in session.page_texts():
+        ents = ents_by_page.get(page_index, [])
+        for e in ents:
+            report.add(e.type, e.value, ref.tag_for(e.type), f"page {page_index + 1}")
+        parts.append(apply_masking(text, ents, ref))
+    masked = "\n\n".join(parts)
+    out = anonymized_path(path.with_suffix(".txt"), output_dir, when)
+    txt_io.write_text(masked, "utf-8", out)
+    return FileResult(out, report)
+
+
 def anonymize_pdf_redact(path: Path, rects_by_page: dict[int, list[Rect]],
                          output_dir: Path, when: datetime) -> Path:
     """Mode rédaction : caviarde les rectangles retenus par page, purge les

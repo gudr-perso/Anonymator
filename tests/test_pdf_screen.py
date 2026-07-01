@@ -2,6 +2,7 @@
 from datetime import datetime
 from unittest.mock import patch
 import fitz
+from PySide6.QtWidgets import QMessageBox
 from tests.pdf_fixtures import make_native_pdf, make_scanned_pdf
 from anonymator.referential import Referential
 from anonymator.ner import FakeNer
@@ -63,6 +64,62 @@ def test_text_run_writes_masked_txt(qtbot, tmp_path):
     assert res.output_path.suffix == ".txt"
     out = res.output_path.read_text(encoding="utf-8")
     assert "[PERSONNE]" in out and "Claire Martin" not in out
+
+
+def test_text_run_honors_review_decochage(qtbot, tmp_path):
+    """Après analyse, décocher une valeur la conserve en clair dans le .txt —
+    le mode texte est cohérent avec la revue visuelle."""
+    src = make_native_pdf(tmp_path / "n.pdf",
+                          "Contact Claire Martin et Jean Dupont ici")
+    s = _screen({"Claire Martin": "PERSON", "Jean Dupont": "PERSON"}, out=tmp_path)
+    qtbot.addWidget(s)
+    s.load_path(str(src)); s.analyze()
+    qtbot.waitUntil(lambda: s.session is not None, timeout=5000)
+    s.session.set_value_enabled("PERSON", "Jean Dupont", False)
+    res = s.run_text(when=datetime(2026, 1, 2, 3, 4, 5))
+    out = res.output_path.read_text(encoding="utf-8")
+    assert "Jean Dupont" in out            # décoché → conservé en clair
+    assert "Claire Martin" not in out      # coché → masqué
+
+
+def test_text_export_warns_when_manual_zones_present(qtbot, tmp_path):
+    """Cliquer « Extraire en .txt » avec des zones manuelles tracées prévient
+    qu'elles ne figureront pas dans le texte (concept propre au caviardage)."""
+    src = make_native_pdf(tmp_path / "n.pdf", "Contact Claire Martin ici")
+    s = _screen({"Claire Martin": "PERSON"}, out=tmp_path); qtbot.addWidget(s)
+    s.load_path(str(src)); s.analyze()
+    qtbot.waitUntil(lambda: s.session is not None, timeout=5000)
+    s._on_manual_rect((300.0, 300.0, 360.0, 330.0))
+    with patch("anonymator.ui.pdf_screen.QMessageBox.question",
+               return_value=QMessageBox.Yes) as q, \
+         patch("anonymator.ui.pdf_screen.QMessageBox.information"):
+        s._text_clicked()
+    assert q.called
+
+
+def test_text_export_no_warning_without_manual_zones(qtbot, tmp_path):
+    src = make_native_pdf(tmp_path / "n.pdf", "Contact Claire Martin ici")
+    s = _screen({"Claire Martin": "PERSON"}, out=tmp_path); qtbot.addWidget(s)
+    s.load_path(str(src)); s.analyze()
+    qtbot.waitUntil(lambda: s.session is not None, timeout=5000)
+    with patch("anonymator.ui.pdf_screen.QMessageBox.question") as q, \
+         patch("anonymator.ui.pdf_screen.QMessageBox.information"):
+        s._text_clicked()
+    assert not q.called
+
+
+def test_text_export_aborts_when_user_declines_manual_warning(qtbot, tmp_path):
+    src = make_native_pdf(tmp_path / "n.pdf", "Contact Claire Martin ici")
+    s = _screen({"Claire Martin": "PERSON"}, out=tmp_path); qtbot.addWidget(s)
+    s.load_path(str(src)); s.analyze()
+    qtbot.waitUntil(lambda: s.session is not None, timeout=5000)
+    s._on_manual_rect((300.0, 300.0, 360.0, 330.0))
+    with patch("anonymator.ui.pdf_screen.QMessageBox.question",
+               return_value=QMessageBox.No), \
+         patch("anonymator.ui.pdf_screen.QMessageBox.information"), \
+         patch.object(s, "run_text") as run:
+        s._text_clicked()
+    assert not run.called
 
 
 def test_manual_rect_added_to_session(qtbot, tmp_path):

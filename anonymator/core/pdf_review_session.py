@@ -31,7 +31,9 @@ class PdfReviewSession:
         self._values_count: dict[tuple[str, str], int] = {}
         self._excluded: set[int] = set()                 # indices dans self._occs
         self._manual: dict[int, list[Rect]] = {}
+        self._page_texts: list[tuple[int, str]] = []      # (index, texte) en ordre
         for ps in pages:
+            self._page_texts.append((ps.page_index, ps.text))
             page_text = PageText(ps.page_index, ps.text, ps.words)
             for e in ps.entities:
                 rects = mapping.rects_for_entity(page_text, e)
@@ -100,6 +102,12 @@ class PdfReviewSession:
     def clear_manual_rects(self, page: int) -> None:
         self._manual.pop(page, None)
 
+    def has_manual_rects(self) -> bool:
+        """Vrai si au moins une zone manuelle a été tracée (toutes pages).
+        Les zones manuelles n'ont pas d'offset texte : elles ne sont honorées
+        que par le caviardage PDF, pas par l'extraction .txt."""
+        return any(rects for rects in self._manual.values())
+
     # --- producteurs ---
     def occurrences(self, page: int) -> list[tuple[int, Entity]]:
         """(occ_index global, entité) des occurrences de la page — pour l'UI."""
@@ -114,6 +122,20 @@ class PdfReviewSession:
                 for r in occ.rects:
                     out.append((r, occ.entity.type))
         return out
+
+    def page_texts(self) -> list[tuple[int, str]]:
+        """(index, texte plat) de chaque page, en ordre d'extraction — pour le
+        mode extraction texte (masquage page par page puis jointure)."""
+        return list(self._page_texts)
+
+    def retained_entities_by_page(self) -> dict[int, list[Entity]]:
+        """Entités retenues (type/valeur/exclusion honorés) groupées par page —
+        pour le mode texte. Miroir de retained_rects_by_page côté géométrie."""
+        result: dict[int, list[Entity]] = {}
+        for i, occ in enumerate(self._occs):
+            if self._occ_retained(i):
+                result.setdefault(occ.page, []).append(occ.entity)
+        return result
 
     def retained_rects_by_page(self) -> dict[int, list[Rect]]:
         """Tous les rectangles à caviarder par page (entités retenues + manuels)."""

@@ -266,6 +266,12 @@ class PdfScreen(QWidget):
             return None
         out_dir = Path(self.prefs.output_dir) if self.prefs.output_dir else self.path.parent
         when = when or datetime.now()
+        # Après analyse, on masque l'ensemble retenu de la session (décochages
+        # de la revue honorés) — cohérent avec le mode caviardage. Sans session
+        # (extraction directe sans « Analyser »), on re-détecte tout.
+        if self.session is not None:
+            return pdf_io.anonymize_pdf_text_from_session(
+                self.path, self.session, out_dir, when)
         try:
             ner = self.loader.get()
             return pdf_io.anonymize_pdf_text(self.path, ner, self.ref, out_dir, when)
@@ -293,6 +299,18 @@ class PdfScreen(QWidget):
         if not self.path:
             QMessageBox.information(self, "Aucun PDF", "Ouvrez d'abord un PDF.")
             return
+        # Les zones manuelles n'ont pas de correspondance dans le texte plat :
+        # elles ne sont caviardées que dans le PDF. On prévient l'utilisateur
+        # avant l'export .txt pour éviter la surprise (fuite d'un tampon/signature).
+        if self.session is not None and self.session.has_manual_rects():
+            confirm = QMessageBox.question(
+                self, "Zones manuelles ignorées",
+                "Les zones tracées manuellement ne seront pas incluses dans le "
+                ".txt : elles n'existent que pour le caviardage du PDF.\n\n"
+                "Pour masquer un tampon ou une signature, utilisez « Caviarder "
+                "(PDF) ».\n\nContinuer l'export en .txt ?")
+            if confirm != QMessageBox.Yes:
+                return
         res = self.run_text()
         if res is not None:
             QMessageBox.information(self, "Texte extrait",
