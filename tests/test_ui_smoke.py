@@ -75,4 +75,19 @@ def test_referential_uses_prefs_overrides(qtbot, tmp_path):
     win = MainWindow(loader=ModelLoader(FakeNer({})), prefs_path=prefs_path)
     qtbot.addWidget(win)
     assert win.ref.is_active("BIC") is True
-    assert "truc" in win.ref.ner_stoplist()
+    assert win.ref.user_rules.keep_matches("truc")
+
+
+def test_main_window_migrates_stoplist_to_rules_file(qtbot, tmp_path):
+    from anonymator.ui.model_loader import ModelLoader
+    from anonymator.ner import FakeNer
+    prefs_path = tmp_path / "prefs.json"
+    prefs_path.write_text('{"theme":"cuma","entity_overrides":{},'
+                          '"ner_stoplist":["service client","monsieur"]}',
+                          encoding="utf-8")
+    win = MainWindow(loader=ModelLoader(FakeNer({})), prefs_path=prefs_path)
+    qtbot.addWidget(win)
+    rules_path = prefs_path.parent / "user_rules.json"
+    assert rules_path.exists()
+    assert win.ref.user_rules.keep_matches("service client")
+    assert win.ref.user_rules.keep_matches("monsieur")

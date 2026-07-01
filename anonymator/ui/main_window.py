@@ -4,6 +4,7 @@ from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QMainWindow, QStackedWidget
 from anonymator.referential import Referential
 from anonymator.ui.preferences import Preferences
+from anonymator.user_rules import UserRules
 from anonymator.ui.theme import build_qss
 from anonymator.ui.model_loader import ModelLoader
 from anonymator.ui.home_screen import HomeScreen
@@ -28,6 +29,7 @@ class MainWindow(QMainWindow):
             self.setWindowIcon(QIcon(str(ico)))
         self.prefs_path = prefs_path
         self.prefs = Preferences.load(prefs_path)
+        self.rules_path = prefs_path.parent / "user_rules.json"
         self.ref = self._build_ref()
         self.loader = loader or ModelLoader()
 
@@ -58,9 +60,12 @@ class MainWindow(QMainWindow):
 
     def _build_ref(self):
         ref = Referential.load_default(overrides=self.prefs.entity_overrides)
-        if self.prefs.ner_stoplist is not None:
-            ref = ref.with_stoplist(self.prefs.ner_stoplist)
-        return ref
+        # migration one-shot : la stoplist (éditée ou par défaut) alimente user_rules.json
+        fallback = self.prefs.ner_stoplist
+        if fallback is None:
+            fallback = list(Referential.load_default()._stoplist)
+        rules = UserRules.load(self.rules_path, fallback_terms=fallback)
+        return ref.with_user_rules(rules)
 
     def _apply_theme(self):
         self.setStyleSheet(build_qss(self.prefs.theme))
