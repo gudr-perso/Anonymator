@@ -79,3 +79,12 @@ def test_model_finished_emits_ready(qtbot):
             s._on_model_finished()
         assert ready == [True]
         assert "installé" in s.model_status_label.text().lower()
+
+
+def test_settings_shows_about_section(qtbot):
+    import anonymator
+    s = _settings(); qtbot.addWidget(s)
+    text = s.about_label.text()
+    assert "AGPL-3.0" in text
+    assert f"Anonymator v{anonymator.__version__}" in text
+    assert "github.com/gudr-perso/Anonymator" in text

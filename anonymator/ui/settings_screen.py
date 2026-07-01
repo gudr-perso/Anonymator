@@ -7,6 +7,7 @@ from anonymator.ui.components.toggle import ToggleSwitch
 from anonymator.referential import Referential
 from anonymator.core.model_status import is_model_available, installed_size
 from anonymator.ui.download_worker import DownloadWorker
+from anonymator.ui.about import about_lines
 
 _TYPES = ["PERSON", "ADDRESS", "ORG", "EMAIL", "PHONE", "IBAN", "BIC",
           "SIREN", "SIRET", "NIR", "POSTAL_CODE", "URL", "LOGIN", "PASSWORD"]
@@ -86,6 +87,11 @@ class SettingsScreen(QWidget):
         self.model_dl_status = QLabel(""); self.model_dl_status.setObjectName("muted")
         root.addWidget(self.model_dl_status)
         self._refresh_model_section()
+        root.addWidget(QLabel("À propos"))
+        self.about_label = QLabel("\n".join(about_lines()))
+        self.about_label.setObjectName("muted")
+        self.about_label.setWordWrap(True)
+        root.addWidget(self.about_label)
 
     @staticmethod
     def _human_mb(n: int) -> str:
