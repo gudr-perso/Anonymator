@@ -1,4 +1,4 @@
-from anonymator.user_rules import compile_pattern
+from anonymator.user_rules import compile_pattern, Rule, UserRules
 
 
 def test_simple_hash_is_digit():
@@ -41,10 +41,6 @@ def test_regex_mode_passthrough():
 
 def test_invalid_regex_returns_none():
     assert compile_pattern("regex", "A(\\d{7}") is None
-
-
-from pathlib import Path
-from anonymator.user_rules import Rule, UserRules
 
 
 def test_keep_matches_uses_enabled_rules():
