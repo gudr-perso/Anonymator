@@ -17,6 +17,13 @@ _PATTERNS = [
     (re.compile(r"\b\d{9}\b"), "SIREN", lambda v: luhn_is_valid(v)),
     (re.compile(r"\b[12]\s?\d{2}\s?\d{2}\s?(?:\d{2}|2[AB])\s?\d{3}\s?\d{3}\s?\d{2}\b"),
      "NIR", lambda v: nir_is_valid(v)),
+    (re.compile(
+        r"\b\d{1,4}(?:\s?(?:bis|ter|quater))?[,\s]+"
+        r"(?:rue|avenue|av|ave|bd|bld|boulevard|impasse|all[ée]e|allee|"
+        r"chemin|place|route|rte|quai|cours|passage|square|villa|voie|"
+        r"faubourg|fbg|sentier|r[ée]sidence|residence)\b[^\n]*",
+        re.IGNORECASE),
+     "ADDRESS", None),
     (re.compile(r"\b\d{5}\b"), "POSTAL_CODE",
      lambda v: postal_code_fr_is_plausible(v)),
     (re.compile(r"https?://[^\s]+"), "URL", None),
