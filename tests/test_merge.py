@@ -22,3 +22,11 @@ def test_longer_deterministic_iban_beats_contained_phone():
     iban = Entity("IBAN", "FR76 3000 6000 0112 3456 7890 189", 5, 38, "deterministic", 1.0)
     phone = Entity("PHONE", "0112 3456 78", 20, 32, "deterministic", 1.0)
     assert merge_entities([phone, iban]) == [iban]
+
+def test_forced_rule_wins_over_ner_overlap():
+    # une entité forcée (source="rule") doit survivre face à un NER chevauchant
+    forced = Entity("REGLE_INTERNE", "PRJ-2024", 0, 8, "rule", 1.0)
+    ner = Entity("ORG", "PRJ-2024", 0, 8, "ner", 0.95)
+    kept = merge_entities([ner, forced])
+    assert len(kept) == 1
+    assert kept[0].source == "rule"

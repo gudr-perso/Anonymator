@@ -6,8 +6,8 @@ def _overlaps(a: Entity, b: Entity) -> bool:
 
 
 def _rank(e: Entity) -> tuple:
-    # 1) déterministe prioritaire  2) plus grande confiance  3) span plus long
-    return (e.source == "deterministic", e.confidence, e.length)
+    # 1) déterministe ou règle utilisateur prioritaire  2) confiance  3) span long
+    return (e.source in ("deterministic", "rule"), e.confidence, e.length)
 
 
 def merge_entities(entities: list[Entity]) -> list[Entity]:
