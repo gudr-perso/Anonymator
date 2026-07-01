@@ -59,6 +59,9 @@ class NavCard(QFrame):
         if self._on_click:
             self._on_click()
 
+    def click(self):
+        self._emit()
+
     def mouseReleaseEvent(self, event):
         self._emit()
         super().mouseReleaseEvent(event)
