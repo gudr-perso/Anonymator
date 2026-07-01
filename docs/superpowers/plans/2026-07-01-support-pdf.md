@@ -1958,6 +1958,13 @@ git commit -m "build(pdf): hidden imports PyInstaller + README formats (.pdf act
 - **Seuil natif/scanné** (`MIN_CHARS_PER_PAGE = 10`) : à recalibrer si de vrais PDF natifs pauvres en texte sont rejetés à tort. Documenté dans `extract.py`.
 - **PDF mixtes** (certaines pages scannées) : v1 accepte le doc dès qu'**une** page a du texte ; les pages sans texte ne produisent aucune entité et ne sont pas caviardées (pas de plantage). Amélioration (avertissement explicite par page) remise à plus tard.
 
+### Suites v1 (revue finale — non bloquantes pour le merge)
+
+- **Mode texte ignore les décochages du panneau** : `anonymize_pdf_text` re-détecte indépendamment et masque **toutes** les entités `confirmed` de la page — il n'honore pas les cases décochées de la revue visuelle (qui, elles, pilotent le caviardage). Sens de l'écart : **sur**-masquage (une valeur décochée reste masquée dans le `.txt`) → direction *sûre* pour un outil de confidentialité (aucune fuite), mais surprise UX possible. À traiter : router le mode texte via l'ensemble retenu de la session (nécessite de rebaser les offsets par page sur le texte joint), ou l'expliciter dans l'UI.
+- **Caviardage synchrone sur le thread UI** : `PdfScreen.run_redact`/`run_text` s'exécutent dans le handler du bouton (le scan, lui, est threadé via `PdfScanWorker`). Sur un gros PDF multi-pages, `apply_redactions` + `save(garbage=4)` peut figer l'UI. À traiter : mirroir du pattern worker, ou au minimum `_set_busy(True)` + curseur d'attente autour de l'appel. Acceptable pour des PDF natifs de taille v1.
+- **`render_page_at` rouvre le document à chaque page** : le cache PNG (`_png_for`) évite les re-rendus d'une même page, mais chaque première vue de page rouvre/reparse tout le `fitz.Document`. O(pages) réouvertures en feuilletant un gros PDF. À traiter si la perf gêne : conserver un handle `fitz` ouvert. Acceptable en v1.
+- **API d'exclusion par occurrence non câblée** : `PdfReviewSession.set_occurrence_excluded`/`occurrences` (parité avec l'exclusion par cellule de `FileReviewSession`) sont implémentées et testées mais non exposées dans l'UI v1 (commentées comme réservées). À câbler si on ajoute un clic-sur-occurrence.
+
 ---
 
 ## Self-Review (effectuée)

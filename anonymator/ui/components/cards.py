@@ -60,6 +60,8 @@ class NavCard(QFrame):
             self._on_click()
 
     def click(self):
+        """Déclenche l'action comme un clic (alias public de _emit, façon
+        QAbstractButton.click) — pratique pour piloter la carte depuis les tests."""
         self._emit()
 
     def mouseReleaseEvent(self, event):

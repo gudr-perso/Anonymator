@@ -80,7 +80,11 @@ class PdfReviewSession:
         self._values_enabled[(etype, value)] = enabled
 
     def set_occurrence_excluded(self, page: int, occ_index: int, excluded: bool) -> None:
-        """Exclut une occurrence individuelle. occ_index = index dans occurrences()."""
+        """Exclut une occurrence individuelle. occ_index = index dans occurrences().
+
+        Réservé : parité avec l'exclusion par cellule de FileReviewSession. Pas
+        encore câblé dans l'UI (PdfScreen n'expose que type/valeur + zones
+        manuelles en v1) ; conservé pour un futur clic-sur-occurrence."""
         if excluded:
             self._excluded.add(occ_index)
         else:
