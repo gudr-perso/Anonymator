@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 from anonymator.textnorm import normalize
+from anonymator.user_rules import UserRules, Rule
 
 _TYPE_TO_NER_LABEL = {
     "PERSON": "personne",
@@ -14,10 +15,21 @@ _STOPLIST_PATH = Path(__file__).parent / "config" / "ner_stoplist.json"
 class Referential:
     def __init__(self, entries: list[dict],
                  overrides: dict[str, bool] | None = None,
-                 stoplist: list[str] | None = None):
+                 stoplist: list[str] | None = None,
+                 user_rules: UserRules | None = None):
         self._by_code = {e["code"]: e for e in entries}
         self._overrides = overrides or {}
         self._stoplist = stoplist or []
+        self.user_rules = user_rules or self._seed_rules_from_stoplist()
+
+    def _seed_rules_from_stoplist(self) -> UserRules:
+        return UserRules([Rule("simple", t, "keep", True,
+                               "importé de la liste d'exclusion")
+                          for t in self._stoplist])
+
+    def with_user_rules(self, user_rules: UserRules) -> "Referential":
+        return Referential(list(self._by_code.values()),
+                           self._overrides, self._stoplist, user_rules)
 
     @classmethod
     def load_default(cls, overrides: dict[str, bool] | None = None) -> "Referential":

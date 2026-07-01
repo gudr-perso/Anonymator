@@ -56,3 +56,29 @@ def test_sensitivity_for():
     assert ref.sensitivity_for("PERSON") == "Haute"
     assert ref.sensitivity_for("POSTAL_CODE") == "Basse"
     assert ref.sensitivity_for("INCONNU") == "Basse"
+
+
+from anonymator.user_rules import UserRules, Rule
+
+
+def test_regle_interne_tag_resolves():
+    ref = Referential.load_default()
+    assert ref.tag_for("REGLE_INTERNE") == "[REGLE-INTERNE]"
+
+
+def test_regle_interne_not_in_ner_or_deterministic():
+    ref = Referential.load_default()
+    assert "REGLE_INTERNE" not in ref.active_deterministic_types()
+    assert set(ref.active_ner_labels()) == {"personne", "adresse postale", "organisation"}
+
+
+def test_default_seeds_user_rules_from_stoplist():
+    ref = Referential.load_default()
+    assert ref.user_rules.keep_matches("service client")
+
+
+def test_with_user_rules_replaces_ruleset():
+    ref = Referential.load_default().with_user_rules(
+        UserRules([Rule("simple", "PRJ-*", "mask", True, "")]))
+    assert not ref.user_rules.keep_matches("service client")
+    assert [r.pattern for r, _ in ref.user_rules.mask_rules()] == ["PRJ-*"]

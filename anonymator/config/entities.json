@@ -13,6 +13,7 @@
     {"code": "POSTAL_CODE", "label": "Code postal",  "method": "deterministic","active": false, "tag": "[CP]",   "sensitivity": "Basse"},
     {"code": "URL",     "label": "URL",           "method": "deterministic","active": false, "tag": "[URL]",      "sensitivity": "Basse"},
     {"code": "LOGIN",    "label": "Identifiant",  "method": "contextual",   "active": true,  "tag": "[LOGIN]",   "sensitivity": "Haute"},
-    {"code": "PASSWORD", "label": "Mot de passe", "method": "contextual",   "active": true,  "tag": "[SECRET]",  "sensitivity": "Haute"}
+    {"code": "PASSWORD", "label": "Mot de passe", "method": "contextual",   "active": true,  "tag": "[SECRET]",  "sensitivity": "Haute"},
+    {"code": "REGLE_INTERNE", "label": "Règle interne", "method": "rule", "active": true, "tag": "[REGLE-INTERNE]", "sensitivity": "Moyenne"}
   ]
 }
