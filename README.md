@@ -70,3 +70,19 @@ Détecte et remplace les données personnelles (noms, emails, IBAN, numéros de 
 | Fichier CSV mal parsé | Vérifier encodage (Latin-1/UTF-8) et séparateur |
 | `.pdf` refusé | Non supporté en v1 |
 | Nom manqué lors de la détection | Ajouter manuellement via la sélection de texte (mode Texte) |
+
+---
+
+## Licence
+
+Anonymator est distribué sous licence **AGPL-3.0** — voir [LICENSE](LICENSE).
+
+Le code source complet est disponible sur
+<https://github.com/gudr-perso/Anonymator>. Chaque version distribuée correspond à
+un tag `vX.Y.Z` du dépôt : le binaire livré correspond exactement au source publié
+sous ce tag (AGPL art. 6).
+
+Attributions :
+
+- Embarque **PyMuPDF** © Artifex Software — AGPL-3.0.
+- Embarque **GLiNER** — modèle `urchade/gliner_multi-v2.1`, Apache-2.0 (usage commercial autorisé).
