@@ -42,3 +42,21 @@ def test_navcards_still_callable_with_defaults(qtbot):
     qtbot.addWidget(h)
     h.btn_text._emit(); h.btn_file._emit(); h.btn_settings._emit()
     assert calls == ["t", "f", "s"]
+
+
+def test_rules_card_triggers_callback(qtbot):
+    clicked = []
+    h = HomeScreen(lambda: None, lambda: None, lambda: None,
+                   on_rules=lambda: clicked.append(True))
+    qtbot.addWidget(h)
+    h.btn_rules.click()
+    assert clicked
+
+
+def test_about_card_triggers_callback(qtbot):
+    clicked = []
+    h = HomeScreen(lambda: None, lambda: None, lambda: None,
+                   on_about=lambda: clicked.append(True))
+    qtbot.addWidget(h)
+    h.btn_about.click()
+    assert clicked
