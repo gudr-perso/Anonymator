@@ -12,6 +12,8 @@ from anonymator.ui.text_screen import TextScreen
 from anonymator.ui.file_screen import FileScreen
 from anonymator.ui.pdf_screen import PdfScreen
 from anonymator.ui.settings_screen import SettingsScreen
+from anonymator.ui.rules_screen import RulesScreen
+from anonymator.ui.about_screen import AboutScreen
 from anonymator.core.model_status import is_model_available
 
 _ASSETS = Path(__file__).parent / "assets"
@@ -39,7 +41,8 @@ class MainWindow(QMainWindow):
         self.home = HomeScreen(self.show_text, self.show_file, self.show_settings,
                                model_available=is_model_available(),
                                on_download=self._request_model,
-                               on_pdf=self.show_pdf)
+                               on_pdf=self.show_pdf,
+                               on_rules=self.show_rules, on_about=self.show_about)
         self.text_screen = TextScreen(self.ref, self.loader, self.prefs,
                                       self.show_home, on_request_model=self._request_model)
         self.file_screen = FileScreen(self.ref, self.loader, self.prefs,
@@ -48,10 +51,12 @@ class MainWindow(QMainWindow):
         self.pdf_screen = PdfScreen(self.ref, self.loader, self.prefs,
                                     self.show_home, on_request_model=self._request_model)
         self.settings_screen = SettingsScreen(self.ref, self.prefs,
-                                              self._apply_prefs, self.show_home,
-                                              rules_path=self.rules_path)
+                                              self._apply_prefs, self.show_home)
+        self.rules_screen = RulesScreen(self.rules_path, self._apply_prefs, self.show_home)
+        self.about_screen = AboutScreen(self.show_home)
         for w in (self.home, self.text_screen, self.file_screen,
-                  self.pdf_screen, self.settings_screen):
+                  self.pdf_screen, self.settings_screen,
+                  self.rules_screen, self.about_screen):
             self.stack.addWidget(w)
 
         self.settings_screen.model_ready.connect(self._on_model_ready)
@@ -114,3 +119,9 @@ class MainWindow(QMainWindow):
 
     def show_settings(self):
         self.stack.setCurrentWidget(self.settings_screen)
+
+    def show_rules(self):
+        self.stack.setCurrentWidget(self.rules_screen)
+
+    def show_about(self):
+        self.stack.setCurrentWidget(self.about_screen)

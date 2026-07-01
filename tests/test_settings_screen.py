@@ -28,24 +28,6 @@ def test_toggle_entity_type_updates_overrides(qtbot):
     assert prefs.entity_overrides["BIC"] is True and called
 
 
-def test_add_and_remove_rule(qtbot, tmp_path):
-    from anonymator.referential import Referential
-    from anonymator.ui.preferences import Preferences
-    from anonymator.ui.settings_screen import SettingsScreen
-    from anonymator.user_rules import UserRules
-    rules_path = tmp_path / "user_rules.json"
-    UserRules([]).save(rules_path)
-    prefs = Preferences()
-    s = SettingsScreen(Referential.load_default(), prefs,
-                       on_apply=lambda: None, on_back=lambda: None,
-                       rules_path=rules_path)
-    qtbot.addWidget(s)
-    s.add_rule(mode="simple", pattern="FACT#######", action="keep", note="factures")
-    assert s.user_rules.keep_matches("FACT1234567")
-    rule = s.user_rules.rules[0]
-    s.remove_rule(rule)
-    assert not s.user_rules.keep_matches("FACT1234567")
-
 
 def _settings(prefs=None):
     from anonymator.referential import Referential
@@ -86,10 +68,3 @@ def test_model_finished_emits_ready(qtbot):
         assert "installé" in s.model_status_label.text().lower()
 
 
-def test_settings_shows_about_section(qtbot):
-    import anonymator
-    s = _settings(); qtbot.addWidget(s)
-    text = s.about_label.text()
-    assert "AGPL-3.0" in text
-    assert f"Anonymator v{anonymator.__version__}" in text
-    assert "github.com/gudr-perso/Anonymator" in text
