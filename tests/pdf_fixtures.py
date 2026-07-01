@@ -28,6 +28,18 @@ def make_scanned_pdf(path: Path) -> Path:
     return path
 
 
+def make_layout_pdf(path: Path) -> Path:
+    """Deux colonnes horizontales + un bloc de marge pivoté (vertical)."""
+    doc = fitz.open()
+    page = doc.new_page()
+    page.insert_text((72, 120), "Titulaire GUILLAUME DROGLAND", fontsize=11)
+    page.insert_text((330, 120), "Montant total", fontsize=11)
+    page.insert_text((40, 400), "Vagram Paris Cedex", fontsize=9, rotate=90)
+    doc.save(str(path))
+    doc.close()
+    return path
+
+
 def make_encrypted_pdf(path: Path, password: str = "secret") -> Path:
     """PDF chiffré (mot de passe utilisateur)."""
     doc = fitz.open()
