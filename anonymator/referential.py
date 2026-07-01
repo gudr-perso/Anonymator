@@ -69,7 +69,3 @@ class Referential:
 
     def sensitivity_for(self, code: str) -> str:
         return self._by_code.get(code, {}).get("sensitivity", "Basse")
-
-    def with_stoplist(self, terms: list[str]) -> "Referential":
-        """Copie avec une stoplist remplacée (édition utilisateur)."""
-        return Referential(list(self._by_code.values()), self._overrides, terms)
