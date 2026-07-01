@@ -58,7 +58,8 @@ cohérent avec `TextScreen` / `FileScreen` / `PdfScreen`.
 - Deux `NavCard` ajoutées après « Paramètres » :
   - « Gestion des règles » / sous-titre « Règles métier » / icône `shield` →
     `on_rules`.
-  - « À propos » / sous-titre « À propos » / icône `sparkle` → `on_about`.
+  - « À propos » / sous-titre « Licence, version et mentions » / icône
+    `sparkle` → `on_about`.
 - Sous-titre de « Paramètres » reformulé : « Thème, dossier, types, modèle ».
 
 ### `anonymator/ui/main_window.py`
