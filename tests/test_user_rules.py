@@ -93,3 +93,49 @@ def test_save_then_load_roundtrip(tmp_path):
     original.save(path)
     reloaded = UserRules.load(path)
     assert reloaded.keep_matches("A0000015")
+
+
+from anonymator.model import Entity
+from anonymator.user_rules import detect_forced, apply_allow
+
+
+def test_detect_forced_emits_regle_interne_with_offsets():
+    rules = UserRules([Rule("simple", "PRJ-####", "mask", True, "projet")])
+    text = "dossier PRJ-2024 clos"
+    ents = detect_forced(text, rules)
+    assert len(ents) == 1
+    e = ents[0]
+    assert e.type == "REGLE_INTERNE"
+    assert e.source == "rule"
+    assert text[e.start:e.end] == "PRJ-2024"
+
+
+def test_detect_forced_multiple_occurrences():
+    rules = UserRules([Rule("simple", "PRJ-####", "mask", True, "")])
+    ents = detect_forced("PRJ-2024 et PRJ-2025", rules)
+    assert [e.value for e in ents] == ["PRJ-2024", "PRJ-2025"]
+
+
+def test_detect_forced_ignores_keep_rules():
+    rules = UserRules([Rule("simple", "A#######", "keep", True, "")])
+    assert detect_forced("A0000015", rules) == []
+
+
+def test_apply_allow_drops_matching_entities():
+    rules = UserRules([Rule("simple", "A#######", "keep", True, "")])
+    ents = [Entity("ADDRESS", "A0000015", 0, 8, "ner", 0.9),
+            Entity("PERSON", "Claire Martin", 20, 33, "ner", 0.9)]
+    kept = apply_allow(ents, rules)
+    assert [e.type for e in kept] == ["PERSON"]
+
+
+def test_keep_wins_over_mask_precedence():
+    # une valeur qui matche à la fois mask et keep est conservée en clair
+    rules = UserRules([
+        Rule("simple", "PRJ-*", "mask", True, ""),
+        Rule("simple", "PRJ-2024", "keep", True, ""),
+    ])
+    forced = detect_forced("PRJ-2024", rules)
+    assert len(forced) == 1                       # le forçage a bien matché
+    kept = apply_allow(forced, rules)
+    assert kept == []                             # mais keep a le dernier mot

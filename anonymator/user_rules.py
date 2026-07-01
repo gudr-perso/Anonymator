@@ -3,6 +3,8 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
+from anonymator.model import Entity
+
 
 def compile_pattern(mode: str, pattern: str) -> "re.Pattern | None":
     """Traduit un motif utilisateur en regex ancrée (fullmatch), casse ignorée.
@@ -93,3 +95,20 @@ class UserRules:
         path.write_text(json.dumps({"rules": self.to_dicts()},
                                    ensure_ascii=False, indent=2),
                         encoding="utf-8")
+
+
+def detect_forced(text: str, rules: UserRules) -> list[Entity]:
+    """Émet une entité REGLE_INTERNE par occurrence d'un motif action=mask."""
+    out: list[Entity] = []
+    for _rule, pat in rules.mask_rules():
+        for m in pat.finditer(text):
+            if m.start() == m.end():          # match vide (ex. '*') → ignoré
+                continue
+            out.append(Entity("REGLE_INTERNE", m.group(0),
+                              m.start(), m.end(), "rule", 1.0))
+    return out
+
+
+def apply_allow(entities: list[Entity], rules: UserRules) -> list[Entity]:
+    """Retire les entités dont la valeur correspond à une règle action=keep."""
+    return [e for e in entities if not rules.keep_matches(e.value)]
