@@ -28,18 +28,23 @@ def test_toggle_entity_type_updates_overrides(qtbot):
     assert prefs.entity_overrides["BIC"] is True and called
 
 
-def test_add_and_remove_stoplist_term(qtbot):
+def test_add_and_remove_rule(qtbot, tmp_path):
     from anonymator.referential import Referential
     from anonymator.ui.preferences import Preferences
     from anonymator.ui.settings_screen import SettingsScreen
+    from anonymator.user_rules import UserRules
+    rules_path = tmp_path / "user_rules.json"
+    UserRules([]).save(rules_path)
     prefs = Preferences()
     s = SettingsScreen(Referential.load_default(), prefs,
-                       on_apply=lambda: None, on_back=lambda: None)
+                       on_apply=lambda: None, on_back=lambda: None,
+                       rules_path=rules_path)
     qtbot.addWidget(s)
-    s.add_stop_term("service client")
-    assert "service client" in prefs.ner_stoplist
-    s.remove_stop_term("service client")
-    assert "service client" not in prefs.ner_stoplist
+    s.add_rule(mode="simple", pattern="FACT#######", action="keep", note="factures")
+    assert s.user_rules.keep_matches("FACT1234567")
+    rule = s.user_rules.rules[0]
+    s.remove_rule(rule)
+    assert not s.user_rules.keep_matches("FACT1234567")
 
 
 def _settings(prefs=None):

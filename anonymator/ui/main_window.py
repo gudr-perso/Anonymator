@@ -48,7 +48,8 @@ class MainWindow(QMainWindow):
         self.pdf_screen = PdfScreen(self.ref, self.loader, self.prefs,
                                     self.show_home, on_request_model=self._request_model)
         self.settings_screen = SettingsScreen(self.ref, self.prefs,
-                                              self._apply_prefs, self.show_home)
+                                              self._apply_prefs, self.show_home,
+                                              rules_path=self.rules_path)
         for w in (self.home, self.text_screen, self.file_screen,
                   self.pdf_screen, self.settings_screen):
             self.stack.addWidget(w)
