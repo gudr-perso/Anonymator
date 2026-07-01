@@ -21,5 +21,16 @@ def installed_size() -> int | None:
         return None
     d = model_cache_dir()
     blobs = d / "blobs"
-    base = blobs if blobs.exists() else d
-    return sum(p.stat().st_size for p in base.rglob("*") if p.is_file())
+    if blobs.exists():
+        blob_size = sum(p.stat().st_size for p in blobs.rglob("*") if p.is_file())
+        if blob_size:
+            return blob_size
+    # Windows sans lien symbolique : les fichiers réels sont copiés dans
+    # snapshots/ et blobs/ reste vide. On somme snapshots/ sans suivre les
+    # symlinks (pour éviter le double comptage sur les systèmes qui en ont).
+    snapshots = d / "snapshots"
+    return sum(
+        p.stat().st_size
+        for p in snapshots.rglob("*")
+        if p.is_file() and not p.is_symlink()
+    )

@@ -54,3 +54,15 @@ def test_installed_size_sums_blobs(tmp_path):
     (blobs / "b").write_bytes(b"y" * 50)
     with patch("anonymator.core.model_status.model_cache_dir", return_value=cache):
         assert installed_size() == 150
+
+
+def test_installed_size_falls_back_to_snapshots_when_blobs_empty(tmp_path):
+    # Windows sans lien symbolique : blobs/ vide, vrais fichiers dans snapshots/
+    from anonymator.core.model_status import installed_size
+    cache = tmp_path / "models--urchade--gliner_multi-v2.1"
+    snap = cache / "snapshots" / "abc"; snap.mkdir(parents=True)
+    (cache / "blobs").mkdir()  # existe mais vide
+    (snap / "model.safetensors").write_bytes(b"x" * 200)
+    (snap / "config.json").write_bytes(b"y" * 25)
+    with patch("anonymator.core.model_status.model_cache_dir", return_value=cache):
+        assert installed_size() == 225
