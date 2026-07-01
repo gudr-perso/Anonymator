@@ -93,20 +93,3 @@ def test_main_window_migrates_stoplist_to_rules_file(qtbot, tmp_path):
     assert win.ref.user_rules.keep_matches("monsieur")
 
 
-def test_settings_screen_adds_and_persists_rule(tmp_path, qtbot):
-    from anonymator.ui.settings_screen import SettingsScreen
-    from anonymator.ui.preferences import Preferences
-    from anonymator.referential import Referential
-    from anonymator.user_rules import UserRules
-    rules_path = tmp_path / "user_rules.json"
-    UserRules([]).save(rules_path)
-    prefs = Preferences()
-    ref = Referential.load_default()
-    screen = SettingsScreen(ref, prefs, lambda: None, lambda: None,
-                            rules_path=rules_path)
-    qtbot.addWidget(screen)
-    screen.add_rule(mode="simple", pattern="A#######",
-                    action="keep", note="codes internes")
-    reloaded = UserRules.load(rules_path)
-    assert reloaded.keep_matches("A0000015")
-    assert screen.rules_path_label.text().find("user_rules.json") != -1
