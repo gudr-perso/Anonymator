@@ -7,7 +7,7 @@ Statut : design validé
 
 Sur un même document PDF, des données identiques sont détectées à un
 endroit et pas à un autre — sur la même page comme d'une page à l'autre.
-Exemple : l'adresse « 16 RUE JEROME BONAPARTE » est surlignée dans le bloc
+Exemple : l'adresse « 16 RUE JEAN DUPONT » est surlignée dans le bloc
 « Lieu de consommation » mais pas dans un bloc isolé en haut de page,
 alors qu'elle figure bien dans la liste des entités détectées.
 
@@ -68,7 +68,7 @@ Un motif ajouté à `_PATTERNS` dans `anonymator/deterministic.py`, type
 - types de voie : rue, avenue/av, bd/boulevard, impasse, allée/allee,
   chemin, place, route, quai, cours, passage, square, villa,
   résidence/residence (liste extensible) ;
-- s'arrête au saut de ligne (`[^\n]*`) → capture « 16 RUE JEROME BONAPARTE »
+- s'arrête au saut de ligne (`[^\n]*`) → capture « 16 RUE JEAN DUPONT »
   seule ; le code postal reste géré par `POSTAL_CODE`, la ville par GLiNER ;
 - `confirmed=True` (pas de validateur) → coché par défaut.
 

@@ -40,8 +40,8 @@ Ajouter à la fin de `tests/test_deterministic.py` :
 
 ```python
 def test_detects_address_street_line():
-    assert ("ADDRESS", "16 RUE JEROME BONAPARTE") in types_at(
-        "16 RUE JEROME BONAPARTE")
+    assert ("ADDRESS", "16 RUE JEAN DUPONT") in types_at(
+        "16 RUE JEAN DUPONT")
 
 
 def test_detects_address_case_insensitive():
@@ -55,9 +55,9 @@ def test_detects_address_with_bis():
 
 
 def test_address_stops_at_newline():
-    vals = {v for (t, v) in types_at("16 RUE JEROME BONAPARTE\n91300 MASSY")
+    vals = {v for (t, v) in types_at("16 RUE JEAN DUPONT\n91300 MASSY")
             if t == "ADDRESS"}
-    assert "16 RUE JEROME BONAPARTE" in vals
+    assert "16 RUE JEAN DUPONT" in vals
 
 
 def test_postal_city_not_matched_as_address():
@@ -113,7 +113,7 @@ def make_layout_pdf(path: Path) -> Path:
     """Deux colonnes horizontales + un bloc de marge pivoté (vertical)."""
     doc = fitz.open()
     page = doc.new_page()
-    page.insert_text((72, 120), "Titulaire GUILLAUME DROGLAND", fontsize=11)
+    page.insert_text((72, 120), "Titulaire JEAN DUPONT", fontsize=11)
     page.insert_text((330, 120), "Montant total", fontsize=11)
     page.insert_text((40, 400), "Vagram Paris Cedex", fontsize=9, rotate=90)
     doc.save(str(path))
@@ -147,7 +147,7 @@ def test_extract_page_keeps_phrase_contiguous(tmp_path):
     doc = extract.open_document(p)
     pt = extract.extract_page(doc[0], 0)
     doc.close()
-    assert "GUILLAUME DROGLAND" in pt.text
+    assert "JEAN DUPONT" in pt.text
 
 
 def test_extract_page_relegates_vertical_margin(tmp_path):
@@ -276,12 +276,12 @@ def _seed(page, i0, i1, etype, value):
 def test_propagates_value_to_other_page():
     p0 = _page(0, ["Titulaire", "GUILLAUME", "DROGLAND"])
     p1 = _page(1, ["Client", "GUILLAUME", "DROGLAND", "ici"])
-    ent = _seed(p0, 1, 2, "PERSON", "GUILLAUME DROGLAND")
+    ent = _seed(p0, 1, 2, "PERSON", "JEAN DUPONT")
     out = propagate.propagate_across_pages([p0, p1], [[ent], []])
     hits = [e for e in out[1]
-            if e.type == "PERSON" and e.value == "GUILLAUME DROGLAND"]
+            if e.type == "PERSON" and e.value == "JEAN DUPONT"]
     assert len(hits) == 1
-    assert p1.text[hits[0].start:hits[0].end] == "GUILLAUME DROGLAND"
+    assert p1.text[hits[0].start:hits[0].end] == "JEAN DUPONT"
     assert hits[0].source == "propagated"
 
 
@@ -436,8 +436,8 @@ def make_repeat_pdf(path: Path) -> Path:
     """Une même phrase présente deux fois, sur deux lignes distinctes."""
     doc = fitz.open()
     page = doc.new_page()
-    page.insert_text((72, 100), "GUILLAUME DROGLAND habite ici", fontsize=11)
-    page.insert_text((72, 200), "Titulaire GUILLAUME DROGLAND", fontsize=11)
+    page.insert_text((72, 100), "JEAN DUPONT habite ici", fontsize=11)
+    page.insert_text((72, 200), "Titulaire JEAN DUPONT", fontsize=11)
     doc.save(str(path))
     doc.close()
     return path
@@ -467,9 +467,9 @@ class _OnceNer:
 
 def test_scan_pdf_propagates_missed_occurrence(tmp_path):
     src = make_repeat_pdf(tmp_path / "r.pdf")
-    pages = pdf_io.scan_pdf(src, _OnceNer("GUILLAUME DROGLAND", "PERSON"), _ref())
+    pages = pdf_io.scan_pdf(src, _OnceNer("JEAN DUPONT", "PERSON"), _ref())
     persons = [e for e in pages[0].entities
-               if e.type == "PERSON" and e.value == "GUILLAUME DROGLAND"]
+               if e.type == "PERSON" and e.value == "JEAN DUPONT"]
     assert len(persons) == 2
 ```
 
