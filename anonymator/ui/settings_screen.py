@@ -1,15 +1,20 @@
+from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
                                QLabel, QComboBox, QLineEdit, QFileDialog,
-                               QListWidget, QListWidgetItem, QScrollArea)
+                               QListWidget, QListWidgetItem, QScrollArea, QProgressBar)
 from anonymator.ui.components.header import HeaderBand
 from anonymator.ui.components.toggle import ToggleSwitch
 from anonymator.referential import Referential
+from anonymator.core.model_status import is_model_available, installed_size
+from anonymator.ui.download_worker import DownloadWorker
 
 _TYPES = ["PERSON", "ADDRESS", "ORG", "EMAIL", "PHONE", "IBAN", "BIC",
           "SIREN", "SIRET", "NIR", "POSTAL_CODE", "URL", "LOGIN", "PASSWORD"]
 
 
 class SettingsScreen(QWidget):
+    model_ready = Signal()
+
     def __init__(self, ref, prefs, on_apply, on_back):
         super().__init__()
         self.ref, self.prefs, self.on_apply = ref, prefs, on_apply
@@ -58,6 +63,86 @@ class SettingsScreen(QWidget):
         root.addLayout(add_row)
         self.stop_list = QListWidget(); root.addWidget(self.stop_list)
         self._reload_stoplist()
+
+        self._dl_worker: DownloadWorker | None = None
+        root.addWidget(QLabel("Modèle de détection (noms, adresses, organisations)"))
+        explain = QLabel(
+            "La détection intelligente des noms, adresses et organisations utilise "
+            "le modèle GLiNER (~300 Mo), téléchargé une seule fois puis utilisé hors ligne. "
+            "Sans lui, les détections par règles (IBAN, e-mail, téléphone, mots de passe…) "
+            "fonctionnent quand même.")
+        explain.setWordWrap(True); explain.setObjectName("muted")
+        root.addWidget(explain)
+        self.model_status_label = QLabel("")
+        root.addWidget(self.model_status_label)
+        self.model_location_label = QLabel(""); self.model_location_label.setObjectName("muted")
+        self.model_location_label.setWordWrap(True)
+        root.addWidget(self.model_location_label)
+        self.btn_model = QPushButton(""); self.btn_model.setObjectName("primary")
+        self.btn_model.clicked.connect(self.start_model_download)
+        root.addWidget(self.btn_model)
+        self.model_progress = QProgressBar(); self.model_progress.setVisible(False)
+        root.addWidget(self.model_progress)
+        self.model_dl_status = QLabel(""); self.model_dl_status.setObjectName("muted")
+        root.addWidget(self.model_dl_status)
+        self._refresh_model_section()
+
+    @staticmethod
+    def _human_mb(n: int) -> str:
+        return f"{n / (1024 * 1024):.0f} Mo"
+
+    def _refresh_model_section(self):
+        from anonymator.core.model_status import model_cache_dir
+        if is_model_available():
+            size = installed_size() or 0
+            self.model_status_label.setText(f"✅ Installé ({self._human_mb(size)})")
+            self.btn_model.setText("Réparer (re-télécharger)")
+        else:
+            self.model_status_label.setText("⬜ Non installé")
+            self.btn_model.setText("Télécharger")
+        self.model_location_label.setText(f"Emplacement : {model_cache_dir()}")
+
+    def start_model_download(self):
+        if self._dl_worker is not None and self._dl_worker.isRunning():
+            return
+        self.btn_model.setEnabled(False)
+        self.model_progress.setVisible(True)
+        self.model_progress.setRange(0, 0)
+        self.model_dl_status.setText("Démarrage…")
+        self._dl_worker = DownloadWorker()
+        self._dl_worker.progress.connect(self._on_model_progress)
+        self._dl_worker.status.connect(self.model_dl_status.setText)
+        self._dl_worker.download_finished.connect(self._on_model_finished)
+        self._dl_worker.error.connect(self._on_model_error)
+        self._dl_worker.finished.connect(self._dl_worker.deleteLater)
+        self._dl_worker.start()
+
+    def _on_model_progress(self, received: int, total: int):
+        if total > 0:
+            self.model_progress.setRange(0, total)
+            self.model_progress.setValue(received)
+            self.model_dl_status.setText(
+                f"{self._human_mb(received)} / {self._human_mb(total)} "
+                f"— {received * 100 // total} %")
+        else:
+            self.model_progress.setRange(0, 0)
+
+    def _on_model_finished(self):
+        self.model_progress.setVisible(False)
+        self.btn_model.setEnabled(True)
+        self._refresh_model_section()
+        self.model_dl_status.setText("Modèle prêt.")
+        self.model_ready.emit()
+
+    def _on_model_error(self, msg: str):
+        self.model_progress.setVisible(False)
+        self.btn_model.setEnabled(True)
+        self.model_dl_status.setText(f"Erreur : {msg}")
+
+    def closeEvent(self, event):
+        if self._dl_worker is not None and self._dl_worker.isRunning():
+            self._dl_worker.quit(); self._dl_worker.wait()
+        super().closeEvent(event)
 
     def select_theme(self, theme: str):
         self.prefs.theme = theme
