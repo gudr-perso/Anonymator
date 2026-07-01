@@ -10,7 +10,6 @@ from anonymator.files.pdf import pdf_io
 from anonymator.files.pdf.extract import (
     ScannedPdfNotSupported, EncryptedPdfError, CorruptPdfError)
 from anonymator.files.pdf.render import RENDER_ZOOM
-from anonymator.output_naming import anonymized_path
 from anonymator.files.anonymize_file import FileResult
 from anonymator.core.pdf_review_session import PdfReviewSession
 from anonymator.ui.pdf_scan_worker import PdfScanWorker
