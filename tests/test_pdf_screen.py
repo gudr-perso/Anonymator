@@ -24,6 +24,16 @@ def test_load_enables_analyze(qtbot, tmp_path):
     assert s.btn_review.isEnabled() is True
 
 
+def test_busy_overlay_toggles(qtbot):
+    s = _screen(); qtbot.addWidget(s); s.show()
+    assert s._overlay.isVisible() is False
+    s._set_busy(True)
+    assert s._overlay.isVisible() is True
+    assert s._overlay.text() == "⏳  Analyse en cours…"
+    s._set_busy(False)
+    assert s._overlay.isVisible() is False
+
+
 def test_analyze_builds_session_and_side(qtbot, tmp_path):
     src = make_native_pdf(tmp_path / "n.pdf", "Contact Claire Martin ici")
     s = _screen({"Claire Martin": "PERSON"}); qtbot.addWidget(s)

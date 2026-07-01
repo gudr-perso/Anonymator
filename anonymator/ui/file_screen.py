@@ -123,6 +123,17 @@ class FileScreen(QWidget):
         self.pager_widget = QWidget(); self.pager_widget.setLayout(self.pager); self.pager_widget.hide()
         root.addWidget(self.pager_widget)
 
+        # Voile "travail en cours" superposé (masqué par défaut)
+        self._overlay = QLabel("⏳  Analyse en cours…", self)
+        self._overlay.setObjectName("busyOverlay")
+        self._overlay.setAlignment(Qt.AlignCenter)
+        self._overlay.hide()
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if self._overlay.isVisible():
+            self._overlay.setGeometry(self.rect())
+
     # ---------- file-info meta ----------
     def _set_meta(self, status: str | None = None):
         if not self.path:
@@ -235,7 +246,13 @@ class FileScreen(QWidget):
         self.btn_review.setEnabled(not busy)
         self.btn_run.setEnabled(not busy)
         self.btn_open.setEnabled(not busy)
-        self.setCursor(Qt.BusyCursor if busy else Qt.ArrowCursor)
+        if busy:
+            self._overlay.setGeometry(self.rect())
+            self._overlay.raise_(); self._overlay.show()
+            self.setCursor(Qt.BusyCursor)
+        else:
+            self._overlay.hide()
+            self.setCursor(Qt.ArrowCursor)
         self._set_meta("analyse en cours…" if busy else None)
 
     def _on_scan_error(self, msg):

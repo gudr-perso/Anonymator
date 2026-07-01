@@ -116,6 +116,16 @@ def test_txt_routes_to_text_review(qtbot, tmp_path):
     assert called.get("text") == "Bonjour Claire"
 
 
+def test_busy_overlay_toggles(qtbot):
+    s = _screen(); qtbot.addWidget(s); s.show()
+    assert s._overlay.isVisible() is False
+    s._set_busy(True)
+    assert s._overlay.isVisible() is True
+    assert s._overlay.text() == "⏳  Analyse en cours…"
+    s._set_busy(False)
+    assert s._overlay.isVisible() is False
+
+
 def test_file_degraded_banner_when_model_absent(qtbot, tmp_path):
     src = tmp_path / "f.csv"
     src.write_bytes("Nom;IBAN\nClaire Martin;FR7630006000011234567890189\n".encode("cp1252"))
