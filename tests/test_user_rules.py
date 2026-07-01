@@ -1,4 +1,6 @@
-from anonymator.user_rules import compile_pattern, Rule, UserRules
+from anonymator.model import Entity
+from anonymator.user_rules import (compile_pattern, Rule, UserRules,
+                                   detect_forced, apply_allow)
 
 
 def test_simple_hash_is_digit():
@@ -93,10 +95,6 @@ def test_save_then_load_roundtrip(tmp_path):
     original.save(path)
     reloaded = UserRules.load(path)
     assert reloaded.keep_matches("A0000015")
-
-
-from anonymator.model import Entity
-from anonymator.user_rules import detect_forced, apply_allow
 
 
 def test_detect_forced_emits_regle_interne_with_offsets():
