@@ -2,9 +2,11 @@
 from datetime import datetime
 import fitz
 import pytest
-from tests.pdf_fixtures import make_native_pdf, make_scanned_pdf
+from tests.pdf_fixtures import (make_native_pdf, make_scanned_pdf,
+                                make_repeat_pdf)
 from anonymator.referential import Referential
 from anonymator.ner import FakeNer
+from anonymator.model import Entity
 from anonymator.files.pdf import pdf_io
 from anonymator.files.pdf.extract import ScannedPdfNotSupported
 
@@ -57,6 +59,26 @@ def _page_text(ps):
     """Reconstruit un PageText à partir d'un PageScan pour appeler mapping."""
     from anonymator.files.pdf.extract import PageText
     return PageText(ps.page_index, ps.text, ps.words)
+
+
+class _OnceNer:
+    """Ne détecte que la 1re occurrence de la surface (simule un miss GLiNER)."""
+    def __init__(self, surface, etype):
+        self._s, self._t = surface, etype
+
+    def detect(self, text, labels):
+        i = text.find(self._s)
+        if i < 0:
+            return []
+        return [Entity(self._t, self._s, i, i + len(self._s), "ner", 0.9, True)]
+
+
+def test_scan_pdf_propagates_missed_occurrence(tmp_path):
+    src = make_repeat_pdf(tmp_path / "r.pdf")
+    pages = pdf_io.scan_pdf(src, _OnceNer("GUILLAUME DROGLAND", "PERSON"), _ref())
+    persons = [e for e in pages[0].entities
+               if e.type == "PERSON" and e.value == "GUILLAUME DROGLAND"]
+    assert len(persons) == 2
 
 
 def test_render_page_at_returns_png(tmp_path):

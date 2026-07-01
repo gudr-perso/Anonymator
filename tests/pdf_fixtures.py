@@ -16,6 +16,17 @@ def make_native_pdf(path: Path, text: str = "Contact Claire Martin claire@exampl
     return path
 
 
+def make_repeat_pdf(path: Path) -> Path:
+    """Une même phrase présente deux fois, sur deux lignes distinctes."""
+    doc = fitz.open()
+    page = doc.new_page()
+    page.insert_text((72, 100), "GUILLAUME DROGLAND habite ici", fontsize=11)
+    page.insert_text((72, 200), "Titulaire GUILLAUME DROGLAND", fontsize=11)
+    doc.save(str(path))
+    doc.close()
+    return path
+
+
 def make_scanned_pdf(path: Path) -> Path:
     """PDF « scanné » : une page avec seulement une image, aucune couche texte."""
     doc = fitz.open()
