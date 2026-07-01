@@ -63,6 +63,10 @@ class Referential:
     def ner_stoplist(self) -> set[str]:
         return {normalize(t) for t in self._stoplist}
 
+    def stoplist_terms(self) -> list[str]:
+        """Termes bruts de la liste d'exclusion (avant normalisation)."""
+        return list(self._stoplist)
+
     def sensitivity_for(self, code: str) -> str:
         return self._by_code.get(code, {}).get("sensitivity", "Basse")
 

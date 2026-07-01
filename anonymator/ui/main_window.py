@@ -63,7 +63,7 @@ class MainWindow(QMainWindow):
         # migration one-shot : la stoplist (éditée ou par défaut) alimente user_rules.json
         fallback = self.prefs.ner_stoplist
         if fallback is None:
-            fallback = list(Referential.load_default()._stoplist)
+            fallback = ref.stoplist_terms()
         rules = UserRules.load(self.rules_path, fallback_terms=fallback)
         return ref.with_user_rules(rules)
 
