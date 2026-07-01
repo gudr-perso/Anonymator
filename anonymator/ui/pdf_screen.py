@@ -14,6 +14,7 @@ from anonymator.files.pdf.render import RENDER_ZOOM
 from anonymator.files.anonymize_file import FileResult
 from anonymator.core.pdf_review_session import PdfReviewSession
 from anonymator.ui.pdf_scan_worker import PdfScanWorker
+from anonymator.ui.model_loader import ModelLoader
 from anonymator.ui.pdf_canvas import PdfCanvas
 from anonymator.ui.colors import color_for
 from anonymator.ui.icons import icon
@@ -140,11 +141,28 @@ class PdfScreen(QWidget):
         self.path = Path(path)
         self.session = None
         self._png_cache = {}
+        self._page_count = 0
+        self.canvas.clear()
         self.side.hide(); self.pager_widget.hide()
         self.btn_zone.setChecked(False)
-        self.btn_review.setEnabled(self.path.suffix.lower() == ".pdf")
+        is_pdf = self.path.suffix.lower() == ".pdf"
+        self.btn_review.setEnabled(is_pdf)
         self.name_label.setText(self.path.name)
-        self.meta_label.setText("Fichier PDF — cliquez « Analyser »")
+        if not is_pdf:
+            self.meta_label.setText("Fichier PDF — cliquez « Analyser »")
+            return
+        # Aperçu immédiat (non caviardé, sans modèle) : confirme que le PDF est
+        # lisible et lève tout de suite corrompu/chiffré via un message explicite.
+        try:
+            self._page_count = pdf_io.page_count(self.path)
+            self.page = 0
+            self._render_page()
+            self.pager_widget.setVisible(self._page_count > 1)
+            self.meta_label.setText(
+                f"{self._page_count} page(s) — cliquez « Analyser » pour détecter")
+        except (CorruptPdfError, EncryptedPdfError) as e:
+            self.meta_label.setText("PDF non exploitable")
+            QMessageBox.warning(self, "PDF non exploitable", str(e))
 
     # ---------- analyse ----------
     def analyze(self):
@@ -153,9 +171,11 @@ class PdfScreen(QWidget):
         if not self.path:
             return
         self._degraded = not (self.loader.has_detector() or is_model_available())
-        ner = NullNer() if self._degraded else self.loader.get()
+        # Le détecteur est construit DANS le worker (pas ici, sur le thread UI) :
+        # une construction lente affiche l'overlay, un échec remonte via `error`.
+        loader = ModelLoader(NullNer()) if self._degraded else self.loader
         self._set_busy(True)
-        self._worker = PdfScanWorker(self.path, ner, self.ref)
+        self._worker = PdfScanWorker(self.path, loader, self.ref)
         self._worker.scan_finished.connect(self._on_scanned)
         self._worker.error.connect(self._on_scan_error)
         self._worker.finished.connect(self._worker.deleteLater)
@@ -238,11 +258,15 @@ class PdfScreen(QWidget):
         return self._png_cache[page_index]
 
     def _render_page(self):
-        if self.session is None:
+        if self.path is None or self._page_count == 0:
             return
         self.canvas.set_page(self._png_for(self.page), RENDER_ZOOM)
-        self.canvas.set_overlays(self.session.retained_entity_rects(self.page),
-                                 self.session.manual_rects(self.page))
+        # Avant analyse (session absente) : aperçu sans overlays.
+        if self.session is not None:
+            self.canvas.set_overlays(self.session.retained_entity_rects(self.page),
+                                     self.session.manual_rects(self.page))
+        else:
+            self.canvas.set_overlays([], [])
         self.lbl_page.setText(f"Page {self.page + 1} / {self._page_count}")
         self.btn_prev.setEnabled(self.page > 0)
         self.btn_next.setEnabled(self.page < self._page_count - 1)

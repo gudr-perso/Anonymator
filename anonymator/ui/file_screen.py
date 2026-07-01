@@ -12,12 +12,14 @@ from anonymator.output_naming import anonymized_path
 from anonymator.files.columns import default_maskable_columns
 from anonymator.core.file_review_session import FileReviewSession
 from anonymator.ui.file_scan_worker import FileScanWorker
+from anonymator.ui.file_anonymize_worker import FileAnonymizeWorker
 from anonymator.ui.colors import color_for
 from anonymator.ui.icons import icon
 from anonymator.ui.components.header import HeaderBand
 from anonymator.ui.components.cards import Card
 from anonymator.core.model_status import is_model_available
 from anonymator.ner import NullNer
+from anonymator.ui.model_loader import ModelLoader
 from anonymator.ui.components.banner import ModelBanner
 
 PAGE_SIZE = 20
@@ -42,6 +44,7 @@ class FileScreen(QWidget):
         self._busy = False
         self._degraded = False
         self._worker: FileScanWorker | None = None
+        self._anon_worker: FileAnonymizeWorker | None = None
 
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0); root.setSpacing(0)
@@ -221,11 +224,39 @@ class FileScreen(QWidget):
             QMessageBox.information(self, "Aucun fichier",
                                     "Ouvrez d'abord un fichier à anonymiser.")
             return
-        result = self.run()
-        if result is not None:
-            QMessageBox.information(
-                self, "Fichier anonymisé",
-                f"Fichier enregistré :\n{result.output_path}")
+        if self.session is not None:
+            # Revue déjà faite : masquage synchrone (léger, aucun modèle requis).
+            result = self.run()
+            if result is not None:
+                QMessageBox.information(
+                    self, "Fichier anonymisé",
+                    f"Fichier enregistré :\n{result.output_path}")
+            return
+        # Sans revue : construction du détecteur + anonymisation hors thread UI
+        # (overlay pendant le chargement, échec remonté via `error`).
+        if self._anon_worker and self._anon_worker.isRunning():
+            return
+        out_dir = Path(self.prefs.output_dir) if self.prefs.output_dir else self.path.parent
+        self._degraded = not (self.loader.has_detector() or is_model_available())
+        loader = ModelLoader(NullNer()) if self._degraded else self.loader
+        self._set_busy(True)
+        self._anon_worker = FileAnonymizeWorker(
+            self.path, loader, self.ref, out_dir, datetime.now())
+        self._anon_worker.done.connect(self._on_anonymized)
+        self._anon_worker.error.connect(self._on_run_error)
+        self._anon_worker.finished.connect(self._anon_worker.deleteLater)
+        self._anon_worker.start()
+
+    def _on_anonymized(self, result):
+        self._set_busy(False)
+        self.banner.setVisible(self._degraded)
+        QMessageBox.information(
+            self, "Fichier anonymisé",
+            f"Fichier enregistré :\n{result.output_path}")
+
+    def _on_run_error(self, msg):
+        self._set_busy(False)
+        QMessageBox.warning(self, "Anonymisation impossible", msg)
 
     # ---------- review mode ----------
     def analyze(self):
@@ -242,9 +273,11 @@ class FileScreen(QWidget):
         cols = default_maskable_columns(self.doc.rows, self.doc.has_header)
         self._cols = cols
         self._degraded = not (self.loader.has_detector() or is_model_available())
-        ner = NullNer() if self._degraded else self.loader.get()
+        # Le détecteur est construit DANS le worker (pas ici, sur le thread UI) :
+        # une construction lente affiche l'overlay, un échec remonte via `error`.
+        loader = ModelLoader(NullNer()) if self._degraded else self.loader
         self._set_busy(True)
-        self._worker = FileScanWorker(self.doc, ner, self.ref, cols)
+        self._worker = FileScanWorker(self.doc, loader, self.ref, cols)
         self._worker.scan_finished.connect(self._on_scanned)
         self._worker.error.connect(self._on_scan_error)
         self._worker.finished.connect(self._worker.deleteLater)

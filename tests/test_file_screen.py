@@ -15,13 +15,32 @@ def test_scan_worker_emits_result(qtbot, tmp_path):
     src.write_bytes("Nom;Montant\nClaire Martin;100,00\n".encode("cp1252"))
     doc = csv_io.read_csv(src)
     cols = default_maskable_columns(doc.rows, doc.has_header)
-    worker = FileScanWorker(doc, FakeNer({"Claire Martin": "PERSON"}),
+    worker = FileScanWorker(doc, ModelLoader(FakeNer({"Claire Martin": "PERSON"})),
                             Referential.load_default(), cols)
     with qtbot.waitSignal(worker.scan_finished, timeout=5000) as blocker:
         worker.start()
     worker.wait()           # ensure thread finishes before teardown
     scanned = blocker.args[0]
     assert (1, 0) in scanned
+
+
+def test_scan_worker_emits_error_when_detector_load_fails(qtbot, tmp_path):
+    """Le détecteur est construit DANS le thread : un échec de chargement
+    remonte via `error` au lieu d'exploser en silence sur le thread principal."""
+    src = tmp_path / "f.csv"
+    src.write_bytes("Nom;Montant\nClaire Martin;100,00\n".encode("cp1252"))
+    doc = csv_io.read_csv(src)
+    cols = default_maskable_columns(doc.rows, doc.has_header)
+
+    class BoomLoader:
+        def get(self):
+            raise RuntimeError("échec chargement modèle")
+
+    worker = FileScanWorker(doc, BoomLoader(), Referential.load_default(), cols)
+    with qtbot.waitSignal(worker.error, timeout=5000) as blocker:
+        worker.start()
+    worker.wait()
+    assert "échec chargement modèle" in blocker.args[0]
 
 
 def _screen(loader_map=None):
@@ -94,6 +113,48 @@ def test_run_on_csv_writes_output(qtbot, tmp_path):
     assert result.output_path.exists()
     out = result.output_path.read_bytes().decode("cp1252")
     assert "[PERSONNE]" in out and "Claire Martin" not in out
+
+
+def test_run_clicked_without_session_threads_and_confirms(qtbot, tmp_path):
+    """Sans analyse préalable (pas de session), « Anonymiser » passe par un
+    worker : overlay affiché, confirmation à la fin, fichier écrit."""
+    src = tmp_path / "f.csv"
+    src.write_bytes("Nom;Montant\nClaire Martin;100,00\n".encode("cp1252"))
+    loader = ModelLoader(FakeNer({"Claire Martin": "PERSON"}))
+    s = FileScreen(Referential.load_default(), loader,
+                   Preferences(output_dir=str(tmp_path)), on_back=lambda: None)
+    qtbot.addWidget(s)
+    s.load_path(str(src))
+    assert s.session is None
+    with patch("anonymator.ui.file_screen.QMessageBox.information") as info:
+        s._run_clicked()
+        qtbot.waitUntil(lambda: info.called, timeout=5000)
+    assert info.called
+    outs = list(tmp_path.glob("*_ano_*.csv"))
+    assert outs and outs[0].read_bytes().decode("cp1252").count("[PERSONNE]") == 1
+
+
+def test_run_clicked_surfaces_detector_load_failure(qtbot, tmp_path):
+    """Régression : un échec de chargement du modèle sur le chemin direct
+    affiche un dialogue explicite au lieu d'un plantage silencieux."""
+    src = tmp_path / "f.csv"
+    src.write_bytes("Nom;Montant\nClaire Martin;100,00\n".encode("cp1252"))
+
+    class BoomLoader:
+        def has_detector(self):
+            return True
+
+        def get(self):
+            raise RuntimeError("échec chargement modèle")
+
+    s = FileScreen(Referential.load_default(), BoomLoader(),
+                   Preferences(output_dir=str(tmp_path)), on_back=lambda: None)
+    qtbot.addWidget(s)
+    s.load_path(str(src))
+    with patch("anonymator.ui.file_screen.QMessageBox.warning") as warn:
+        s._run_clicked()
+        qtbot.waitUntil(lambda: warn.called, timeout=5000)
+    assert warn.called
 
 
 def test_review_disabled_for_xlsx(qtbot, tmp_path):

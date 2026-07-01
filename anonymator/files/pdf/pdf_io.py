@@ -103,6 +103,16 @@ def anonymize_pdf_redact(path: Path, rects_by_page: dict[int, list[Rect]],
     return out
 
 
+def page_count(path: Path) -> int:
+    """Nombre de pages, sans extraire le texte. Lève EncryptedPdfError /
+    CorruptPdfError si le document est inexploitable (via open_document)."""
+    doc = extract.open_document(path)
+    try:
+        return doc.page_count
+    finally:
+        doc.close()
+
+
 def render_page_at(path: Path, page_index: int,
                    zoom: float = render.RENDER_ZOOM) -> bytes:
     """Rend une page en PNG (pour l'aperçu de revue)."""

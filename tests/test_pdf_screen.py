@@ -3,7 +3,8 @@ from datetime import datetime
 from unittest.mock import patch
 import fitz
 from PySide6.QtWidgets import QMessageBox
-from tests.pdf_fixtures import make_native_pdf, make_scanned_pdf
+from tests.pdf_fixtures import (make_native_pdf, make_scanned_pdf,
+                                make_encrypted_pdf, make_repeat_pdf)
 from anonymator.referential import Referential
 from anonymator.ner import FakeNer
 from anonymator.ui.model_loader import ModelLoader
@@ -23,6 +24,45 @@ def test_load_enables_analyze(qtbot, tmp_path):
     s = _screen(); qtbot.addWidget(s)
     s.load_path(str(src))
     assert s.btn_review.isEnabled() is True
+
+
+def test_load_renders_preview_without_analysis(qtbot, tmp_path):
+    """Dès l'ouverture, l'aperçu (non caviardé) s'affiche — sans analyse ni
+    modèle. Le canevas a une page et aucun overlay."""
+    src = make_native_pdf(tmp_path / "n.pdf", "Contact Claire Martin ici")
+    s = _screen(); qtbot.addWidget(s)
+    s.load_path(str(src))
+    assert s.canvas.has_page() is True
+    assert s.canvas.overlay_count() == 0
+    assert s._page_count == 1
+
+
+def test_load_multipage_shows_pager(qtbot, tmp_path):
+    src = make_repeat_pdf(tmp_path / "r.pdf")   # 1 page ; on garde le pager caché
+    s = _screen(); qtbot.addWidget(s); s.show()
+    s.load_path(str(src))
+    assert s.canvas.has_page() is True
+    assert s.pager_widget.isVisible() is (s._page_count > 1)
+
+
+def test_load_corrupt_pdf_shows_error_immediately(qtbot, tmp_path):
+    """Un PDF illisible affiche le message d'erreur dès l'ouverture, sans
+    attendre « Analyser »."""
+    bad = tmp_path / "bad.pdf"
+    bad.write_bytes(b"%PDF-1.4 ceci n'est pas un vrai PDF")
+    s = _screen(); qtbot.addWidget(s)
+    with patch("anonymator.ui.pdf_screen.QMessageBox.warning") as warn:
+        s.load_path(str(bad))
+    assert warn.called
+    assert s.canvas.has_page() is False
+
+
+def test_load_encrypted_pdf_shows_error_immediately(qtbot, tmp_path):
+    src = make_encrypted_pdf(tmp_path / "e.pdf")
+    s = _screen(); qtbot.addWidget(s)
+    with patch("anonymator.ui.pdf_screen.QMessageBox.warning") as warn:
+        s.load_path(str(src))
+    assert warn.called
 
 
 def test_busy_overlay_toggles(qtbot):
@@ -129,6 +169,29 @@ def test_manual_rect_added_to_session(qtbot, tmp_path):
     qtbot.waitUntil(lambda: s.session is not None, timeout=5000)
     s._on_manual_rect((300.0, 300.0, 360.0, 330.0))
     assert (300.0, 300.0, 360.0, 330.0) in s.session.manual_rects(0)
+
+
+def test_analyze_surfaces_detector_load_failure(qtbot, tmp_path):
+    """Régression du bug « rien ne se passe » : si le chargement du modèle
+    échoue, un dialogue explicite s'affiche au lieu d'un plantage silencieux."""
+    src = make_native_pdf(tmp_path / "n.pdf", "Contact Claire Martin ici")
+
+    class BoomLoader:
+        def has_detector(self):
+            return True
+
+        def get(self):
+            raise RuntimeError("échec chargement modèle")
+
+    from anonymator.ui.preferences import Preferences
+    s = PdfScreen(Referential.load_default(), BoomLoader(), Preferences(),
+                  on_back=lambda: None)
+    qtbot.addWidget(s)
+    s.load_path(str(src))
+    with patch("anonymator.ui.pdf_screen.QMessageBox.warning") as warn:
+        s.analyze()
+        qtbot.waitUntil(lambda: warn.called, timeout=5000)
+    assert warn.called
 
 
 def test_scanned_pdf_shows_error(qtbot, tmp_path):

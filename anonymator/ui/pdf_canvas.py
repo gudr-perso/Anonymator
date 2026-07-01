@@ -36,6 +36,13 @@ class PdfCanvas(QGraphicsView):
     def has_page(self) -> bool:
         return self._pixmap_item is not None
 
+    def clear(self) -> None:
+        """Vide le canevas (aucune page, aucun overlay)."""
+        self._scene.clear()
+        self._pixmap_item = None
+        self._overlay_items = []
+        self._rubber = None
+
     def overlay_count(self) -> int:
         return len(self._overlay_items)
 
