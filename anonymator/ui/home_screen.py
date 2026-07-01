@@ -34,7 +34,8 @@ class HeroPanel(QWidget):
 
 class HomeScreen(QWidget):
     def __init__(self, on_text, on_file, on_settings,
-                 model_available: bool = True, on_download=None, on_dismiss=None):
+                 model_available: bool = True, on_download=None, on_dismiss=None,
+                 on_pdf=None):
         super().__init__()
         self._on_dismiss = on_dismiss
         root = QHBoxLayout(self)
@@ -95,9 +96,11 @@ class HomeScreen(QWidget):
                                 "Analyser et masquer un texte collé", on_click=on_text)
         self.btn_file = NavCard("folder", "Importer un fichier",
                                 ".txt, .csv ou .xlsx", on_click=on_file)
+        self.btn_pdf = NavCard("document", "Importer un PDF",
+                               "Caviarder ou extraire (PDF natifs)", on_click=on_pdf)
         self.btn_settings = NavCard("settings", "Paramètres",
                                     "Règles de détection & masquage", on_click=on_settings)
-        for c in (self.btn_text, self.btn_file, self.btn_settings):
+        for c in (self.btn_text, self.btn_file, self.btn_pdf, self.btn_settings):
             rv.addWidget(c)
         rv.addStretch()
 

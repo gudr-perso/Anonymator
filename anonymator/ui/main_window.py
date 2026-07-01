@@ -9,6 +9,7 @@ from anonymator.ui.model_loader import ModelLoader
 from anonymator.ui.home_screen import HomeScreen
 from anonymator.ui.text_screen import TextScreen
 from anonymator.ui.file_screen import FileScreen
+from anonymator.ui.pdf_screen import PdfScreen
 from anonymator.ui.settings_screen import SettingsScreen
 from anonymator.core.model_status import is_model_available
 
@@ -35,15 +36,19 @@ class MainWindow(QMainWindow):
 
         self.home = HomeScreen(self.show_text, self.show_file, self.show_settings,
                                model_available=is_model_available(),
-                               on_download=self._request_model)
+                               on_download=self._request_model,
+                               on_pdf=self.show_pdf)
         self.text_screen = TextScreen(self.ref, self.loader, self.prefs,
                                       self.show_home, on_request_model=self._request_model)
         self.file_screen = FileScreen(self.ref, self.loader, self.prefs,
                                       self.show_home, on_text_review=self._review_text,
                                       on_request_model=self._request_model)
+        self.pdf_screen = PdfScreen(self.ref, self.loader, self.prefs,
+                                    self.show_home, on_request_model=self._request_model)
         self.settings_screen = SettingsScreen(self.ref, self.prefs,
                                               self._apply_prefs, self.show_home)
-        for w in (self.home, self.text_screen, self.file_screen, self.settings_screen):
+        for w in (self.home, self.text_screen, self.file_screen,
+                  self.pdf_screen, self.settings_screen):
             self.stack.addWidget(w)
 
         self.settings_screen.model_ready.connect(self._on_model_ready)
@@ -65,6 +70,7 @@ class MainWindow(QMainWindow):
         self.ref = self._build_ref()
         self.text_screen.ref = self.ref
         self.file_screen.ref = self.ref
+        self.pdf_screen.ref = self.ref
         self._apply_theme()
 
     def _request_model(self):
@@ -75,6 +81,7 @@ class MainWindow(QMainWindow):
         self.home.set_model_available(True)
         self.text_screen.hide_degraded()
         self.file_screen.hide_degraded()
+        self.pdf_screen.hide_degraded()
 
     def closeEvent(self, event):
         # SettingsScreen est un enfant du QStackedWidget : son closeEvent ne se
@@ -95,6 +102,9 @@ class MainWindow(QMainWindow):
 
     def show_file(self):
         self.stack.setCurrentWidget(self.file_screen)
+
+    def show_pdf(self):
+        self.stack.setCurrentWidget(self.pdf_screen)
 
     def show_settings(self):
         self.stack.setCurrentWidget(self.settings_screen)
