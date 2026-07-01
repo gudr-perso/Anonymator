@@ -1,4 +1,3 @@
-import re
 from anonymator.user_rules import compile_pattern
 
 
