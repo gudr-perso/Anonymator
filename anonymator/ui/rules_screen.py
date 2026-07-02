@@ -5,8 +5,10 @@ from pathlib import Path
 
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
                                QLabel, QComboBox, QLineEdit,
-                               QListWidget, QListWidgetItem)
+                               QTableWidget, QHeaderView, QAbstractItemView)
 from anonymator.ui.components.header import HeaderBand
+from anonymator.ui.components.nav_band import NavBand
+from anonymator.ui.components.cards import Card
 from anonymator.user_rules import UserRules, Rule, compile_pattern
 
 
@@ -17,15 +19,13 @@ class RulesScreen(QWidget):
         self.on_apply = on_apply
         self.user_rules = UserRules.load(rules_path) if rules_path else UserRules([])
 
-        root = QVBoxLayout(self)
+        root = QVBoxLayout(self); root.setContentsMargins(0, 0, 0, 0); root.setSpacing(0)
         root.addWidget(HeaderBand())
-        nav = QHBoxLayout()
-        back = QPushButton("Accueil"); back.setObjectName("ghost")
-        back.clicked.connect(on_back)
-        nav.addWidget(back); nav.addWidget(QLabel("Gestion des règles")); nav.addStretch()
-        root.addLayout(nav)
+        root.addWidget(NavBand("Gestion des règles", "layers", on_home=on_back))
+        body = QVBoxLayout(); body.setContentsMargins(40, 24, 40, 16); body.setSpacing(16)
+        wrap = QWidget(); wrap.setLayout(body); root.addWidget(wrap)
 
-        root.addWidget(QLabel("Règles métier"))
+        title = QLabel("Règles métier"); title.setObjectName("title")
         help_rules = QLabel(
             "Définissez vos propres règles. « Ne jamais masquer » protège une "
             "codification interne (ex. A####### = A + 7 chiffres, FACT.* = "
@@ -33,22 +33,42 @@ class RulesScreen(QWidget):
             "[REGLE-INTERNE]. Mode simple : # = un chiffre, ? = un caractère, "
             "* = n'importe quoi. Mode expert : expression régulière.")
         help_rules.setWordWrap(True); help_rules.setObjectName("muted")
-        root.addWidget(help_rules)
+        body.addWidget(title); body.addWidget(help_rules)
 
-        add_rule_row = QHBoxLayout()
+        # --- Carte barre d'ajout ---
+        add_card = Card("sparkle", "Nouvelle règle")
+        add_row = QHBoxLayout()
         self.rule_pattern = QLineEdit(); self.rule_pattern.setPlaceholderText("Motif, ex. A#######")
         self.rule_mode = QComboBox(); self.rule_mode.addItems(["simple", "expert"])
         self.rule_action = QComboBox(); self.rule_action.addItems(["Ne jamais masquer", "Toujours masquer"])
         self.rule_note = QLineEdit(); self.rule_note.setPlaceholderText("Note (optionnel)")
-        btn_add_rule = QPushButton("Ajouter"); btn_add_rule.setObjectName("secondary")
+        btn_add_rule = QPushButton("+ Ajouter"); btn_add_rule.setObjectName("primary")
         btn_add_rule.clicked.connect(self._on_add_rule_clicked)
         for w in (self.rule_pattern, self.rule_mode, self.rule_action, self.rule_note, btn_add_rule):
-            add_rule_row.addWidget(w)
-        root.addLayout(add_rule_row)
+            add_row.addWidget(w)
+        add_card.body.addLayout(add_row)
         self.rule_error = QLabel(""); self.rule_error.setObjectName("muted")
-        root.addWidget(self.rule_error)
-        self.rules_list = QListWidget(); root.addWidget(self.rules_list)
+        add_card.body.addWidget(self.rule_error)
+        body.addWidget(add_card)
 
+        # --- Carte table ---
+        table_card = Card("layers", "Règles définies")
+        self.count_badge = QLabel(""); self.count_badge.setObjectName("occBadge")
+        table_card.head.addWidget(self.count_badge)
+        self.rules_table = QTableWidget(0, 5)
+        self.rules_table.setHorizontalHeaderLabels(["MOTIF", "MODE", "ACTION", "NOTE", ""])
+        self.rules_table.verticalHeader().setVisible(False)
+        self.rules_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.rules_table.setSelectionMode(QAbstractItemView.NoSelection)
+        hh = self.rules_table.horizontalHeader()
+        hh.setSectionResizeMode(0, QHeaderView.Stretch)
+        hh.setSectionResizeMode(3, QHeaderView.Stretch)
+        for c in (1, 2, 4):
+            hh.setSectionResizeMode(c, QHeaderView.ResizeToContents)
+        table_card.body.addWidget(self.rules_table)
+        body.addWidget(table_card)
+
+        # --- Pied ---
         path_row = QHBoxLayout()
         self.rules_path_label = QLabel(
             f"Fichier des règles : {self.rules_path}" if self.rules_path
@@ -57,21 +77,28 @@ class RulesScreen(QWidget):
         btn_open = QPushButton("Ouvrir le dossier"); btn_open.setObjectName("ghost")
         btn_open.clicked.connect(self._open_rules_folder)
         path_row.addWidget(self.rules_path_label); path_row.addStretch(); path_row.addWidget(btn_open)
-        root.addLayout(path_row)
+        body.addLayout(path_row)
         self._reload_rules()
 
     def _reload_rules(self):
-        self.rules_list.clear()
+        from PySide6.QtWidgets import QTableWidgetItem, QPushButton
+        from anonymator.ui.components.rule_action_badge import RuleActionBadge
+        from anonymator.ui.icons import icon
+        self.rules_table.setRowCount(0)
         for r in self.user_rules.rules:
-            sens = "garder" if r.action == "keep" else "masquer"
-            label = f"[{sens}] {r.pattern}  ({r.mode})" + (f" — {r.note}" if r.note else "")
-            host = QWidget(); h = QHBoxLayout(host); h.setContentsMargins(0, 0, 0, 0)
-            h.addWidget(QLabel(label)); h.addStretch()
-            x = QPushButton("✕"); x.setObjectName("ghost"); x.setFixedWidth(30)
-            x.clicked.connect(lambda _=False, rule=r: self.remove_rule(rule))
-            h.addWidget(x)
-            it = QListWidgetItem(); it.setSizeHint(host.sizeHint())
-            self.rules_list.addItem(it); self.rules_list.setItemWidget(it, host)
+            row = self.rules_table.rowCount()
+            self.rules_table.insertRow(row)
+            self.rules_table.setItem(row, 0, QTableWidgetItem(r.pattern))
+            mode_lbl = "SIMPLE" if r.mode == "simple" else "EXPERT"
+            self.rules_table.setItem(row, 1, QTableWidgetItem(mode_lbl))
+            self.rules_table.setCellWidget(row, 2, RuleActionBadge(r.action))
+            self.rules_table.setItem(row, 3, QTableWidgetItem(r.note or ""))
+            btn = QPushButton(); btn.setObjectName("ghost"); btn.setFixedWidth(34)
+            btn.setIcon(icon("trash", "#6B7C72", 16))
+            btn.clicked.connect(lambda _=False, rule=r: self.remove_rule(rule))
+            self.rules_table.setCellWidget(row, 4, btn)
+        self.count_badge.setText(f"{len(self.user_rules.rules)} règles")
+        self.rules_table.resizeRowsToContents()
 
     def _on_add_rule_clicked(self):
         mode = "simple" if self.rule_mode.currentText() == "simple" else "regex"
