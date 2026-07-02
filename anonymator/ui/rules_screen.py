@@ -81,7 +81,7 @@ class RulesScreen(QWidget):
         self._reload_rules()
 
     def _reload_rules(self):
-        from PySide6.QtWidgets import QTableWidgetItem, QPushButton
+        from PySide6.QtWidgets import QTableWidgetItem, QPushButton, QWidget, QHBoxLayout
         from anonymator.ui.components.rule_action_badge import RuleActionBadge
         from anonymator.ui.icons import icon
         self.rules_table.setRowCount(0)
@@ -91,7 +91,10 @@ class RulesScreen(QWidget):
             self.rules_table.setItem(row, 0, QTableWidgetItem(r.pattern))
             mode_lbl = "SIMPLE" if r.mode == "simple" else "EXPERT"
             self.rules_table.setItem(row, 1, QTableWidgetItem(mode_lbl))
-            self.rules_table.setCellWidget(row, 2, RuleActionBadge(r.action))
+            badge_cell = QWidget(); bl = QHBoxLayout(badge_cell)
+            bl.setContentsMargins(8, 4, 8, 4); bl.setSpacing(0)
+            bl.addWidget(RuleActionBadge(r.action)); bl.addStretch()
+            self.rules_table.setCellWidget(row, 2, badge_cell)
             self.rules_table.setItem(row, 3, QTableWidgetItem(r.note or ""))
             btn = QPushButton(); btn.setObjectName("ghost"); btn.setFixedWidth(34)
             btn.setIcon(icon("trash", "#6B7C72", 16))
