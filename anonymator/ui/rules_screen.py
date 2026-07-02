@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
 from anonymator.ui.components.header import HeaderBand
 from anonymator.ui.components.nav_band import NavBand
 from anonymator.ui.components.cards import Card
+from anonymator.ui.theme import color
 from anonymator.user_rules import UserRules, Rule, compile_pattern
 
 
@@ -105,7 +106,7 @@ class RulesScreen(QWidget):
             self.rules_table.setCellWidget(row, 2, badge_cell)
             self.rules_table.setItem(row, 3, QTableWidgetItem(r.note or ""))
             btn = QPushButton(); btn.setObjectName("ghost"); btn.setFixedWidth(34)
-            btn.setIcon(icon("trash", "#6B7C72", 16))
+            btn.setIcon(icon("trash", color("text_muted"), 16))
             btn.clicked.connect(lambda _=False, rule=r: self.remove_rule(rule))
             self.rules_table.setCellWidget(row, 4, btn)
         self.count_badge.setText(f"{len(self.user_rules.rules)} règles")
