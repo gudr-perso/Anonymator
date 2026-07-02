@@ -35,3 +35,47 @@ def test_qss_includes_card_and_header_styles():
     qss = build_qss("cuma")
     assert "#Card" in qss
     assert "HeaderBand" in qss
+
+
+def test_cuma_tokens_are_frozen():
+    """Garde-fou : CUMA ne doit jamais bouger (rendu identique au pixel)."""
+    from anonymator.ui.theme import THEMES
+    assert THEMES["cuma"] == {
+        "primary": "#31B700", "action": "#00965E", "dark": "#063b27",
+        "accent": "#E8621A", "accent_hover": "#C9500F", "bg": "#FFFFFF",
+        "text": "#10331F", "bg_hero": "#E8F3EA", "surface": "#FFFFFF",
+        "surface_alt": "#F3FAF4", "border": "#E2E8E4", "text_muted": "#6B7C72",
+        "info": "#4FA8D8", "info_hover": "#3D93C2",
+        "grid_bg": "#E8F3EA", "grid_line": "#E1EBE3",
+        "hero_text": "#10331F", "hero_muted": "#6B7C72",
+        "toggle_off": "#C7D2CC", "logo": "logo.png",
+    }
+
+
+def test_cap_has_same_keys_as_cuma():
+    from anonymator.ui.theme import THEMES
+    assert set(THEMES["cap"]) == set(THEMES["cuma"])
+
+
+def test_active_theme_getset():
+    from anonymator.ui.theme import (
+        set_active_theme, active_theme, DEFAULT_THEME)
+    try:
+        set_active_theme("cap")
+        assert active_theme() == "cap"
+        set_active_theme("inconnu")          # retombe sur le défaut
+        assert active_theme() == DEFAULT_THEME
+    finally:
+        set_active_theme(DEFAULT_THEME)
+
+
+def test_color_reads_active_theme():
+    from anonymator.ui.theme import set_active_theme, color, DEFAULT_THEME
+    try:
+        set_active_theme("cap")
+        assert color("action") == "#138fdb"
+        assert color("grid_bg") == "#0a1556"
+        assert color("action", "cuma") == "#00965E"   # override explicite
+    finally:
+        set_active_theme(DEFAULT_THEME)
+
