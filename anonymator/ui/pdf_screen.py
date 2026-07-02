@@ -19,6 +19,7 @@ from anonymator.ui.pdf_canvas import PdfCanvas
 from anonymator.ui.colors import color_for
 from anonymator.ui.icons import icon
 from anonymator.ui.components.header import HeaderBand
+from anonymator.ui.components.nav_band import NavBand
 from anonymator.ui.components.cards import Card
 from anonymator.ui.components.banner import ModelBanner
 from anonymator.core.model_status import is_model_available
@@ -44,6 +45,7 @@ class PdfScreen(QWidget):
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0); root.setSpacing(0)
         root.addWidget(HeaderBand())
+        root.addWidget(NavBand("PDF", "scan", on_home=on_back))
         self.banner = ModelBanner(on_install=self._request_model)
         root.addWidget(self.banner)
 

@@ -3,6 +3,8 @@ from PySide6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QLabel, QPushBu
 from PySide6.QtGui import QPainter, QPen, QColor, QPixmap
 from PySide6.QtCore import Qt
 from anonymator.ui.components.cards import NavCard
+from anonymator.ui.components.header import HeaderBand
+from anonymator.ui.components.nav_band import NavBand
 
 _HERO_BG = "#E8F3EA"
 _GRID = "#E1EBE3"
@@ -38,9 +40,16 @@ class HomeScreen(QWidget):
                  on_pdf=None, on_rules=None, on_about=None):
         super().__init__()
         self._on_dismiss = on_dismiss
-        root = QHBoxLayout(self)
+        root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
+        root.addWidget(HeaderBand())
+        root.addWidget(NavBand("Accueil", "home", on_home=None))
+
+        split_host = QWidget()
+        split = QHBoxLayout(split_host)
+        split.setContentsMargins(0, 0, 0, 0)
+        split.setSpacing(0)
 
         hero = HeroPanel()
         hv = QVBoxLayout(hero)
@@ -109,8 +118,9 @@ class HomeScreen(QWidget):
             rv.addWidget(c)
         rv.addStretch()
 
-        root.addWidget(hero, 5)
-        root.addWidget(right, 6)
+        split.addWidget(hero, 5)
+        split.addWidget(right, 6)
+        root.addWidget(split_host, 1)
 
     def _dismiss(self):
         self.model_card.setVisible(False)

@@ -10,6 +10,7 @@ from anonymator.ui.colors import color_for
 from anonymator.ui.icons import icon
 from anonymator.ui.text_analyze_worker import TextAnalyzeWorker
 from anonymator.ui.components.header import HeaderBand
+from anonymator.ui.components.nav_band import NavBand
 from anonymator.ui.components.cards import Card, StatCard
 from anonymator.ui.components.badge import CategoryBadge
 from anonymator.ui.components.toggle import ToggleSwitch
@@ -30,18 +31,9 @@ class TextScreen(QWidget):
 
         root = QVBoxLayout(self)
         root.addWidget(HeaderBand())
+        root.addWidget(NavBand("Texte", "document", on_home=on_back))
         self.banner = ModelBanner(on_install=self._request_model)
         root.addWidget(self.banner)
-
-        crumb = QWidget(); crumb.setObjectName("Crumb")
-        cb = QHBoxLayout(crumb); cb.setContentsMargins(4, 4, 4, 4); cb.setSpacing(4)
-        home_btn = QPushButton(" Accueil"); home_btn.setObjectName("crumb")
-        home_btn.setIcon(icon("home", "#6B7C72")); home_btn.clicked.connect(on_back)
-        txt_btn = QPushButton(" Texte"); txt_btn.setObjectName("crumbActive")
-        txt_btn.setIcon(icon("document", "#00965E"))
-        cb.addWidget(home_btn); cb.addWidget(txt_btn)
-        nav = QHBoxLayout(); nav.addWidget(crumb); nav.addStretch()
-        root.addLayout(nav)
 
         stats = QHBoxLayout()
         self.stat_detected = StatCard("shield", "Entités détectées")

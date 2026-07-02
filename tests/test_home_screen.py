@@ -1,5 +1,6 @@
 # tests/test_home_screen.py
 from anonymator.ui.home_screen import HomeScreen
+from anonymator.ui.components.nav_band import NavBand
 
 
 def _home(model_available, dl=None, later=None):
@@ -60,3 +61,8 @@ def test_about_card_triggers_callback(qtbot):
     qtbot.addWidget(h)
     h.btn_about.click()
     assert clicked
+
+
+def test_home_has_navband(qtbot):
+    h = _home(True); qtbot.addWidget(h)
+    assert h.findChild(NavBand) is not None
