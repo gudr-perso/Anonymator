@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 from anonymator.referential import Referential
 from anonymator.ui.preferences import Preferences
-from anonymator.ui.settings_screen import SettingsScreen
+from anonymator.ui.settings_screen import SettingsScreen, _TYPES
 
 
 def test_changing_theme_updates_prefs_and_calls_apply(qtbot):
@@ -16,10 +16,16 @@ def test_changing_theme_updates_prefs_and_calls_apply(qtbot):
     assert called  # on_apply déclenché → réapplique le QSS + sauvegarde
 
 
+def test_theme_combobox_selection_sets_prefs(qtbot):
+    prefs = Preferences()
+    s = SettingsScreen(Referential.load_default(), prefs,
+                       on_apply=lambda: None, on_back=lambda: None)
+    qtbot.addWidget(s)
+    s.theme_box.setCurrentText("CAP — bleu")
+    assert prefs.theme == "cap"
+
+
 def test_toggle_entity_type_updates_overrides(qtbot):
-    from anonymator.referential import Referential
-    from anonymator.ui.preferences import Preferences
-    from anonymator.ui.settings_screen import SettingsScreen
     prefs = Preferences(); called = []
     s = SettingsScreen(Referential.load_default(), prefs,
                        on_apply=lambda: called.append(True), on_back=lambda: None)
@@ -28,11 +34,38 @@ def test_toggle_entity_type_updates_overrides(qtbot):
     assert prefs.entity_overrides["BIC"] is True and called
 
 
+def test_one_entity_card_per_type(qtbot):
+    s = _settings()
+    qtbot.addWidget(s)
+    assert len(s._type_toggles) == len(_TYPES) == 14
+
+
+def test_count_badge_shows_active_count(qtbot):
+    s = _settings()
+    qtbot.addWidget(s)
+    n_active = sum(1 for code in _TYPES if s.ref.is_active(code))
+    assert s.count_badge.text() == f"{n_active} / 14 actifs"
+
+
+def test_toggling_a_type_via_toggle_widget_updates_prefs_and_apply(qtbot):
+    prefs = Preferences(); called = []
+    s = SettingsScreen(Referential.load_default(), prefs,
+                       on_apply=lambda: called.append(True), on_back=lambda: None)
+    qtbot.addWidget(s)
+    s._type_toggles["PERSON"].setChecked(False)
+    assert prefs.entity_overrides["PERSON"] is False
+    assert called
+
+
+def test_toggling_a_type_refreshes_counter(qtbot):
+    s = _settings()
+    qtbot.addWidget(s)
+    s._type_toggles["PERSON"].setChecked(True)
+    n_active = sum(1 for code in _TYPES if s.ref.is_active(code) or code == "PERSON")
+    assert s.count_badge.text() == f"{n_active} / 14 actifs"
+
 
 def _settings(prefs=None):
-    from anonymator.referential import Referential
-    from anonymator.ui.preferences import Preferences
-    from anonymator.ui.settings_screen import SettingsScreen
     return SettingsScreen(Referential.load_default(), prefs or Preferences(),
                           on_apply=lambda: None, on_back=lambda: None)
 
@@ -66,5 +99,3 @@ def test_model_finished_emits_ready(qtbot):
             s._on_model_finished()
         assert ready == [True]
         assert "installé" in s.model_status_label.text().lower()
-
-
