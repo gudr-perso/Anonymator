@@ -11,6 +11,7 @@ a = Analysis(
         ('anonymator/config/entities.json', 'anonymator/config'),
         ('anonymator/ui/assets/anonymator.ico', 'anonymator/ui/assets'),
         ('anonymator/ui/assets/logo.png', 'anonymator/ui/assets'),
+        ('anonymator/ui/assets/logo-cap.png', 'anonymator/ui/assets'),
         ('anonymator/ui/assets/picto.png', 'anonymator/ui/assets'),
         ('anonymator/ui/assets/icons', 'anonymator/ui/assets/icons'),
     ],
