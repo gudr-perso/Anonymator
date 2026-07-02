@@ -86,3 +86,11 @@ def test_color_reads_active_theme():
     finally:
         set_active_theme(DEFAULT_THEME)
 
+
+
+def test_pageinfo_uses_hero_text_readable_on_grid():
+    """Le libellé de pagination est posé sur le fond quadrillé (transparent) :
+    il doit suivre hero_text (blanc en CAP sur navy) et rester inchangé en CUMA."""
+    from anonymator.ui.theme import build_qss
+    assert "QLabel#pageInfo { color: #FFFFFF" in build_qss("cap")
+    assert "QLabel#pageInfo { color: #10331F" in build_qss("cuma")
