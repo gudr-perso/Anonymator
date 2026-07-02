@@ -9,7 +9,8 @@ THEMES = {
              "info": "#4FA8D8", "info_hover": "#3D93C2",
              "grid_bg": "#E8F3EA", "grid_line": "#E1EBE3",
              "hero_text": "#10331F", "hero_muted": "#6B7C72",
-             "toggle_off": "#C7D2CC", "logo": "logo.png"},
+             "toggle_off": "#C7D2CC", "logo": "logo.png",
+             "header_tag": "RÉSEAU CUMA"},
     "cap":  {"primary": "#2aa6e8", "action": "#138fdb", "dark": "#050c3f",
              "accent": "#f36100", "accent_hover": "#d15400", "bg": "#FFFFFF",
              "text": "#050c3f",
@@ -18,7 +19,8 @@ THEMES = {
              "info": "#2aa6e8", "info_hover": "#138fdb",
              "grid_bg": "#0a1556", "grid_line": "#1e2a63",
              "hero_text": "#FFFFFF", "hero_muted": "rgba(255,255,255,0.82)",
-             "toggle_off": "#C3CCE0", "logo": "logo-cap.png"},
+             "toggle_off": "#C3CCE0", "logo": "logo-cap.png",
+             "header_tag": ""},
 }
 
 _active_theme = DEFAULT_THEME

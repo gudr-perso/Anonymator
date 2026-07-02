@@ -49,7 +49,14 @@ def test_cuma_tokens_are_frozen():
         "grid_bg": "#E8F3EA", "grid_line": "#E1EBE3",
         "hero_text": "#10331F", "hero_muted": "#6B7C72",
         "toggle_off": "#C7D2CC", "logo": "logo.png",
+        "header_tag": "RÉSEAU CUMA",
     }
+
+
+def test_cap_header_tag_is_empty():
+    from anonymator.ui.theme import THEMES
+    assert THEMES["cap"]["header_tag"] == ""
+    assert THEMES["cuma"]["header_tag"] == "RÉSEAU CUMA"
 
 
 def test_cap_has_same_keys_as_cuma():

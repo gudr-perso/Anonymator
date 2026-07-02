@@ -1,5 +1,6 @@
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QSizePolicy
 from anonymator.ui.icons import icon
+from anonymator.ui.theme import color
 
 
 def _rgba(hex_color: str, alpha: float) -> str:
@@ -14,14 +15,11 @@ class RuleActionBadge(QFrame):
     action ∈ {'keep','mask'}. On utilise une vraie icône SVG (œil / œil barré)
     plutôt qu'un emoji : Qt mesure mal la largeur des emoji couleur, ce qui
     rognait le badge dans une colonne ResizeToContents."""
-    _KEEP = "#00965E"
-    _MASK = "#E8621A"
-
     def __init__(self, action: str, parent=None):
         super().__init__(parent)
         keep = action == "keep"
         self.action = action
-        self.color = self._KEEP if keep else self._MASK
+        self.color = color("action") if keep else color("accent")
         self._text = "Ne jamais masquer" if keep else "Toujours masquer"
         icon_name = "eye" if keep else "eye-off"
 

@@ -1,6 +1,7 @@
 from PySide6.QtWidgets import QFrame, QVBoxLayout, QHBoxLayout, QLabel
 from PySide6.QtCore import Qt
 from anonymator.ui.icons import icon
+from anonymator.ui.theme import color
 
 
 class Card(QFrame):
@@ -10,7 +11,7 @@ class Card(QFrame):
         self.setObjectName("Card")
         outer = QVBoxLayout(self)
         self.head = QHBoxLayout()
-        ic = QLabel(); ic.setPixmap(icon(icon_name, "#00965E").pixmap(16, 16))
+        ic = QLabel(); ic.setPixmap(icon(icon_name, color("action")).pixmap(16, 16))
         self.title_label = QLabel(title)
         self.title_label.setObjectName("sectionLabel")
         self.title_label.setStyleSheet("text-transform: uppercase;")
@@ -22,10 +23,12 @@ class Card(QFrame):
 
 class StatCard(QFrame):
     """Icône + grand nombre + libellé."""
-    def __init__(self, icon_name: str, label: str, accent: str = "#00965E", parent=None):
+    def __init__(self, icon_name: str, label: str, accent: str | None = None, parent=None):
         super().__init__(parent)
         self.setObjectName("StatCard")
         row = QHBoxLayout(self)
+        if accent is None:
+            accent = color("action")
         ic = QLabel(); ic.setPixmap(icon(icon_name, accent).pixmap(20, 20))
         col = QVBoxLayout()
         self.value_label = QLabel("0")
@@ -47,12 +50,12 @@ class NavCard(QFrame):
         self.setCursor(Qt.PointingHandCursor)
         self._on_click = on_click
         row = QHBoxLayout(self)
-        ic = QLabel(); ic.setPixmap(icon(icon_name, "#00965E").pixmap(22, 22))
+        ic = QLabel(); ic.setPixmap(icon(icon_name, color("action")).pixmap(22, 22))
         col = QVBoxLayout()
         t = QLabel(title); t.setStyleSheet("font-size: 15px; font-weight: 700;")
         s = QLabel(subtitle); s.setObjectName("muted")
         col.addWidget(t); col.addWidget(s)
-        chev = QLabel(); chev.setPixmap(icon("chevron-right", "#6B7C72").pixmap(18, 18))
+        chev = QLabel(); chev.setPixmap(icon("chevron-right", color("text_muted")).pixmap(18, 18))
         row.addWidget(ic); row.addLayout(col); row.addStretch(); row.addWidget(chev)
 
     def _emit(self):
