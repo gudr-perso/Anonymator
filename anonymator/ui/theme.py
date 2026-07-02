@@ -97,6 +97,13 @@ QPushButton#pager {{ background: {surface}; color: {text}; border: 1px solid {bo
 QPushButton#pager:hover {{ background: {surface_alt}; border-color: {action}; }}
 QPushButton#pager:disabled {{ color: {text_muted}; border-color: {border}; }}
 QLabel#pageInfo {{ color: {text}; font-weight: 600; }}
+#NavBand {{ background: {surface}; border-bottom: 1px solid {border}; }}
+QPushButton#tab {{ background: transparent; color: {text_muted}; border: none;
+                  border-bottom: 3px solid transparent; padding: 12px 14px; font-weight: 600; }}
+QPushButton#tab:hover {{ color: {text}; }}
+QPushButton#tabActive {{ background: transparent; color: {action}; border: none;
+                        border-bottom: 3px solid {action}; padding: 12px 14px; font-weight: 700; }}
+QPushButton#tabActive:disabled {{ color: {action}; }}
 """
 
 
