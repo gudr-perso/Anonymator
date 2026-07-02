@@ -18,6 +18,7 @@ from anonymator.core.model_status import is_model_available
 from anonymator.ner import NullNer
 from anonymator.ui.model_loader import ModelLoader
 from anonymator.ui.components.banner import ModelBanner
+from anonymator.ui.components.grid import paint_grid, GRID_BG
 
 
 class TextScreen(QWidget):
@@ -29,11 +30,18 @@ class TextScreen(QWidget):
         self._worker: TextAnalyzeWorker | None = None
         self._degraded = False
 
+        self.setObjectName("TextBg")
+        self.setStyleSheet(f"#TextBg {{ background: {GRID_BG}; }}")
         root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0); root.setSpacing(0)
         root.addWidget(HeaderBand())
         root.addWidget(NavBand("Texte", "document", on_home=on_back))
         self.banner = ModelBanner(on_install=self._request_model)
         root.addWidget(self.banner)
+
+        # Contenu avec padding (le root est à 0 pour aligner le bandeau et le
+        # fond quadrillé pleine largeur, comme l'écran Fichier).
+        content = QVBoxLayout(); content.setContentsMargins(18, 10, 18, 12); content.setSpacing(10)
 
         stats = QHBoxLayout()
         self.stat_detected = StatCard("shield", "Entités détectées")
@@ -44,7 +52,7 @@ class TextScreen(QWidget):
         for c in (self.stat_detected, self.stat_categories, self.stat_mask,
                   self.stat_keep, self.stat_risk):
             stats.addWidget(c)
-        root.addLayout(stats)
+        content.addLayout(stats)
 
         body = QHBoxLayout()
         left = QVBoxLayout()
@@ -65,7 +73,7 @@ class TextScreen(QWidget):
         ent_card.body.addWidget(self.entity_area)
 
         body.addLayout(left, 3); body.addWidget(ent_card, 2)
-        root.addLayout(body)
+        content.addLayout(body, 1)
 
         actions = QHBoxLayout()
         self.btn_analyze = QPushButton("  Analyser"); self.btn_analyze.setObjectName("primary")
@@ -78,7 +86,8 @@ class TextScreen(QWidget):
         self.btn_export = QPushButton("Exporter .txt"); self.btn_export.setObjectName("ghost"); self.btn_export.clicked.connect(self._export)
         actions.addWidget(self.btn_analyze); actions.addWidget(self.btn_apply); actions.addStretch()
         actions.addWidget(self.btn_copy); actions.addWidget(self.btn_export)
-        root.addLayout(actions)
+        content.addLayout(actions)
+        root.addLayout(content, 1)
 
         # Voile "travail en cours" superposé (masqué par défaut)
         self._overlay = QLabel("⏳  Analyse en cours…", self)
@@ -125,6 +134,9 @@ class TextScreen(QWidget):
         super().resizeEvent(event)
         if self._overlay.isVisible():
             self._overlay.setGeometry(self.rect())
+
+    def paintEvent(self, _event):
+        paint_grid(self)
 
     def _clear_entities(self):
         while self._entity_layout.count() > 1:
