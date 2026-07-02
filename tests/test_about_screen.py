@@ -1,19 +1,25 @@
-import anonymator
-from anonymator.ui.about_screen import AboutScreen
+from anonymator.ui.about_screen import AboutScreen, EMBEDDED_COMPONENTS
+from anonymator import __version__
 
 
-def test_about_screen_shows_legal_lines(qtbot):
-    s = AboutScreen(on_back=lambda: None)
-    qtbot.addWidget(s)
-    text = s.about_label.text()
-    assert "AGPL-3.0" in text
-    assert f"Anonymator v{anonymator.__version__}" in text
-    assert "github.com/gudr-perso/Anonymator" in text
+def test_shows_version(qtbot):
+    scr = AboutScreen(on_back=lambda: None)
+    qtbot.addWidget(scr)
+    assert __version__ in scr.version_badge.text()
 
 
-def test_about_screen_back_button_calls_on_back(qtbot):
+def test_embedded_components_listed():
+    names = [c[0] for c in EMBEDDED_COMPONENTS]
+    assert "PyMuPDF" in names
+    assert "GLiNER" in names
+
+
+def test_back_navband(qtbot):
+    from anonymator.ui.components.nav_band import NavBand
     called = []
-    s = AboutScreen(on_back=lambda: called.append(True))
-    qtbot.addWidget(s)
-    s.back_btn.click()
-    assert called
+    scr = AboutScreen(on_back=lambda: called.append(True))
+    qtbot.addWidget(scr)
+    nb = scr.findChild(NavBand)
+    assert nb is not None
+    nb.home_btn.click()
+    assert called == [True]
