@@ -104,6 +104,8 @@ QPushButton#tab:hover {{ color: {text}; }}
 QPushButton#tabActive {{ background: transparent; color: {action}; border: none;
                         border-bottom: 3px solid {action}; padding: 12px 14px; font-weight: 700; }}
 QPushButton#tabActive:disabled {{ color: {action}; }}
+#EntityCard {{ background: {surface}; border: 1px solid {border}; border-radius: 10px; }}
+#EntityCard:hover {{ border-color: {action}; }}
 """
 
 
