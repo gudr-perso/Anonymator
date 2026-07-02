@@ -448,13 +448,52 @@ Dans `StatCard.__init__`, juste avant la ligne 29 (`ic = QLabel()...`), ajouter 
 Ligne 50 : `icon(icon_name, "#00965E")` → `icon(icon_name, color("action"))`
 Ligne 55 : `icon("chevron-right", "#6B7C72")` → `icon("chevron-right", color("text_muted"))`
 
-- [ ] **Step 2 : `header.py`**
+- [ ] **Step 2 : `header.py` — icône + étiquette réseau pilotée par le thème**
 
-Après `from anonymator.ui.icons import icon` (ligne 2), ajouter :
+Cette étape touche aussi `theme.py` (nouveau token `header_tag`) et `tests/test_theme.py`.
+
+D'abord, ajouter le token `header_tag` aux **deux** thèmes dans `anonymator/ui/theme.py` :
+- dans `THEMES["cuma"]`, ajouter `"header_tag": "RÉSEAU CUMA"` ;
+- dans `THEMES["cap"]`, ajouter `"header_tag": ""` (chaîne vide → étiquette masquée).
+
+Mettre à jour le garde-fou `tests/test_theme.py::test_cuma_tokens_are_frozen` : ajouter
+`"header_tag": "RÉSEAU CUMA",` dans le dict attendu (sinon le test échoue, ce qui est
+normal — c'est le garde-fou qui signale l'évolution volontaire de CUMA).
+
+Ajouter un test dans `tests/test_theme.py` :
 ```python
-from anonymator.ui.theme import color
+def test_cap_header_tag_is_empty():
+    from anonymator.ui.theme import THEMES
+    assert THEMES["cap"]["header_tag"] == ""
+    assert THEMES["cuma"]["header_tag"] == "RÉSEAU CUMA"
 ```
-Ligne 11 : `icon("shield", "#31B700")` → `icon("shield", color("primary"))`
+
+Puis réécrire `anonymator/ui/components/header.py` en entier :
+```python
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel
+from anonymator.ui.icons import icon
+from anonymator.ui.theme import color
+
+
+class HeaderBand(QFrame):
+    """Bandeau d'en-tête : logo + nom de l'app + étiquette réseau (thème)."""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setObjectName("HeaderBand")
+        row = QHBoxLayout(self)
+        logo = QLabel(); logo.setPixmap(icon("shield", color("primary")).pixmap(20, 20))
+        name = QLabel("Anonymator"); name.setStyleSheet("font-weight: 700;")
+        row.addWidget(logo); row.addWidget(name)
+        tag = color("header_tag")
+        if tag:                                  # masqué (avec le séparateur) si vide
+            sep = QLabel("|"); sep.setObjectName("muted")
+            net = QLabel(tag); net.setObjectName("muted")
+            net.setStyleSheet("font-weight: 700; letter-spacing: 1px;")
+            row.addWidget(sep); row.addWidget(net)
+        row.addStretch()
+```
+
+Vérifier après coup : `python -m pytest tests/test_theme.py -q` (garde-fou + nouveau test passent).
 
 - [ ] **Step 3 : `nav_band.py`**
 
@@ -967,5 +1006,4 @@ git commit -m "fix(theme): lisibilité des textes hors carte sur fond navy (CAP)
 
 ## Notes hors périmètre (à confirmer avec l'utilisateur, pas dans ce plan)
 
-- `header.py` affiche le texte `"RÉSEAU CUMA"` en dur, quel que soit le thème. Purement textuel (pas une couleur), donc laissé tel quel ici. À traiter séparément si le thème CAP doit afficher un autre libellé.
 - Couleurs de contenu conservées volontairement : badges de licence `EMBEDDED_COMPONENTS` (`#d62828`, `#00965E`) et rouge « risque » `#9a031e` — sémantiques, indépendantes du thème.

@@ -109,6 +109,10 @@ aujourd'hui, pour garantir un rendu CUMA identique.
 | `hero_muted` | `#6B7C72` | `rgba(255,255,255,0.82)` |
 | `toggle_off` | `#C7D2CC` | `#C3CCE0` |
 | `logo` (nom de fichier dans assets) | `logo.png` | `logo-cap.png` |
+| `header_tag` (étiquette réseau du bandeau) | `RÉSEAU CUMA` | `""` (masquée) |
+
+En CAP, `header_tag` vide masque l'étiquette « RÉSEAU CUMA » **et** son séparateur
+`|` dans le bandeau d'en-tête (aujourd'hui codés en dur). CUMA reste inchangé.
 
 ## Fichiers touchés
 
