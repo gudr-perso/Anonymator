@@ -15,6 +15,22 @@ THEMES = {
              "info": "#5BBCEC", "info_hover": "#3FA3D6"},
 }
 
+THEME_LABELS = {
+    "cuma": "CUMA — vert identitaire",
+    "cap":  "CAP — bleu",
+}
+
+
+def label_for_theme(theme: str) -> str:
+    return THEME_LABELS.get(theme, theme)
+
+
+def theme_for_label(label: str) -> str:
+    for key, lbl in THEME_LABELS.items():
+        if lbl == label:
+            return key
+    return DEFAULT_THEME
+
 _TEMPLATE = """
 QWidget {{ background: {bg}; color: {text};
           font-family: 'Inter','Segoe UI',sans-serif; font-size: 14px; }}
