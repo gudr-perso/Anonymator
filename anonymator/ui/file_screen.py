@@ -5,7 +5,8 @@ from PySide6.QtWidgets import (QWidget, QFrame, QVBoxLayout, QHBoxLayout, QPushB
                                QMessageBox, QTreeWidget, QTreeWidgetItem, QLineEdit)
 from PySide6.QtGui import QColor
 from PySide6.QtCore import Qt
-from anonymator.ui.components.grid import paint_grid, GRID_BG
+from anonymator.ui.components.grid import paint_grid
+from anonymator.ui.theme import color
 from anonymator.files.anonymize_file import (anonymize_file, UnsupportedFormat, FileResult)
 from anonymator.files import csv_io
 from anonymator.output_naming import anonymized_path
@@ -34,7 +35,7 @@ class FileScreen(QWidget):
     def __init__(self, ref, loader, prefs, on_back, on_text_review=None, on_request_model=None):
         super().__init__()
         self.setObjectName("FileBg")
-        self.setStyleSheet(f"#FileBg {{ background: {GRID_BG}; }}")
+        self.setStyleSheet(f"#FileBg {{ background: {color('grid_bg')}; }}")
         self.ref, self.loader, self.prefs = ref, loader, prefs
         self.on_text_review = on_text_review
         self.on_request_model = on_request_model

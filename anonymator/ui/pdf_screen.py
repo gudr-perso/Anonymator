@@ -6,7 +6,8 @@ from PySide6.QtWidgets import (QWidget, QFrame, QVBoxLayout, QHBoxLayout, QPushB
                                QTreeWidgetItem, QHeaderView)
 from PySide6.QtGui import QColor, QFont
 from PySide6.QtCore import Qt
-from anonymator.ui.components.grid import paint_grid, GRID_BG
+from anonymator.ui.components.grid import paint_grid
+from anonymator.ui.theme import color
 from anonymator.files.pdf import pdf_io
 from anonymator.files.pdf.extract import (
     ScannedPdfNotSupported, EncryptedPdfError, CorruptPdfError)
@@ -30,7 +31,7 @@ class PdfScreen(QWidget):
     def __init__(self, ref, loader, prefs, on_back, on_request_model=None):
         super().__init__()
         self.setObjectName("PdfBg")
-        self.setStyleSheet(f"#PdfBg {{ background: {GRID_BG}; }}")
+        self.setStyleSheet(f"#PdfBg {{ background: {color('grid_bg')}; }}")
         self.ref, self.loader, self.prefs = ref, loader, prefs
         self.on_request_model = on_request_model
         self.path: Path | None = None
