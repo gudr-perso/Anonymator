@@ -52,7 +52,7 @@ class PdfScreen(QWidget):
 
         # ---- barre d'action ----
         bar = QHBoxLayout(); bar.setContentsMargins(18, 14, 18, 8); bar.setSpacing(12)
-        self._file_ic = QLabel(); self._file_ic.setPixmap(icon("document", "#00965E").pixmap(22, 22))
+        self._file_ic = QLabel(); self._file_ic.setPixmap(icon("document", color("action")).pixmap(22, 22))
         info_col = QVBoxLayout(); info_col.setSpacing(1)
         self.name_label = QLabel("Aucun PDF"); self.name_label.setObjectName("fileName")
         self.meta_label = QLabel("Importez un fichier .pdf natif (texte sélectionnable)")
@@ -216,7 +216,7 @@ class PdfScreen(QWidget):
         for t in self.session.types():
             top = QTreeWidgetItem([t, f"×{self.session.count_retained(t)}"])
             top.setForeground(0, QColor(color_for(t)))
-            top.setForeground(1, QColor("#6B7C72"))
+            top.setForeground(1, QColor(color("text_muted")))
             top.setTextAlignment(1, Qt.AlignRight | Qt.AlignVCenter)
             top.setFont(0, bold)
             top.setData(0, Qt.UserRole, ("type", t, None))

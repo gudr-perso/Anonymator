@@ -48,7 +48,7 @@ class TextScreen(QWidget):
         self.stat_detected = StatCard("shield", "Entités détectées")
         self.stat_categories = StatCard("layers", "Catégories")
         self.stat_mask = StatCard("eye-off", "À masquer")
-        self.stat_keep = StatCard("document", "Conservées", "#E8621A")
+        self.stat_keep = StatCard("document", "Conservées", color("accent"))
         self.stat_risk = StatCard("alert", "Niveau de risque", "#9a031e")
         for c in (self.stat_detected, self.stat_categories, self.stat_mask,
                   self.stat_keep, self.stat_risk):
