@@ -72,9 +72,7 @@ class FileScreen(QWidget):
         self.btn_review.setEnabled(False); self.btn_review.clicked.connect(self.analyze)
         self.btn_run = QPushButton("  Anonymiser && enregistrer"); self.btn_run.setObjectName("info")
         self.btn_run.setIcon(icon("shield", "white")); self.btn_run.clicked.connect(self._run_clicked)
-        self.btn_back = QPushButton("  Accueil"); self.btn_back.setObjectName("navHome")
-        self.btn_back.setIcon(icon("home", "white")); self.btn_back.clicked.connect(on_back)
-        for b in (self.btn_open, self.btn_review, self.btn_run, self.btn_back):
+        for b in (self.btn_open, self.btn_review, self.btn_run):
             bar.addWidget(b)
         action_band = QFrame(); action_band.setObjectName("ActionBand")
         action_band.setLayout(bar)

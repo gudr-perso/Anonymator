@@ -71,10 +71,8 @@ class PdfScreen(QWidget):
         self.btn_redact.setIcon(icon("shield", "white")); self.btn_redact.clicked.connect(self._redact_clicked)
         self.btn_text = QPushButton("  Extraire en .txt"); self.btn_text.setObjectName("navTool")
         self.btn_text.setIcon(icon("document", "white")); self.btn_text.clicked.connect(self._text_clicked)
-        self.btn_back = QPushButton("  Accueil"); self.btn_back.setObjectName("navHome")
-        self.btn_back.setIcon(icon("home", "white")); self.btn_back.clicked.connect(on_back)
         for b in (self.btn_open, self.btn_review, self.btn_zone,
-                  self.btn_redact, self.btn_text, self.btn_back):
+                  self.btn_redact, self.btn_text):
             bar.addWidget(b)
         action_band = QFrame(); action_band.setObjectName("ActionBand")
         action_band.setLayout(bar)
