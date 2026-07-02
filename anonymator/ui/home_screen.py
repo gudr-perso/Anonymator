@@ -5,10 +5,15 @@ from PySide6.QtCore import Qt
 from anonymator.ui.components.cards import NavCard
 from anonymator.ui.components.header import HeaderBand
 from anonymator.ui.components.nav_band import NavBand
+from anonymator.ui.theme import color
 
-_HERO_BG = "#E8F3EA"
-_GRID = "#E1EBE3"
-_LOGO = Path(__file__).parent / "assets" / "logo.png"
+_ASSETS = Path(__file__).parent / "assets"
+
+
+def _rgba(hex_color: str, alpha: float) -> str:
+    h = hex_color.lstrip("#")
+    r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+    return f"rgba({r}, {g}, {b}, {alpha})"
 
 
 class HeroPanel(QWidget):
@@ -16,12 +21,13 @@ class HeroPanel(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setObjectName("Hero")
-        self.setStyleSheet(f"#Hero {{ background: {_HERO_BG}; }}")
+        self.setStyleSheet(f"#Hero {{ background: {color('grid_bg')}; }}")
 
     def paintEvent(self, _event):
         p = QPainter(self)
-        p.fillRect(self.rect(), QColor(_HERO_BG))
-        pen = QPen(QColor(_GRID)); pen.setWidth(1)
+        bg, grid = color("grid_bg"), color("grid_line")
+        p.fillRect(self.rect(), QColor(bg))
+        pen = QPen(QColor(grid)); pen.setWidth(1)
         p.setPen(pen)
         step = 26
         w, h = self.width(), self.height()
@@ -54,24 +60,29 @@ class HomeScreen(QWidget):
         hero = HeroPanel()
         hv = QVBoxLayout(hero)
         hv.setContentsMargins(48, 44, 48, 44)
-        has_logo = _LOGO.exists()
+        logo_path = _ASSETS / color("logo")
+        has_logo = logo_path.exists()
         if has_logo:
             logo = QLabel()
-            logo.setPixmap(QPixmap(str(_LOGO)).scaledToWidth(250, Qt.SmoothTransformation))
+            logo.setPixmap(QPixmap(str(logo_path)).scaledToWidth(250, Qt.SmoothTransformation))
         else:
             logo = QLabel("CUMA"); logo.setObjectName("title")
-            logo.setStyleSheet("color: #31B700; font-size: 34px; font-weight: 800;")
+            logo.setStyleSheet(
+                f"color: {color('primary')}; font-size: 34px; font-weight: 800;")
         title = QLabel("Anonymisez.\nPartagez l'essentiel.")
         title.setObjectName("title")
+        title.setStyleSheet(f"color: {color('hero_text')};")
         sub = QLabel("Protégez noms, adresses et coordonnées avant tout partage. "
                      "Traitement 100% local, aucune donnée envoyée.")
-        sub.setObjectName("muted"); sub.setWordWrap(True)
-        sub.setStyleSheet("color:#6B7C72; font-size:16px; line-height:140%;")
+        sub.setWordWrap(True)
+        sub.setStyleSheet(
+            f"color:{color('hero_muted')}; font-size:16px; line-height:140%;")
         hv.addWidget(logo); hv.addSpacing(120); hv.addWidget(title); hv.addWidget(sub)
         hv.addStretch()
         # tagline déjà présente dans le logo officiel → on ne la répète qu'en repli texte
         if not has_logo:
-            foot = QLabel("la puissance du <span style='color:#E8621A;font-weight:700'>groupe</span>")
+            foot = QLabel("la puissance du "
+                          f"<span style='color:{color('accent')};font-weight:700'>groupe</span>")
             foot.setTextFormat(Qt.RichText)
             hv.addWidget(foot)
 
@@ -94,9 +105,10 @@ class HomeScreen(QWidget):
         self.btn_model_later.clicked.connect(self._dismiss)
         mc_btns.addWidget(self.btn_model_download); mc_btns.addWidget(self.btn_model_later); mc_btns.addStretch()
         mc.addWidget(mc_title); mc.addWidget(mc_desc); mc.addLayout(mc_btns)
+        act = color("action")
         self.model_card.setStyleSheet(
-            "#modelInvite { background: rgba(0, 150, 94, 0.08); "
-            "border: 1px solid rgba(0, 150, 94, 0.45); border-radius: 10px; }")
+            f"#modelInvite {{ background: {_rgba(act, 0.08)}; "
+            f"border: 1px solid {_rgba(act, 0.45)}; border-radius: 10px; }}")
         self.model_card.setVisible(not model_available)
         rv.addWidget(self.model_card); rv.addSpacing(12)
         label = QLabel("PAR OÙ COMMENCER ?"); label.setObjectName("sectionLabel")
