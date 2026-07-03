@@ -20,8 +20,17 @@ Thumbs.db
 
 # App data / modèles téléchargés / sorties
 *.log
+build_log.txt
 models/
 output/
+@sortie/
+exports/
 *_ano_*.csv
 *_ano_*.xlsx
 *_ano_*.txt
+*_ano_*.docx
+*_ano_*.pptx
+*_ano_*.pdf
+
+# Artefacts de packaging (trop volumineux / non versionnables)
+*.zip
