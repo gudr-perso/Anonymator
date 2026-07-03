@@ -1,6 +1,12 @@
 # anonymator.spec
 # -*- mode: python ; coding: utf-8 -*-
 
+from PyInstaller.utils.hooks import collect_data_files
+
+# Gabarits par défaut (default.docx / default.pptx) chargés en package data
+# par python-docx / python-pptx — indispensables dans l'exe figé.
+ooxml_datas = collect_data_files('docx') + collect_data_files('pptx')
+
 a = Analysis(
     ['anonymator/__main__.py'],
     pathex=[],
@@ -14,7 +20,7 @@ a = Analysis(
         ('anonymator/ui/assets/logo-cap.png', 'anonymator/ui/assets'),
         ('anonymator/ui/assets/picto.png', 'anonymator/ui/assets'),
         ('anonymator/ui/assets/icons', 'anonymator/ui/assets/icons'),
-    ],
+    ] + ooxml_datas,
     hiddenimports=[
         'anonymator.ui.colors',
         'anonymator.ui.theme',
@@ -48,6 +54,18 @@ a = Analysis(
         'anonymator.files.encoding',
         'anonymator.files.columns',
         'anonymator.report.audit',
+        'docx',
+        'pptx',
+        'anonymator.files.ooxml.docx_io',
+        'anonymator.files.ooxml.pptx_io',
+        'anonymator.files.ooxml.xml_parts',
+        'anonymator.files.ooxml.scan',
+        'anonymator.files.ooxml.metadata',
+        'anonymator.files.ooxml.run_remap',
+        'anonymator.files.ooxml.text_unit',
+        'anonymator.core.ooxml_review_session',
+        'anonymator.ui.ooxml_scan_worker',
+        'anonymator.ui.components.perimetre_card',
         'gliner',
         'torch',
         'transformers',
