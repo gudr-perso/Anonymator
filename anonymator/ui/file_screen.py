@@ -112,14 +112,21 @@ class FileScreen(QWidget):
         hint.setObjectName("hint"); hint.setWordWrap(True)
         ent_card.body.addWidget(hint)
         ent_card.body.addWidget(self.side)
-        self.perimetre = PerimetreCard()
-        self.perimetre.hide()
-        ent_card.body.addWidget(self.perimetre)
         self.side.hide(); hint.hide(); self._hint = hint
+
+        # Bloc distinct sous les entités : périmètre du traitement (docx/pptx).
+        self.perimetre_card = Card("eye", "Périmètre du traitement")
+        self.perimetre = PerimetreCard()
+        self.perimetre_card.body.addWidget(self.perimetre)
+        self.perimetre_card.hide()
+
+        right = QVBoxLayout(); right.setSpacing(12)
+        right.addWidget(ent_card, 1)
+        right.addWidget(self.perimetre_card)
 
         body = QHBoxLayout(); body.setContentsMargins(18, 12, 18, 8); body.setSpacing(12)
         body.addWidget(table_card, 3)
-        body.addWidget(ent_card, 2)
+        body.addLayout(right, 2)
         root.addLayout(body, 1)
 
         # ---- pied de pagination ----
@@ -199,7 +206,7 @@ class FileScreen(QWidget):
             self.table.clear()
             self.table.setRowCount(0)
             self.table.setColumnCount(0)
-        self.perimetre.setVisible(False)
+        self.perimetre_card.setVisible(False)
         self._set_meta()
 
     def _fill_preview(self, rows):
@@ -360,7 +367,7 @@ class FileScreen(QWidget):
         self.occ_badge.setText(f"{_fmt_int(self.session.total_occurrences())} occ.")
         self.occ_badge.show(); self._hint.show()
         self._build_side()
-        self.side.show(); self.perimetre.show()
+        self.side.show(); self.perimetre_card.show()
         self.pager_widget.hide()
         self._render_units_page()
 
