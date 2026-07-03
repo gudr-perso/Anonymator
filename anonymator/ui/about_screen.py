@@ -68,7 +68,10 @@ class AboutScreen(QWidget):
         pitch = QLabel("Anonymisez vos textes et fichiers en local. Protégez les "
                        "données personnelles avant tout partage, sans rien envoyer en ligne.")
         pitch.setObjectName("muted"); pitch.setWordWrap(True); pitch.setAlignment(Qt.AlignHCenter)
-        pitch.setMaximumWidth(680)
+        # Largeur fixe (et non maximumWidth) : un QLabel word-wrap ajouté avec
+        # alignement se dimensionne sinon à une largeur préférée trop étroite,
+        # ce qui repassait le pitch sur 4 lignes. 540 px → 2 lignes.
+        pitch.setFixedWidth(540)
         hero.addWidget(pitch, alignment=Qt.AlignHCenter)
         body.addLayout(hero)
 
