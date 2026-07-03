@@ -52,3 +52,17 @@ def test_disabling_type_keeps_all_clear():
     session.set_type_enabled("PERSON", False)
     session.apply_and_save("out.docx")
     assert saved["text"] == "Claire Martin et Marie Curie"
+
+
+def test_is_value_confirmed_reflects_key_control():
+    units = [_unit("Corps", "peu importe")]
+    scanned = {0: [
+        Entity("PERSON", "Claire Martin", 0, 13, "ner", 1.0, confirmed=True),
+        Entity("IBAN", "FR76 XXX", 0, 8, "deterministic", 1.0, confirmed=False),
+    ]}
+    session = OoxmlReviewSession(units, scanned, Referential.load_default(),
+                                 lambda out: None, lambda out, rep: None)
+    assert session.is_value_confirmed("PERSON", "Claire Martin") is True
+    assert session.is_value_confirmed("IBAN", "FR76 XXX") is False
+    # non confirmé → décoché par défaut (opt-in)
+    assert session.is_value_enabled("IBAN", "FR76 XXX") is False

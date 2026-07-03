@@ -393,6 +393,7 @@ class FileScreen(QWidget):
     def _build_side(self):
         from PySide6.QtGui import QFont
         bold = QFont(); bold.setBold(True)
+        ital = QFont(); ital.setItalic(True)
         self.side.blockSignals(True)
         self.side.clear()
         for t in self.session.types():
@@ -405,13 +406,22 @@ class FileScreen(QWidget):
             top.setFlags(top.flags() | Qt.ItemIsUserCheckable)
             top.setCheckState(0, Qt.Checked if self.session.is_type_enabled(t) else Qt.Unchecked)
             for value, n in self.session.values_for(t):
-                child = QTreeWidgetItem([value, f"×{n}"])
+                confirmed = self.session.is_value_confirmed(t, value)
+                label = value if confirmed else f"{value}   ⚠ clé non conforme"
+                child = QTreeWidgetItem([label, f"×{n}"])
                 child.setForeground(1, QColor("#9aa8a0"))
                 child.setTextAlignment(1, Qt.AlignRight | Qt.AlignVCenter)
                 child.setData(0, Qt.UserRole, ("value", t, value))
                 child.setFlags(child.flags() | Qt.ItemIsUserCheckable)
                 enabled = self.session.is_value_enabled(t, value)
                 child.setCheckState(0, Qt.Checked if enabled else Qt.Unchecked)
+                if not confirmed:
+                    child.setFont(0, ital)
+                    child.setForeground(0, QColor("#c47f17"))
+                    child.setToolTip(
+                        0, f"Reconnu comme {t} d'après son format, mais le contrôle "
+                        "de la clé (checksum) a échoué : décoché par défaut, "
+                        "cochez-le pour le masquer quand même.")
                 top.addChild(child)
             self.side.addTopLevelItem(top)
         self.side.expandAll()

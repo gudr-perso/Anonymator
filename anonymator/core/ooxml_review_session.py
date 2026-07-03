@@ -21,12 +21,16 @@ class OoxmlReviewSession:
         self._types_enabled: dict[str, bool] = {}
         self._values_enabled: dict[tuple[str, str], bool] = {}
         self._values_count: dict[tuple[str, str], int] = {}
+        self._values_confirmed: dict[tuple[str, str], bool] = {}
         for ents in scanned.values():
             for e in ents:
                 self._types_enabled.setdefault(e.type, True)
                 key = (e.type, e.value)
                 self._values_count[key] = self._values_count.get(key, 0) + 1
                 self._values_enabled.setdefault(key, e.confirmed)
+                # non confirmé si une occurrence échoue au contrôle de la clé
+                self._values_confirmed[key] = (
+                    self._values_confirmed.get(key, True) and e.confirmed)
 
     # --- lecture ---
     def types(self) -> list[str]:
@@ -61,6 +65,10 @@ class OoxmlReviewSession:
 
     def is_value_enabled(self, etype: str, value: str) -> bool:
         return self._values_enabled.get((etype, value), True)
+
+    def is_value_confirmed(self, etype: str, value: str) -> bool:
+        """Faux = format reconnu mais contrôle de la clé (checksum) échoué."""
+        return self._values_confirmed.get((etype, value), True)
 
     # --- écriture ---
     def set_type_enabled(self, etype: str, enabled: bool) -> None:

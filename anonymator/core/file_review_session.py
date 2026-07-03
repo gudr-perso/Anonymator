@@ -19,6 +19,7 @@ class FileReviewSession:
         self._types_enabled: dict[str, bool] = {}
         self._values_enabled: dict[tuple[str, str], bool] = {}
         self._values_count: dict[tuple[str, str], int] = {}
+        self._values_confirmed: dict[tuple[str, str], bool] = {}
         self._cells_excluded: set[tuple[int, int]] = set()
         for ents in self._cells.values():
             for e in ents:
@@ -27,6 +28,9 @@ class FileReviewSession:
                 self._values_count[key] = self._values_count.get(key, 0) + 1
                 # défaut : confirmé → activé ; non confirmé → désactivé (opt-in)
                 self._values_enabled.setdefault(key, e.confirmed)
+                # non confirmé si une occurrence échoue au contrôle de la clé
+                self._values_confirmed[key] = (
+                    self._values_confirmed.get(key, True) and e.confirmed)
 
     def types(self) -> list[str]:
         return sorted(self._types_enabled)
@@ -85,6 +89,10 @@ class FileReviewSession:
     def is_value_enabled(self, etype: str, value: str) -> bool:
         """État de la case d'une valeur distincte (pour cocher l'UI)."""
         return self._values_enabled.get((etype, value), True)
+
+    def is_value_confirmed(self, etype: str, value: str) -> bool:
+        """Faux = format reconnu mais contrôle de la clé (checksum) échoué."""
+        return self._values_confirmed.get((etype, value), True)
 
     # --- producteurs ---
     def masked_document(self):
