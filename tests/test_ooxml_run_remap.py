@@ -62,3 +62,9 @@ def test_entity_at_start_and_end():
     runs = _runs("Jean Dupont")
     run_remap.apply(runs, [_ent("Jean Dupont", 0, 11)], _ref())
     assert runs[0].text == "[PERSONNE]"
+
+
+def test_zero_width_span_is_ignored():
+    runs = _runs("Hello")
+    run_remap.apply(runs, [_ent("", 2, 2)], _ref())
+    assert runs[0].text == "Hello"

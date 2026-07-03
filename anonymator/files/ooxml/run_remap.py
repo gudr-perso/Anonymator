@@ -25,6 +25,8 @@ def apply(runs, entities: list[Entity], ref: Referential) -> None:
     des runs change après masquage (peu d'entités par paragraphe → négligeable).
     """
     for e in sorted(merge_entities(entities), key=lambda e: e.start, reverse=True):
+        if e.end <= e.start:      # span vide : rien à masquer (garde-fou)
+            continue
         _, spans = build_offsets(runs)
         _mask_span(runs, spans, e.start, e.end, ref.tag_for(e.type))
 
