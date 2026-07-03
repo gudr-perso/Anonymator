@@ -43,3 +43,28 @@ def test_direct_path_keeps_unconfirmed_iban_clear(tmp_path):
     out = res.output_path.read_text(encoding="utf-8")
     assert "FR76 3000 4000 1200 0000 1234 567" in out   # non confirmé → laissé en clair
     assert "[IBAN]" not in out
+
+
+def test_dispatch_docx(tmp_path):
+    from datetime import datetime
+    from anonymator.referential import Referential
+    from anonymator.ner import FakeNer
+    from anonymator.files.anonymize_file import anonymize_file
+    from tests.ooxml_fixtures import make_docx
+    src = make_docx(tmp_path / "d.docx")
+    res = anonymize_file(src, FakeNer({"Claire Martin": "PERSON"}),
+                         Referential.load_default(), tmp_path, datetime.now())
+    assert res.output_path.suffix == ".docx"
+    assert any(r["original"] == "Claire Martin" for r in res.report.to_rows())
+
+
+def test_dispatch_pptx(tmp_path):
+    from datetime import datetime
+    from anonymator.referential import Referential
+    from anonymator.ner import FakeNer
+    from anonymator.files.anonymize_file import anonymize_file
+    from tests.ooxml_fixtures import make_pptx
+    src = make_pptx(tmp_path / "p.pptx")
+    res = anonymize_file(src, FakeNer({"Claire Martin": "PERSON"}),
+                         Referential.load_default(), tmp_path, datetime.now())
+    assert res.output_path.suffix == ".pptx"

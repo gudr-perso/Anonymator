@@ -46,6 +46,20 @@ def anonymize_xlsx(path: Path, ner: NerDetector, ref: Referential,
     return FileResult(out, report)
 
 
+def anonymize_docx(path: Path, ner: NerDetector, ref: Referential,
+                   output_dir: Path, when: datetime) -> FileResult:
+    from anonymator.files.ooxml import docx_io
+    out, report = docx_io.anonymize_document(path, ner, ref, output_dir, when)
+    return FileResult(out, report)
+
+
+def anonymize_pptx(path: Path, ner: NerDetector, ref: Referential,
+                   output_dir: Path, when: datetime) -> FileResult:
+    from anonymator.files.ooxml import pptx_io
+    out, report = pptx_io.anonymize_document(path, ner, ref, output_dir, when)
+    return FileResult(out, report)
+
+
 def scan_csv(doc, ner: NerDetector, ref: Referential,
              cols: set[int]) -> dict[tuple[int, int], list[Entity]]:
     """Détecte les entités par cellule (dédupliqué) sur les colonnes `cols`.
@@ -121,5 +135,10 @@ def anonymize_file(path: Path, ner: NerDetector, ref: Referential,
             raise NotImplementedError(
                 "Sélection de colonnes non supportée pour .xlsx en v1")
         return anonymize_xlsx(path, ner, ref, output_dir, when)
+    if suffix == ".docx":
+        return anonymize_docx(path, ner, ref, output_dir, when)
+    if suffix == ".pptx":
+        return anonymize_pptx(path, ner, ref, output_dir, when)
     raise UnsupportedFormat(
-        f"Format non supporté : {suffix} (formats acceptés : .txt, .csv, .xlsx)")
+        f"Format non supporté : {suffix} "
+        f"(formats acceptés : .txt, .csv, .xlsx, .docx, .pptx)")
