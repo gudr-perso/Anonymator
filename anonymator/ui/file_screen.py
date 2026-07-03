@@ -78,7 +78,9 @@ class FileScreen(QWidget):
             bar.addWidget(b)
         action_band = QFrame(); action_band.setObjectName("ActionBand")
         action_band.setLayout(bar)
-        root.addWidget(action_band)
+        band_row = QHBoxLayout(); band_row.setContentsMargins(18, 0, 18, 0)
+        band_row.addWidget(action_band)
+        root.addLayout(band_row)
 
         # ---- corps : extrait (gauche) + entités (droite) ----
         self.table = QTableWidget()
@@ -107,7 +109,7 @@ class FileScreen(QWidget):
         ent_card.body.addWidget(self.side)
         self.side.hide(); hint.hide(); self._hint = hint
 
-        body = QHBoxLayout(); body.setContentsMargins(18, 0, 18, 8); body.setSpacing(12)
+        body = QHBoxLayout(); body.setContentsMargins(18, 12, 18, 8); body.setSpacing(12)
         body.addWidget(table_card, 3)
         body.addWidget(ent_card, 2)
         root.addLayout(body, 1)

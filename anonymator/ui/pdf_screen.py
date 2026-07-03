@@ -78,7 +78,9 @@ class PdfScreen(QWidget):
             bar.addWidget(b)
         action_band = QFrame(); action_band.setObjectName("ActionBand")
         action_band.setLayout(bar)
-        root.addWidget(action_band)
+        band_row = QHBoxLayout(); band_row.setContentsMargins(18, 0, 18, 0)
+        band_row.addWidget(action_band)
+        root.addLayout(band_row)
 
         # ---- corps : canevas (gauche) + entités (droite) ----
         self.canvas = PdfCanvas()
@@ -100,7 +102,7 @@ class PdfScreen(QWidget):
         ent_card.body.addWidget(hint); ent_card.body.addWidget(self.side)
         self.side.hide()
 
-        body = QHBoxLayout(); body.setContentsMargins(18, 0, 18, 8); body.setSpacing(12)
+        body = QHBoxLayout(); body.setContentsMargins(18, 12, 18, 8); body.setSpacing(12)
         body.addWidget(canvas_card, 3); body.addWidget(ent_card, 2)
         root.addLayout(body, 1)
 

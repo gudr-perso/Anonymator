@@ -96,7 +96,7 @@ QPushButton#navTool {{ background: {primary}; color: white; border: none;
 QPushButton#navTool:hover {{ background: {action}; }}
 QPushButton#navTool:checked {{ background: {dark}; }}
 /* Bandeau blanc (barre fichier + boutons) posé sur la grille */
-#ActionBand {{ background: {surface}; border-bottom: 1px solid {border}; }}
+#ActionBand {{ background: {surface}; border: 1px solid {border}; border-radius: 10px; }}
 #PagerBar {{ background: transparent; }}
 #Crumb {{ background: {surface_alt}; border: 1px solid {border}; border-radius: 18px; }}
 QPushButton#crumb {{ background: transparent; color: {text_muted}; border: none;
