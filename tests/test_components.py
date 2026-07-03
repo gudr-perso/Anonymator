@@ -60,3 +60,19 @@ def test_model_banner_install_callback(qtbot):
     qtbot.addWidget(b)
     b.btn.click()
     assert called == [True]
+
+from anonymator.ui.theme import set_active_theme, DEFAULT_THEME
+from anonymator.ui.components.toggle import ToggleSwitch as _Toggle
+
+
+def test_toggle_track_color_follows_theme(qtbot):
+    from anonymator.ui.theme import color
+    try:
+        set_active_theme("cap")
+        t = _Toggle(); qtbot.addWidget(t)
+        t.setChecked(True)
+        assert t.track_color() == color("action")   # cyan en CAP
+        t.setChecked(False)
+        assert t.track_color() == color("toggle_off")
+    finally:
+        set_active_theme(DEFAULT_THEME)

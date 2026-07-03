@@ -6,14 +6,44 @@ THEMES = {
              "text": "#10331F",
              "bg_hero": "#E8F3EA", "surface": "#FFFFFF", "surface_alt": "#F3FAF4",
              "border": "#E2E8E4", "text_muted": "#6B7C72",
-             "info": "#4FA8D8", "info_hover": "#3D93C2"},
-    "cap":  {"primary": "#1DA8E2", "action": "#1570B8", "dark": "#0D1A35",
-             "accent": "#E8621A", "accent_hover": "#C9500F", "bg": "#FFFFFF",
-             "text": "#1E1E2E",
-             "bg_hero": "#EAF4FB", "surface": "#FFFFFF", "surface_alt": "#F4F9FD",
-             "border": "#E1E8EF", "text_muted": "#6B7280",
-             "info": "#5BBCEC", "info_hover": "#3FA3D6"},
+             "info": "#4FA8D8", "info_hover": "#3D93C2",
+             "grid_bg": "#E8F3EA", "grid_line": "#E1EBE3",
+             "hero_text": "#10331F", "hero_muted": "#6B7C72",
+             "toggle_off": "#C7D2CC", "logo": "logo.png",
+             "header_tag": "RÉSEAU CUMA"},
+    "cap":  {"primary": "#2aa6e8", "action": "#138fdb", "dark": "#050c3f",
+             "accent": "#f36100", "accent_hover": "#d15400", "bg": "#FFFFFF",
+             "text": "#050c3f",
+             "bg_hero": "#0a1556", "surface": "#FFFFFF", "surface_alt": "#EEF5FB",
+             "border": "#DCE6F0", "text_muted": "#64748B",
+             "info": "#2aa6e8", "info_hover": "#138fdb",
+             "grid_bg": "#0a1556", "grid_line": "#1e2a63",
+             "hero_text": "#FFFFFF", "hero_muted": "rgba(255,255,255,0.82)",
+             "toggle_off": "#C3CCE0", "logo": "logo-cap.png",
+             "header_tag": ""},
 }
+
+_active_theme = DEFAULT_THEME
+
+
+def set_active_theme(name: str) -> None:
+    """Positionne le thème lu par la couche peinte / icônes."""
+    global _active_theme
+    _active_theme = name if name in THEMES else DEFAULT_THEME
+
+
+def active_theme() -> str:
+    return _active_theme
+
+
+def tokens(theme: str | None = None) -> dict:
+    return THEMES.get(theme or _active_theme, THEMES[DEFAULT_THEME])
+
+
+def color(role: str, theme: str | None = None) -> str:
+    """Couleur d'un rôle dans le thème actif (ou `theme` si précisé)."""
+    return tokens(theme)[role]
+
 
 THEME_LABELS = {
     "cuma": "CUMA — vert identitaire",
@@ -96,7 +126,7 @@ QPushButton#pager {{ background: {surface}; color: {text}; border: 1px solid {bo
                     border-radius: 8px; padding: 7px 14px; }}
 QPushButton#pager:hover {{ background: {surface_alt}; border-color: {action}; }}
 QPushButton#pager:disabled {{ color: {text_muted}; border-color: {border}; }}
-QLabel#pageInfo {{ color: {text}; font-weight: 600; }}
+QLabel#pageInfo {{ color: {hero_text}; font-weight: 600; }}
 #NavBand {{ background: {surface}; border-bottom: 1px solid {border}; }}
 QPushButton#tab {{ background: transparent; color: {text_muted}; border: none;
                   border-bottom: 3px solid transparent; padding: 12px 14px; font-weight: 600; }}

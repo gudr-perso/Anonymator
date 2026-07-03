@@ -5,7 +5,8 @@ from PySide6.QtWidgets import (QWidget, QFrame, QVBoxLayout, QHBoxLayout, QPushB
                                QMessageBox, QTreeWidget, QTreeWidgetItem, QLineEdit)
 from PySide6.QtGui import QColor
 from PySide6.QtCore import Qt
-from anonymator.ui.components.grid import paint_grid, GRID_BG
+from anonymator.ui.components.grid import paint_grid
+from anonymator.ui.theme import color
 from anonymator.files.anonymize_file import (anonymize_file, UnsupportedFormat, FileResult)
 from anonymator.files import csv_io
 from anonymator.output_naming import anonymized_path
@@ -34,7 +35,7 @@ class FileScreen(QWidget):
     def __init__(self, ref, loader, prefs, on_back, on_text_review=None, on_request_model=None):
         super().__init__()
         self.setObjectName("FileBg")
-        self.setStyleSheet(f"#FileBg {{ background: {GRID_BG}; }}")
+        self.setStyleSheet(f"#FileBg {{ background: {color('grid_bg')}; }}")
         self.ref, self.loader, self.prefs = ref, loader, prefs
         self.on_text_review = on_text_review
         self.on_request_model = on_request_model
@@ -57,7 +58,7 @@ class FileScreen(QWidget):
 
         # ---- barre d'action : infos fichier (gauche) + actions (droite) ----
         bar = QHBoxLayout(); bar.setContentsMargins(18, 14, 18, 8); bar.setSpacing(12)
-        self._file_ic = QLabel(); self._file_ic.setPixmap(icon("document", "#00965E").pixmap(22, 22))
+        self._file_ic = QLabel(); self._file_ic.setPixmap(icon("document", color("action")).pixmap(22, 22))
         info_col = QVBoxLayout(); info_col.setSpacing(1)
         self.name_label = QLabel("Aucun fichier"); self.name_label.setObjectName("fileName")
         self.meta_label = QLabel("Importez un fichier .txt, .csv ou .xlsx")
@@ -320,7 +321,7 @@ class FileScreen(QWidget):
         for t in self.session.types():
             top = QTreeWidgetItem([t, f"×{self.session.count_retained(t)}"])
             top.setForeground(0, QColor(color_for(t)))
-            top.setForeground(1, QColor("#6B7C72"))
+            top.setForeground(1, QColor(color("text_muted")))
             top.setTextAlignment(1, Qt.AlignRight | Qt.AlignVCenter)
             top.setFont(0, bold)
             top.setData(0, Qt.UserRole, ("type", t, None))

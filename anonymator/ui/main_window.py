@@ -1,11 +1,12 @@
 # anonymator/ui/main_window.py
 from pathlib import Path
+from PySide6.QtCore import QTimer
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QMainWindow, QStackedWidget
 from anonymator.referential import Referential
 from anonymator.ui.preferences import Preferences
 from anonymator.user_rules import UserRules
-from anonymator.ui.theme import build_qss
+from anonymator.ui.theme import build_qss, set_active_theme, active_theme
 from anonymator.ui.model_loader import ModelLoader
 from anonymator.ui.home_screen import HomeScreen
 from anonymator.ui.text_screen import TextScreen
@@ -38,6 +39,18 @@ class MainWindow(QMainWindow):
         self.stack = QStackedWidget()
         self.setCentralWidget(self.stack)
 
+        set_active_theme(self.prefs.theme)   # avant de construire la couche peinte/icônes
+        self._build_screens()
+        self.show_home()
+        self._apply_theme()
+
+    def _build_screens(self):
+        """(Re)construit tous les écrans avec le thème actif courant."""
+        while self.stack.count():
+            w = self.stack.widget(0)
+            self.stack.removeWidget(w)
+            w.deleteLater()
+
         self.home = HomeScreen(self.show_text, self.show_file, self.show_settings,
                                model_available=is_model_available(),
                                on_download=self._request_model,
@@ -61,9 +74,6 @@ class MainWindow(QMainWindow):
 
         self.settings_screen.model_ready.connect(self._on_model_ready)
 
-        self.show_home()
-        self._apply_theme()
-
     def _build_ref(self):
         ref = Referential.load_default(overrides=self.prefs.entity_overrides)
         # migration one-shot : la stoplist (éditée ou par défaut) alimente user_rules.json
@@ -74,15 +84,25 @@ class MainWindow(QMainWindow):
         return ref.with_user_rules(rules)
 
     def _apply_theme(self):
+        set_active_theme(self.prefs.theme)
         self.setStyleSheet(build_qss(self.prefs.theme))
 
     def _apply_prefs(self):
+        theme_changed = self.prefs.theme != active_theme()
         self.prefs.save(self.prefs_path)
         self.ref = self._build_ref()
         self.text_screen.ref = self.ref
         self.file_screen.ref = self.ref
         self.pdf_screen.ref = self.ref
         self._apply_theme()
+        if theme_changed:
+            # reconstruire hors du callback du combo (évite de détruire le
+            # settings_screen dont le signal est en cours d'exécution)
+            QTimer.singleShot(0, self._retheme)
+
+    def _retheme(self):
+        self._build_screens()
+        self.show_home()
 
     def _request_model(self):
         self.show_settings()

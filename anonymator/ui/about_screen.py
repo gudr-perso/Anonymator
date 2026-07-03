@@ -7,10 +7,9 @@ from anonymator.ui.components.header import HeaderBand
 from anonymator.ui.components.nav_band import NavBand
 from anonymator.ui.components.cards import Card
 from anonymator.ui.icons import icon
+from anonymator.ui.theme import color
 from anonymator import __version__
 from anonymator.ui.about import REPO_URL
-
-_LOGO = Path(__file__).parent / "assets" / "logo.png"
 
 EMBEDDED_COMPONENTS = [
     ("PyMuPDF", "© Artifex Software · lecture & écriture PDF", "AGPL-3.0", "#d62828"),
@@ -27,7 +26,7 @@ def _muted(text: str) -> QLabel:
 
 
 def _icon_label(name: str) -> QLabel:
-    l = QLabel(); l.setPixmap(icon(name, "#00965E", 20).pixmap(20, 20)); return l
+    l = QLabel(); l.setPixmap(icon(name, color("action"), 20).pixmap(20, 20)); return l
 
 
 def _license_badge(text: str, color: str) -> QLabel:
@@ -51,9 +50,10 @@ class AboutScreen(QWidget):
 
         # Héros centré
         hero = QVBoxLayout(); hero.setAlignment(Qt.AlignHCenter)
-        if _LOGO.exists():
+        logo_path = Path(__file__).parent / "assets" / color("logo")
+        if logo_path.exists():
             logo = QLabel(); logo.setAlignment(Qt.AlignHCenter)
-            logo.setPixmap(QPixmap(str(_LOGO)).scaledToWidth(180, Qt.SmoothTransformation))
+            logo.setPixmap(QPixmap(str(logo_path)).scaledToWidth(180, Qt.SmoothTransformation))
             hero.addWidget(logo, alignment=Qt.AlignHCenter)
         name_row = QHBoxLayout(); name_row.setAlignment(Qt.AlignHCenter)
         name = QLabel("Anonymator"); name.setObjectName("title")
@@ -76,7 +76,7 @@ class AboutScreen(QWidget):
         r1.addLayout(col1); r1.addStretch()
         lic.body.addLayout(r1)
         gh = QPushButton(f"  Code source sur GitHub — tag v{__version__}")
-        gh.setObjectName("secondary"); gh.setIcon(icon("github", "#10331F", 18))
+        gh.setObjectName("secondary"); gh.setIcon(icon("github", color("text"), 18))
         gh.setCursor(Qt.PointingHandCursor)
         gh.clicked.connect(lambda: QDesktopServices.openUrl(QUrl(REPO_URL)))
         lic.body.addWidget(gh)

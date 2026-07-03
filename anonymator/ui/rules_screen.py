@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
 from anonymator.ui.components.header import HeaderBand
 from anonymator.ui.components.nav_band import NavBand
 from anonymator.ui.components.cards import Card
+from anonymator.ui.theme import color
 from anonymator.user_rules import UserRules, Rule, compile_pattern
 
 
@@ -63,8 +64,14 @@ class RulesScreen(QWidget):
         hh = self.rules_table.horizontalHeader()
         hh.setSectionResizeMode(0, QHeaderView.Stretch)
         hh.setSectionResizeMode(3, QHeaderView.Stretch)
-        for c in (1, 2, 4):
-            hh.setSectionResizeMode(c, QHeaderView.ResizeToContents)
+        hh.setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        hh.setSectionResizeMode(4, QHeaderView.ResizeToContents)
+        # Colonne ACTION : largeur fixe calculée depuis le badge le plus long
+        # (« Ne jamais masquer »). ResizeToContents ignore les widgets de
+        # cellule selon l'environnement, ce qui rognait la pastille.
+        from anonymator.ui.components.rule_action_badge import RuleActionBadge
+        hh.setSectionResizeMode(2, QHeaderView.Fixed)
+        self.rules_table.setColumnWidth(2, RuleActionBadge("keep").sizeHint().width() + 24)
         table_card.body.addWidget(self.rules_table)
         body.addWidget(table_card)
 
@@ -82,6 +89,7 @@ class RulesScreen(QWidget):
 
     def _reload_rules(self):
         from PySide6.QtWidgets import QTableWidgetItem, QPushButton, QWidget, QHBoxLayout
+        from PySide6.QtCore import Qt
         from anonymator.ui.components.rule_action_badge import RuleActionBadge
         from anonymator.ui.icons import icon
         self.rules_table.setRowCount(0)
@@ -93,11 +101,12 @@ class RulesScreen(QWidget):
             self.rules_table.setItem(row, 1, QTableWidgetItem(mode_lbl))
             badge_cell = QWidget(); bl = QHBoxLayout(badge_cell)
             bl.setContentsMargins(8, 4, 8, 4); bl.setSpacing(0)
-            bl.addWidget(RuleActionBadge(r.action)); bl.addStretch()
+            bl.addWidget(RuleActionBadge(r.action), 0, Qt.AlignLeft | Qt.AlignVCenter)
+            bl.addStretch()
             self.rules_table.setCellWidget(row, 2, badge_cell)
             self.rules_table.setItem(row, 3, QTableWidgetItem(r.note or ""))
             btn = QPushButton(); btn.setObjectName("ghost"); btn.setFixedWidth(34)
-            btn.setIcon(icon("trash", "#6B7C72", 16))
+            btn.setIcon(icon("trash", color("text_muted"), 16))
             btn.clicked.connect(lambda _=False, rule=r: self.remove_rule(rule))
             self.rules_table.setCellWidget(row, 4, btn)
         self.count_badge.setText(f"{len(self.user_rules.rules)} règles")

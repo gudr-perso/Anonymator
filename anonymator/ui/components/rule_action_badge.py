@@ -1,5 +1,6 @@
-from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QSizePolicy
 from anonymator.ui.icons import icon
+from anonymator.ui.theme import color
 
 
 def _rgba(hex_color: str, alpha: float) -> str:
@@ -14,18 +15,18 @@ class RuleActionBadge(QFrame):
     action ∈ {'keep','mask'}. On utilise une vraie icône SVG (œil / œil barré)
     plutôt qu'un emoji : Qt mesure mal la largeur des emoji couleur, ce qui
     rognait le badge dans une colonne ResizeToContents."""
-    _KEEP = "#00965E"
-    _MASK = "#E8621A"
-
     def __init__(self, action: str, parent=None):
         super().__init__(parent)
         keep = action == "keep"
         self.action = action
-        self.color = self._KEEP if keep else self._MASK
+        self.color = color("action") if keep else color("accent")
         self._text = "Ne jamais masquer" if keep else "Toujours masquer"
         icon_name = "eye" if keep else "eye-off"
 
         self.setObjectName("RuleBadge")
+        # Taille fixe : la pastille ne se compresse jamais sous son contenu,
+        # sinon le libellé serait rogné dans une colonne étroite.
+        self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.setStyleSheet(
             f"#RuleBadge {{ background: {_rgba(self.color, 0.14)}; border-radius: 8px; }}")
         row = QHBoxLayout(self)
@@ -37,6 +38,9 @@ class RuleActionBadge(QFrame):
         self._label = QLabel(self._text)
         self._label.setStyleSheet(
             f"color: {self.color}; font-size: 12px; font-weight: 700; background: transparent;")
+        # Plancher de largeur = sizeHint : le libellé ne peut jamais être rogné,
+        # quelle que soit la police de la plateforme.
+        self._label.setMinimumWidth(self._label.sizeHint().width())
         row.addWidget(ic)
         row.addWidget(self._label)
 

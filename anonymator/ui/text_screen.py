@@ -18,7 +18,8 @@ from anonymator.core.model_status import is_model_available
 from anonymator.ner import NullNer
 from anonymator.ui.model_loader import ModelLoader
 from anonymator.ui.components.banner import ModelBanner
-from anonymator.ui.components.grid import paint_grid, GRID_BG
+from anonymator.ui.components.grid import paint_grid
+from anonymator.ui.theme import color
 
 
 class TextScreen(QWidget):
@@ -31,7 +32,7 @@ class TextScreen(QWidget):
         self._degraded = False
 
         self.setObjectName("TextBg")
-        self.setStyleSheet(f"#TextBg {{ background: {GRID_BG}; }}")
+        self.setStyleSheet(f"#TextBg {{ background: {color('grid_bg')}; }}")
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0); root.setSpacing(0)
         root.addWidget(HeaderBand())
@@ -47,7 +48,7 @@ class TextScreen(QWidget):
         self.stat_detected = StatCard("shield", "Entités détectées")
         self.stat_categories = StatCard("layers", "Catégories")
         self.stat_mask = StatCard("eye-off", "À masquer")
-        self.stat_keep = StatCard("document", "Conservées", "#E8621A")
+        self.stat_keep = StatCard("document", "Conservées", color("accent"))
         self.stat_risk = StatCard("alert", "Niveau de risque", "#9a031e")
         for c in (self.stat_detected, self.stat_categories, self.stat_mask,
                   self.stat_keep, self.stat_risk):

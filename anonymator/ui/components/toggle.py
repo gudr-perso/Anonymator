@@ -2,8 +2,7 @@ from PySide6.QtWidgets import QAbstractButton
 from PySide6.QtGui import QPainter, QColor
 from PySide6.QtCore import Qt, QSize
 
-_ON = "#00965E"
-_OFF = "#C7D2CC"
+from anonymator.ui.theme import color
 
 
 class ToggleSwitch(QAbstractButton):
@@ -17,11 +16,13 @@ class ToggleSwitch(QAbstractButton):
     def sizeHint(self) -> QSize:
         return QSize(44, 24)
 
+    def track_color(self) -> str:
+        return color("action") if self.isChecked() else color("toggle_off")
+
     def paintEvent(self, _event):
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing)
-        track = QColor(_ON if self.isChecked() else _OFF)
-        p.setBrush(track)
+        p.setBrush(QColor(self.track_color()))
         p.setPen(Qt.NoPen)
         p.drawRoundedRect(self.rect(), 12, 12)
         d = 18

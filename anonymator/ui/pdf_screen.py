@@ -6,7 +6,8 @@ from PySide6.QtWidgets import (QWidget, QFrame, QVBoxLayout, QHBoxLayout, QPushB
                                QTreeWidgetItem, QHeaderView)
 from PySide6.QtGui import QColor, QFont
 from PySide6.QtCore import Qt
-from anonymator.ui.components.grid import paint_grid, GRID_BG
+from anonymator.ui.components.grid import paint_grid
+from anonymator.ui.theme import color
 from anonymator.files.pdf import pdf_io
 from anonymator.files.pdf.extract import (
     ScannedPdfNotSupported, EncryptedPdfError, CorruptPdfError)
@@ -30,7 +31,7 @@ class PdfScreen(QWidget):
     def __init__(self, ref, loader, prefs, on_back, on_request_model=None):
         super().__init__()
         self.setObjectName("PdfBg")
-        self.setStyleSheet(f"#PdfBg {{ background: {GRID_BG}; }}")
+        self.setStyleSheet(f"#PdfBg {{ background: {color('grid_bg')}; }}")
         self.ref, self.loader, self.prefs = ref, loader, prefs
         self.on_request_model = on_request_model
         self.path: Path | None = None
@@ -51,7 +52,7 @@ class PdfScreen(QWidget):
 
         # ---- barre d'action ----
         bar = QHBoxLayout(); bar.setContentsMargins(18, 14, 18, 8); bar.setSpacing(12)
-        self._file_ic = QLabel(); self._file_ic.setPixmap(icon("document", "#00965E").pixmap(22, 22))
+        self._file_ic = QLabel(); self._file_ic.setPixmap(icon("document", color("action")).pixmap(22, 22))
         info_col = QVBoxLayout(); info_col.setSpacing(1)
         self.name_label = QLabel("Aucun PDF"); self.name_label.setObjectName("fileName")
         self.meta_label = QLabel("Importez un fichier .pdf natif (texte sélectionnable)")
@@ -215,7 +216,7 @@ class PdfScreen(QWidget):
         for t in self.session.types():
             top = QTreeWidgetItem([t, f"×{self.session.count_retained(t)}"])
             top.setForeground(0, QColor(color_for(t)))
-            top.setForeground(1, QColor("#6B7C72"))
+            top.setForeground(1, QColor(color("text_muted")))
             top.setTextAlignment(1, Qt.AlignRight | Qt.AlignVCenter)
             top.setFont(0, bold)
             top.setData(0, Qt.UserRole, ("type", t, None))

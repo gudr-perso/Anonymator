@@ -1,17 +1,26 @@
 from PySide6.QtGui import QPainter, QPen, QColor
+from anonymator.ui.theme import color
 
 # Fond quadrillé identique au panneau gauche de l'accueil (HeroPanel).
-GRID_BG = "#E8F3EA"
-GRID_LINE = "#E1EBE3"
+# Les couleurs sont désormais lues dans le thème actif (cf. theme.py).
 GRID_STEP = 26
 
 
-def paint_grid(widget, bg: str = GRID_BG, line: str = GRID_LINE,
-               step: int = GRID_STEP) -> None:
-    """Peint un fond vert pâle + une grille de cadrage légère sur *widget*.
+def grid_colors() -> tuple[str, str]:
+    """(fond, ligne) du quadrillage pour le thème actif."""
+    return color("grid_bg"), color("grid_line")
 
-    À appeler depuis le paintEvent d'un QWidget dont l'objectName porte le
-    même fond en QSS (cf. #FileBg / #PdfBg)."""
+
+def paint_grid(widget, bg: str | None = None, line: str | None = None,
+               step: int = GRID_STEP) -> None:
+    """Peint un fond + une grille de cadrage légère sur *widget*.
+
+    Sans argument, lit le thème actif (`grid_bg`/`grid_line`). À appeler depuis
+    le paintEvent d'un QWidget dont l'objectName porte le même fond en QSS."""
+    if bg is None:
+        bg = color("grid_bg")
+    if line is None:
+        line = color("grid_line")
     p = QPainter(widget)
     p.fillRect(widget.rect(), QColor(bg))
     pen = QPen(QColor(line)); pen.setWidth(1)

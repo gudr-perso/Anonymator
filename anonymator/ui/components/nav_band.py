@@ -1,6 +1,7 @@
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QPushButton
 from PySide6.QtCore import Qt
 from anonymator.ui.icons import icon
+from anonymator.ui.theme import color
 
 
 class NavBand(QFrame):
@@ -17,7 +18,7 @@ class NavBand(QFrame):
 
         self.home_btn = QPushButton("  Accueil")
         self.home_btn.setObjectName("tab")
-        self.home_btn.setIcon(icon("home", "#6B7C72", 18))
+        self.home_btn.setIcon(icon("home", color("text_muted"), 18))
         self.home_btn.setCursor(Qt.PointingHandCursor)
         if on_home is not None:
             self.home_btn.clicked.connect(on_home)
@@ -26,7 +27,7 @@ class NavBand(QFrame):
 
         self.active_btn = QPushButton("  " + title)
         self.active_btn.setObjectName("tabActive")
-        self.active_btn.setIcon(icon(icon_name, "#00965E", 18))
+        self.active_btn.setIcon(icon(icon_name, color("action"), 18))
         self.active_btn.setEnabled(False)
 
         row.addWidget(self.home_btn)
