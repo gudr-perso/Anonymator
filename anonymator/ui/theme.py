@@ -136,6 +136,16 @@ QPushButton#tabActive {{ background: transparent; color: {action}; border: none;
 QPushButton#tabActive:disabled {{ color: {action}; }}
 #EntityCard {{ background: {surface}; border: 1px solid {border}; border-radius: 10px; }}
 #EntityCard:hover {{ border-color: {action}; }}
+/* Barres de défilement — poignée à la couleur foncée du thème
+   (vert foncé en CUMA, bleu foncé en CAP), piste discrète */
+QScrollBar:vertical {{ background: transparent; width: 12px; margin: 0; }}
+QScrollBar:horizontal {{ background: transparent; height: 12px; margin: 0; }}
+QScrollBar::handle:vertical {{ background: {dark}; min-height: 28px; border-radius: 6px; }}
+QScrollBar::handle:horizontal {{ background: {dark}; min-width: 28px; border-radius: 6px; }}
+QScrollBar::handle:hover {{ background: {action}; }}
+QScrollBar::add-line, QScrollBar::sub-line {{ width: 0; height: 0;
+                                             background: none; border: none; }}
+QScrollBar::add-page, QScrollBar::sub-page {{ background: transparent; }}
 """
 
 

@@ -37,12 +37,57 @@ def test_load_renders_preview_without_analysis(qtbot, tmp_path):
     assert s._page_count == 1
 
 
-def test_load_multipage_shows_pager(qtbot, tmp_path):
-    src = make_repeat_pdf(tmp_path / "r.pdf")   # 1 page ; on garde le pager caché
+def test_single_page_shows_bar_but_hides_pagination(qtbot, tmp_path):
+    # Page unique : la barre du bas est visible (elle héberge le zoom), mais
+    # les contrôles de pagination restent masqués.
+    src = make_repeat_pdf(tmp_path / "r.pdf")   # 1 page
     s = _screen(); qtbot.addWidget(s); s.show()
     s.load_path(str(src))
     assert s.canvas.has_page() is True
-    assert s.pager_widget.isVisible() is (s._page_count > 1)
+    assert s._page_count == 1
+    assert s.pager_widget.isVisible() is True
+    assert s.btn_prev.isVisibleTo(s.pager_widget) is False
+    assert s.btn_next.isVisibleTo(s.pager_widget) is False
+    assert s.btn_zoom_in.isVisibleTo(s.pager_widget) is True
+
+
+def test_multipage_shows_pagination(qtbot, tmp_path):
+    doc = fitz.open()
+    for i in range(2):
+        doc.new_page().insert_text((72, 100), f"page {i}", fontsize=11)
+    path = tmp_path / "multi.pdf"; doc.save(str(path)); doc.close()
+    s = _screen(); qtbot.addWidget(s); s.show()
+    s.load_path(str(path))
+    assert s._page_count == 2
+    assert s.pager_widget.isVisible() is True
+    assert s.btn_next.isVisibleTo(s.pager_widget) is True
+
+
+def test_zoom_button_updates_label(qtbot, tmp_path):
+    src = make_repeat_pdf(tmp_path / "r.pdf")
+    s = _screen(); qtbot.addWidget(s); s.show()
+    s.load_path(str(src))
+    assert s.lbl_zoom.text() == "100 %"
+    s._zoom(s.canvas.zoom_in)
+    assert s.canvas.display_zoom > 1.0
+    assert s.lbl_zoom.text() == f"{round(s.canvas.display_zoom * 100)} %"
+
+
+def test_fit_button_enables_fit_mode(qtbot, tmp_path):
+    src = make_repeat_pdf(tmp_path / "r.pdf")
+    s = _screen(); qtbot.addWidget(s); s.resize(500, 600); s.show()
+    qtbot.waitExposed(s)
+    s.load_path(str(src))
+    s.btn_fit.click()
+    assert s.canvas._fit_width is True
+
+
+def test_shortcuts_are_documented_in_screen(qtbot):
+    s = _screen(); qtbot.addWidget(s)
+    txt = s.lbl_shortcuts.text()
+    # la légende à l'écran mentionne les raccourcis de zoom
+    assert "Ctrl" in txt
+    assert "molette" in txt.lower()
 
 
 def test_load_corrupt_pdf_shows_error_immediately(qtbot, tmp_path):

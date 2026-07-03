@@ -88,6 +88,16 @@ def test_color_reads_active_theme():
 
 
 
+def test_scrollbars_handle_uses_dark_theme_color():
+    """Les barres de défilement prennent la couleur foncée du thème
+    (vert foncé en CUMA, bleu foncé en CAP)."""
+    from anonymator.ui.theme import build_qss, THEMES
+    for theme in ("cuma", "cap"):
+        qss = build_qss(theme)
+        assert "QScrollBar::handle:vertical { background: " + THEMES[theme]["dark"] in qss
+        assert "QScrollBar::handle:horizontal { background: " + THEMES[theme]["dark"] in qss
+
+
 def test_pageinfo_uses_hero_text_readable_on_grid():
     """Le libellé de pagination est posé sur le fond quadrillé (transparent) :
     il doit suivre hero_text (blanc en CAP sur navy) et rester inchangé en CUMA."""

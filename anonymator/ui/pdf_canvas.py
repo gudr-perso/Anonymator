@@ -21,12 +21,19 @@ class PdfCanvas(QGraphicsView):
 
     manual_rect_drawn = Signal(tuple)   # (x0, y0, x1, y1) en points PDF
 
+    ZOOM_STEP = 1.25
+    ZOOM_MIN = 0.25
+    ZOOM_MAX = 8.0
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self._scene = QGraphicsScene(self)
         self.setScene(self._scene)
         self.setRenderHints(self.renderHints())
+        self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
         self._zoom = 2.0
+        self._display = 1.0
+        self._fit_width = False
         self._pixmap_item = None
         self._overlay_items: list[QGraphicsRectItem] = []
         self._draw_mode = False
@@ -37,11 +44,12 @@ class PdfCanvas(QGraphicsView):
         return self._pixmap_item is not None
 
     def clear(self) -> None:
-        """Vide le canevas (aucune page, aucun overlay)."""
+        """Vide le canevas (aucune page, aucun overlay) et remet le zoom à 1."""
         self._scene.clear()
         self._pixmap_item = None
         self._overlay_items = []
         self._rubber = None
+        self.reset_zoom()
 
     def overlay_count(self) -> int:
         return len(self._overlay_items)
@@ -49,6 +57,65 @@ class PdfCanvas(QGraphicsView):
     def set_draw_mode(self, on: bool) -> None:
         self._draw_mode = on
         self.setCursor(Qt.CrossCursor if on else Qt.ArrowCursor)
+
+    # --- zoom d'affichage (transformation de vue, indépendant de self._zoom
+    #     qui reste le facteur de rasterisation scène ↔ points PDF) ---
+    @property
+    def display_zoom(self) -> float:
+        return self._display
+
+    def _apply_display_zoom(self) -> None:
+        self.resetTransform()
+        self.scale(self._display, self._display)
+
+    def zoom_in(self) -> None:
+        self._fit_width = False
+        self._set_display_zoom(self._display * self.ZOOM_STEP)
+
+    def zoom_out(self) -> None:
+        self._fit_width = False
+        self._set_display_zoom(self._display / self.ZOOM_STEP)
+
+    def reset_zoom(self) -> None:
+        self._fit_width = False
+        self._set_display_zoom(1.0)
+
+    def fit_to_width(self) -> None:
+        """Ajuste le zoom pour que la largeur de la page remplisse la zone
+        visible. Reste actif au redimensionnement jusqu'à un zoom manuel."""
+        if not self.has_page():
+            return
+        self._fit_width = True
+        self._apply_fit_width()
+
+    def _apply_fit_width(self) -> None:
+        avail = self.viewport().width() - 2   # petite marge
+        scene_w = self._scene.width()
+        if scene_w <= 0 or avail <= 0:
+            return
+        zoom = avail / scene_w
+        # réserve la place de la barre de défilement verticale si la page déborde
+        if self._scene.height() * zoom > self.viewport().height():
+            avail -= self.verticalScrollBar().sizeHint().width()
+            zoom = avail / scene_w
+        self._set_display_zoom(zoom)
+
+    def _set_display_zoom(self, value: float) -> None:
+        self._display = max(self.ZOOM_MIN, min(self.ZOOM_MAX, value))
+        self._apply_display_zoom()
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if self._fit_width and self.has_page():
+            self._apply_fit_width()
+
+    def wheelEvent(self, event):
+        # Ctrl + molette : zoome autour du curseur (AnchorUnderMouse).
+        if event.modifiers() & Qt.ControlModifier and self.has_page():
+            self.zoom_in() if event.angleDelta().y() > 0 else self.zoom_out()
+            event.accept()
+            return
+        super().wheelEvent(event)
 
     def set_page(self, png: bytes, zoom: float) -> None:
         self._zoom = zoom
@@ -58,6 +125,8 @@ class PdfCanvas(QGraphicsView):
         img = QImage.fromData(png, "PNG")
         self._pixmap_item = self._scene.addPixmap(QPixmap.fromImage(img))
         self._scene.setSceneRect(self._pixmap_item.boundingRect())
+        if self._fit_width:
+            self._apply_fit_width()
 
     def set_overlays(self, entity_rects: list[tuple[Rect, str]],
                      manual_rects: list[Rect]) -> None:

@@ -4,7 +4,7 @@ from pathlib import Path
 from PySide6.QtWidgets import (QWidget, QFrame, QVBoxLayout, QHBoxLayout, QPushButton,
                                QLabel, QFileDialog, QMessageBox, QTreeWidget,
                                QTreeWidgetItem, QHeaderView)
-from PySide6.QtGui import QColor, QFont
+from PySide6.QtGui import QColor, QFont, QShortcut, QKeySequence
 from PySide6.QtCore import Qt
 from anonymator.ui.components.grid import paint_grid
 from anonymator.ui.theme import color
@@ -106,20 +106,44 @@ class PdfScreen(QWidget):
         body.addWidget(canvas_card, 3); body.addWidget(ent_card, 2)
         root.addLayout(body, 1)
 
-        # ---- pagination ----
+        # ---- pagination + zoom ----
         self.pager = QHBoxLayout(); self.pager.setContentsMargins(18, 6, 18, 14)
+        # zoom (gauche) : − / % (remise à 100 %) / +
+        self.btn_zoom_out = QPushButton("−"); self.btn_zoom_out.setObjectName("pager")
+        self.btn_zoom_out.setToolTip("Dézoomer (Ctrl + molette)")
+        self.btn_zoom_out.clicked.connect(lambda: self._zoom(self.canvas.zoom_out))
+        self.lbl_zoom = QPushButton("100 %"); self.lbl_zoom.setObjectName("pager")
+        self.lbl_zoom.setToolTip("Réinitialiser le zoom")
+        self.lbl_zoom.clicked.connect(lambda: self._zoom(self.canvas.reset_zoom))
+        self.btn_zoom_in = QPushButton("+"); self.btn_zoom_in.setObjectName("pager")
+        self.btn_zoom_in.setToolTip("Zoomer (Ctrl +, ou Ctrl + molette)")
+        self.btn_zoom_in.clicked.connect(lambda: self._zoom(self.canvas.zoom_in))
+        self.btn_fit = QPushButton("Ajuster"); self.btn_fit.setObjectName("pager")
+        self.btn_fit.setToolTip("Ajuster à la largeur (Ctrl + 9)")
+        self.btn_fit.clicked.connect(lambda: self._zoom(self.canvas.fit_to_width))
+        self.lbl_shortcuts = QLabel(
+            "Ctrl +/− : zoom · Ctrl 0 : 100 % · Ctrl 9 : ajuster · Ctrl + molette")
+        self.lbl_shortcuts.setObjectName("hint")
+        # pagination (droite)
         self.btn_prev = QPushButton("‹ Précédent"); self.btn_prev.setObjectName("pager")
         self.btn_prev.clicked.connect(lambda: self._go(self.page - 1))
         self.lbl_page = QLabel(""); self.lbl_page.setObjectName("pageInfo")
         self.lbl_page.setAlignment(Qt.AlignCenter)
         self.btn_next = QPushButton("Suivant ›"); self.btn_next.setObjectName("pager")
         self.btn_next.clicked.connect(lambda: self._go(self.page + 1))
-        self.pager.addWidget(self.btn_prev); self.pager.addStretch()
-        self.pager.addWidget(self.lbl_page); self.pager.addStretch()
+        self.pager.addWidget(self.btn_zoom_out); self.pager.addWidget(self.lbl_zoom)
+        self.pager.addWidget(self.btn_zoom_in); self.pager.addWidget(self.btn_fit)
+        self.pager.addSpacing(14); self.pager.addWidget(self.lbl_shortcuts)
+        self.pager.addStretch()
+        self.pager.addWidget(self.btn_prev)
+        self.pager.addWidget(self.lbl_page)
         self.pager.addWidget(self.btn_next)
         self.pager_widget = QWidget(); self.pager_widget.setObjectName("PagerBar")
         self.pager_widget.setLayout(self.pager); self.pager_widget.hide()
         root.addWidget(self.pager_widget)
+
+        # ---- raccourcis clavier de zoom (documentés via lbl_shortcuts) ----
+        self._make_zoom_shortcuts()
 
         # Voile "travail en cours" superposé (masqué par défaut)
         self._overlay = QLabel("⏳  Analyse en cours…", self)
@@ -131,6 +155,9 @@ class PdfScreen(QWidget):
         super().resizeEvent(event)
         if self._overlay.isVisible():
             self._overlay.setGeometry(self.rect())
+        # en mode « Ajuster », le canvas se recale seul : on resynchronise le %.
+        if self.canvas.has_page():
+            self._update_zoom_label()
 
     def paintEvent(self, _event):
         paint_grid(self)
@@ -161,7 +188,7 @@ class PdfScreen(QWidget):
             self._page_count = pdf_io.page_count(self.path)
             self.page = 0
             self._render_page()
-            self.pager_widget.setVisible(self._page_count > 1)
+            self._show_pager()
             self.meta_label.setText(
                 f"{self._page_count} page(s) — cliquez « Analyser » pour détecter")
         except (CorruptPdfError, EncryptedPdfError) as e:
@@ -209,7 +236,7 @@ class PdfScreen(QWidget):
         self.page = 0
         self._build_side()
         self.side.show()
-        self.pager_widget.setVisible(self._page_count > 1)
+        self._show_pager()
         self._render_page()
 
     # ---------- panneau latéral (même structure que FileScreen) ----------
@@ -278,6 +305,37 @@ class PdfScreen(QWidget):
     def _go(self, page: int):
         self.page = max(0, min(page, self._page_count - 1))
         self._render_page()
+
+    # ---------- zoom ----------
+    def _make_zoom_shortcuts(self):
+        # Ctrl + / Ctrl = (même touche sans Maj) → zoom ; Ctrl - → dézoom ;
+        # Ctrl 0 → 100 % ; Ctrl 9 → ajuster à la largeur.
+        specs = [
+            ("Ctrl++", self.canvas.zoom_in), ("Ctrl+=", self.canvas.zoom_in),
+            ("Ctrl+-", self.canvas.zoom_out),
+            ("Ctrl+0", self.canvas.reset_zoom),
+            ("Ctrl+9", self.canvas.fit_to_width),
+        ]
+        for seq, action in specs:
+            sc = QShortcut(QKeySequence(seq), self)
+            sc.activated.connect(lambda a=action: self._zoom(a))
+
+    def _zoom(self, action):
+        action()
+        self._update_zoom_label()
+
+    def _update_zoom_label(self):
+        self.lbl_zoom.setText(f"{round(self.canvas.display_zoom * 100)} %")
+
+    def _show_pager(self):
+        """Affiche la barre du bas dès qu'une page est présente. Les contrôles
+        de pagination ne sont visibles qu'en multi-page ; le zoom reste toujours
+        disponible."""
+        multi = self._page_count > 1
+        for w in (self.btn_prev, self.lbl_page, self.btn_next):
+            w.setVisible(multi)
+        self.pager_widget.setVisible(self._page_count >= 1)
+        self._update_zoom_label()
 
     # ---------- zone manuelle ----------
     def _toggle_zone(self, on: bool):
