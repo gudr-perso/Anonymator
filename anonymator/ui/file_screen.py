@@ -274,7 +274,20 @@ class FileScreen(QWidget):
         self._anon_worker.done.connect(self._on_anonymized)
         self._anon_worker.error.connect(self._on_run_error)
         self._anon_worker.finished.connect(self._anon_worker.deleteLater)
+        self._anon_worker.finished.connect(self._forget_anon_worker)
         self._anon_worker.start()
+
+    def _forget_worker(self):
+        # Le worker a fini : son objet C++ est supprimé (deleteLater). On oublie
+        # le wrapper (devenu mort) pour que le garde-fou de `analyze()` ne le
+        # déréférence pas au prochain lancement. `sender()` évite d'effacer un
+        # worker plus récent déjà assigné.
+        if self.sender() is self._worker:
+            self._worker = None
+
+    def _forget_anon_worker(self):
+        if self.sender() is self._anon_worker:
+            self._anon_worker = None
 
     def _on_anonymized(self, result):
         self._set_busy(False)
@@ -305,6 +318,7 @@ class FileScreen(QWidget):
             self._worker.scan_finished.connect(self._on_ooxml_scanned)
             self._worker.error.connect(self._on_scan_error)
             self._worker.finished.connect(self._worker.deleteLater)
+            self._worker.finished.connect(self._forget_worker)
             self._worker.start()
             return
         if self.doc is None:
@@ -320,6 +334,7 @@ class FileScreen(QWidget):
         self._worker.scan_finished.connect(self._on_scanned)
         self._worker.error.connect(self._on_scan_error)
         self._worker.finished.connect(self._worker.deleteLater)
+        self._worker.finished.connect(self._forget_worker)
         self._worker.start()
 
     def _set_busy(self, busy: bool):

@@ -215,6 +215,31 @@ def test_file_no_banner_with_injected_detector(qtbot, tmp_path):
         assert s.banner.isVisibleTo(s) is False
 
 
+def test_analyze_docx_twice_does_not_crash(tmp_path, qtbot):
+    """Régression : analyser un 2e document après un 1er ne doit pas planter avec
+    « Internal C++ object (OoxmlScanWorker) already deleted ». Le worker précédent
+    est supprimé côté C++ par deleteLater ; le garde-fou de `analyze()` ne doit pas
+    déréférencer ce wrapper mort."""
+    from tests.ooxml_fixtures import make_docx
+    src1 = make_docx(tmp_path / "d1.docx")
+    src2 = make_docx(tmp_path / "d2.docx")
+    loader = ModelLoader(FakeNer({"Claire Martin": "PERSON"}))
+    s = FileScreen(Referential.load_default(), loader,
+                   Preferences(output_dir=str(tmp_path)), on_back=lambda: None)
+    qtbot.addWidget(s)
+
+    s.load_path(str(src1))
+    s.analyze()
+    qtbot.waitUntil(lambda: s.session is not None, timeout=10000)
+    # À ce stade le 1er worker a fini : son objet C++ est supprimé (deleteLater)
+    # mais `s._worker` en garde un wrapper mort.
+
+    s.load_path(str(src2))
+    s.analyze()                                            # ne doit pas lever
+    qtbot.waitUntil(lambda: s.session is not None, timeout=10000)
+    assert "PERSON" in s.session.types()
+
+
 def test_file_screen_reviews_docx(tmp_path, qtbot):
     from anonymator.referential import Referential
     from anonymator.ner import FakeNer
