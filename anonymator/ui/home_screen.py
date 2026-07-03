@@ -116,7 +116,7 @@ class HomeScreen(QWidget):
         self.btn_text = NavCard("document", "Coller du texte",
                                 "Analyser et masquer un texte collé", on_click=on_text)
         self.btn_file = NavCard("folder", "Importer un fichier",
-                                ".txt, .csv ou .xlsx", on_click=on_file)
+                                ".txt, .csv, .xlsx, .docx ou .pptx", on_click=on_file)
         self.btn_pdf = NavCard("document", "Importer un PDF",
                                "Caviarder ou extraire (PDF natifs)", on_click=on_pdf)
         self.btn_settings = NavCard("settings", "Paramètres",
