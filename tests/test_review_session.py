@@ -45,3 +45,25 @@ def test_unconfirmed_not_retained_by_default():
     assert s.retained() == []                       # non confirmé → non retenu
     s.set_entity_enabled(0, True)
     assert len(s.retained()) == 1
+
+
+def test_unconfirmed_lists_pending_invalid_entities():
+    text = "IBAN FR00 0000 fin"
+    ents = [Entity("IBAN", "FR00 0000", 5, 14, "deterministic", 1.0, confirmed=False)]
+    s = ReviewSession(text, ents)
+    # décochée par défaut → à surligner distinctement
+    assert [e.type for e in s.unconfirmed()] == ["IBAN"]
+    assert s.retained() == []
+    # une fois cochée, elle passe en « retenue » et sort de unconfirmed()
+    s.set_entity_enabled(0, True)
+    assert s.unconfirmed() == []
+    assert len(s.retained()) == 1
+
+
+def test_unconfirmed_excludes_confirmed_and_disabled_type():
+    text = "x"
+    ents = [Entity("PERSON", "x", 0, 1, "ner", 0.9, confirmed=True),
+            Entity("NIR", "1 23", 0, 1, "deterministic", 1.0, confirmed=False)]
+    s = ReviewSession(text, ents)
+    s.set_type_enabled("NIR", False)                # type désactivé → pas surligné
+    assert s.unconfirmed() == []

@@ -25,6 +25,17 @@ def test_analyze_populates_session(qtbot):
     assert {"PERSON", "EMAIL"} <= types
 
 
+def test_unconfirmed_iban_highlighted_dotted(qtbot):
+    from PySide6.QtGui import QTextCharFormat
+    s = _screen(); qtbot.addWidget(s)
+    s.input.setPlainText("RIB FR76 3000 4000 1200 0000 1234 567 fin")
+    _analyze(qtbot, s)
+    iban = next(e for e in s.session.entities() if e.type == "IBAN")
+    assert iban.confirmed is False                      # IBAN factice
+    styles = {sel.format.underlineStyle() for sel in s.input.extraSelections()}
+    assert QTextCharFormat.DotLine in styles            # surligné, en pointillé
+
+
 def test_apply_produces_masked_text(qtbot):
     s = _screen(); qtbot.addWidget(s)
     s.input.setPlainText("Claire Martin mail c@x.fr")

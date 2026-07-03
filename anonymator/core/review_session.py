@@ -36,6 +36,18 @@ class ReviewSession:
                 out.append(e)
         return out
 
+    def unconfirmed(self) -> list[Entity]:
+        """Entités au format valide mais clé de contrôle invalide, non masquées
+        par défaut (case décochée). À surligner distinctement dans la revue avec
+        la mention « non confirmé » — l'utilisateur peut cocher pour masquer.
+        Exclut celles que l'utilisateur a déjà cochées (→ retenues) ou dont le
+        type est désactivé."""
+        out = []
+        for e, on in zip(self._entities, self._enabled):
+            if not on and not e.confirmed and e.type not in self._disabled_types:
+                out.append(e)
+        return out
+
     def masked_text(self, ref) -> str:
         return apply_masking(self.text, self.retained(), ref)
 
