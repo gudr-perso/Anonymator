@@ -21,7 +21,11 @@ _PATTERNS = [
         r"\b\d{1,4}(?:\s?(?:bis|ter|quater))?[,\s]+"
         r"(?:rue|avenue|av|ave|bd|bld|boulevard|impasse|all[ée]e|allee|"
         r"chemin|place|route|rte|quai|cours|passage|square|villa|voie|"
-        r"faubourg|fbg|sentier|r[ée]sidence|residence)\b[^\n]*",
+        r"faubourg|fbg|sentier|r[ée]sidence|residence)\b"
+        # nom de voie : quelques mots après le type de voie, bornés. On
+        # s'arrête à toute ponctuation (virgule, point, parenthèse…) et au
+        # retour à la ligne, pour ne pas engloutir la phrase en prose.
+        r"(?:[ \t]+[\w'’&-]+){0,5}",
         re.IGNORECASE),
      "ADDRESS", None),
     (re.compile(r"\b\d{5}\b"), "POSTAL_CODE",

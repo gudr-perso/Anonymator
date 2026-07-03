@@ -93,3 +93,20 @@ def test_address_stops_at_newline():
 
 def test_postal_city_not_matched_as_address():
     assert all(t != "ADDRESS" for (t, v) in types_at("91300 MASSY"))
+
+
+def test_address_in_prose_does_not_swallow_sentence():
+    # En prose (aucun retour à la ligne), la queue de l'adresse ne doit pas
+    # engloutir le reste de la phrase. Cf. régression du span géant [ADRESSE].
+    text = ("elle a récupéré les clés au 18 rue des Acacias, appt B12 (69003), "
+            "puis elle a filé s'installer au calme avant de reprendre le fil.")
+    vals = {v for (t, v) in types_at(text) if t == "ADDRESS"}
+    assert "18 rue des Acacias" in vals
+    # aucune adresse ne doit déborder sur la suite de la phrase
+    assert all(len(v) <= len("18 rue des Acacias") for v in vals)
+
+
+def test_address_stops_at_comma():
+    vals = {v for (t, v) in types_at("16 RUE JEROME BONAPARTE, 91300 MASSY")
+            if t == "ADDRESS"}
+    assert "16 RUE JEROME BONAPARTE" in vals
