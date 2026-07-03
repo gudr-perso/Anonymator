@@ -157,10 +157,13 @@ class TextScreen(QWidget):
             val = QLabel(e.value); val.setStyleSheet("font-size: 13px;")
             col.addWidget(val)
             if not e.confirmed:
-                note = QLabel("⚠ format ressemblant mais erroné")
+                note = QLabel("⚠ format valide mais clé mathématiquement fausse")
                 note.setStyleSheet("color:#9a031e; font-style:italic; font-size:11px;")
-                note.setToolTip("Le motif a la bonne forme mais la validation "
-                                "(clé de contrôle) a échoué — non masqué par défaut.")
+                note.setToolTip("La structure est correcte mais la clé de contrôle "
+                                "(mod 97 pour l'IBAN, clé de contrôle pour le N° de "
+                                "sécu) ne tombe pas juste — probablement une valeur "
+                                "factice ou une coquille. Surligné en pointillé, non "
+                                "masqué par défaut ; cochez pour le masquer.")
                 col.addWidget(note)
             h.addLayout(col); h.addStretch()
             tog = ToggleSwitch(); tog.setChecked(e.confirmed)
@@ -176,19 +179,26 @@ class TextScreen(QWidget):
     def _highlight(self):
         if self.session is None:
             return
-        retained = set(id(e) for e in self.session.retained())
         doc = self.input.document(); extra = []
-        for e in self.session.entities():
-            if id(e) not in retained:
-                continue
-            fmt = QTextCharFormat(); c = QColor(color_for(e.type)); c.setAlpha(70)
-            fmt.setBackground(c); fmt.setUnderlineColor(QColor(color_for(e.type)))
-            fmt.setUnderlineStyle(QTextCharFormat.SingleUnderline)
-            cur = QTextCursor(doc); cur.setPosition(e.start)
-            cur.setPosition(e.end, QTextCursor.KeepAnchor)
-            sel = QTextEdit.ExtraSelection(); sel.cursor = cur; sel.format = fmt
-            extra.append(sel)
+        for e in self.session.retained():
+            extra.append(self._selection(doc, e, tentative=False))
+        # entités « non confirmées » (clé de contrôle invalide) : surlignage
+        # distinct, pointillé et atténué — détectées mais non masquées.
+        for e in self.session.unconfirmed():
+            extra.append(self._selection(doc, e, tentative=True))
         self.input.setExtraSelections(extra)
+
+    def _selection(self, doc, e, tentative):
+        base = QColor(color_for(e.type))
+        bg = QColor(base); bg.setAlpha(30 if tentative else 70)
+        fmt = QTextCharFormat(); fmt.setBackground(bg)
+        fmt.setUnderlineColor(base)
+        fmt.setUnderlineStyle(QTextCharFormat.DotLine if tentative
+                              else QTextCharFormat.SingleUnderline)
+        cur = QTextCursor(doc); cur.setPosition(e.start)
+        cur.setPosition(e.end, QTextCursor.KeepAnchor)
+        sel = QTextEdit.ExtraSelection(); sel.cursor = cur; sel.format = fmt
+        return sel
 
     def _refresh_stats(self):
         if self.session is None:
