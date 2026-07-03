@@ -23,6 +23,10 @@ from anonymator.core.model_status import is_model_available
 from anonymator.ner import NullNer
 from anonymator.ui.model_loader import ModelLoader
 from anonymator.ui.components.banner import ModelBanner
+from anonymator.core.ooxml_review_session import OoxmlReviewSession
+from anonymator.ui.ooxml_scan_worker import OoxmlScanWorker
+from anonymator.ui.components.perimetre_card import PerimetreCard
+from anonymator.files.ooxml import xml_parts
 
 PAGE_SIZE = 20
 
@@ -42,6 +46,7 @@ class FileScreen(QWidget):
         self.path: Path | None = None
         self.doc = None
         self.session: FileReviewSession | None = None
+        self._ooxml = None
         self.page = 0
         self._busy = False
         self._degraded = False
@@ -62,7 +67,7 @@ class FileScreen(QWidget):
         self._file_ic = QLabel(); self._file_ic.setPixmap(icon("document", color("action")).pixmap(22, 22))
         info_col = QVBoxLayout(); info_col.setSpacing(1)
         self.name_label = QLabel("Aucun fichier"); self.name_label.setObjectName("fileName")
-        self.meta_label = QLabel("Importez un fichier .txt, .csv ou .xlsx")
+        self.meta_label = QLabel("Importez un fichier .txt, .csv, .xlsx, .docx ou .pptx")
         self.meta_label.setObjectName("fileMeta")
         info_col.addWidget(self.name_label); info_col.addWidget(self.meta_label)
         bar.addWidget(self._file_ic); bar.addLayout(info_col); bar.addStretch()
@@ -107,6 +112,9 @@ class FileScreen(QWidget):
         hint.setObjectName("hint"); hint.setWordWrap(True)
         ent_card.body.addWidget(hint)
         ent_card.body.addWidget(self.side)
+        self.perimetre = PerimetreCard()
+        self.perimetre.hide()
+        ent_card.body.addWidget(self.perimetre)
         self.side.hide(); hint.hide(); self._hint = hint
 
         body = QHBoxLayout(); body.setContentsMargins(18, 12, 18, 8); body.setSpacing(12)
@@ -154,7 +162,7 @@ class FileScreen(QWidget):
     def _set_meta(self, status: str | None = None):
         if not self.path:
             self.name_label.setText("Aucun fichier")
-            self.meta_label.setText("Importez un fichier .txt, .csv ou .xlsx")
+            self.meta_label.setText("Importez un fichier .txt, .csv, .xlsx, .docx ou .pptx")
             return
         self.name_label.setText(self.path.name)
         kind = f"Fichier {self.path.suffix.lstrip('.').upper()}"
@@ -170,7 +178,8 @@ class FileScreen(QWidget):
     # ---------- opening / preview ----------
     def _open(self):
         path, _ = QFileDialog.getOpenFileName(
-            self, "Ouvrir", "", "Fichiers (*.txt *.csv *.xlsx)")
+            self, "Ouvrir", "",
+            "Fichiers (*.txt *.csv *.xlsx *.docx *.pptx)")
         if path:
             self.load_path(path)
 
@@ -178,13 +187,19 @@ class FileScreen(QWidget):
         self.path = Path(path)
         self.doc = None
         self.session = None
+        self._ooxml = None
         self.side.hide(); self.pager_widget.hide()
         self.occ_badge.hide(); self._hint.hide()
         suffix = self.path.suffix.lower()
-        self.btn_review.setEnabled(suffix in (".csv", ".txt"))
+        self.btn_review.setEnabled(suffix in (".csv", ".txt", ".docx", ".pptx"))
         if suffix == ".csv":
             self.doc = csv_io.read_csv(self.path)
             self._fill_preview(self.doc.rows[:50])
+        else:
+            self.table.clear()
+            self.table.setRowCount(0)
+            self.table.setColumnCount(0)
+        self.perimetre.setVisible(False)
         self._set_meta()
 
     def _fill_preview(self, rows):
@@ -209,9 +224,12 @@ class FileScreen(QWidget):
         out_dir = Path(self.prefs.output_dir) if self.prefs.output_dir else self.path.parent
         when = when or datetime.now()
         if self.session is not None:
+            out = anonymized_path(self.path, out_dir, when)
+            if isinstance(self.session, OoxmlReviewSession):
+                report = self.session.apply_and_save(out)
+                return FileResult(out, report)
             masked = self.session.masked_document()
             report = self.session.report()
-            out = anonymized_path(self.path, out_dir, when)
             csv_io.write_csv(masked, out)
             return FileResult(out, report)
         try:
@@ -272,6 +290,16 @@ class FileScreen(QWidget):
             if self.on_text_review:
                 self.on_text_review(text)
             return
+        if self.path and self.path.suffix.lower() in (".docx", ".pptx"):
+            self._degraded = not (self.loader.has_detector() or is_model_available())
+            loader = ModelLoader(NullNer()) if self._degraded else self.loader
+            self._set_busy(True)
+            self._worker = OoxmlScanWorker(self.path, loader, self.ref)
+            self._worker.scan_finished.connect(self._on_ooxml_scanned)
+            self._worker.error.connect(self._on_scan_error)
+            self._worker.finished.connect(self._worker.deleteLater)
+            self._worker.start()
+            return
         if self.doc is None:
             return
         cols = default_maskable_columns(self.doc.rows, self.doc.has_header)
@@ -316,6 +344,45 @@ class FileScreen(QWidget):
         self.side.show(); self.pager_widget.show()
         self._render_page()
 
+    def _on_ooxml_scanned(self, res):
+        self._ooxml = res
+        if res.fmt == "docx":
+            save_fn = lambda out: res.doc.save(str(out))
+            post_fn = lambda out, rep: xml_parts.postprocess_docx(
+                out, self._detector_for_apply(), self.ref, rep)
+        else:
+            save_fn = lambda out: res.doc.save(str(out))
+            post_fn = lambda out, rep: xml_parts.postprocess_metadata(out, rep)
+        self.session = OoxmlReviewSession(
+            res.units, res.scanned, self.ref, save_fn, post_fn)
+        self._set_busy(False)
+        self.banner.setVisible(self._degraded)
+        self.occ_badge.setText(f"{_fmt_int(self.session.total_occurrences())} occ.")
+        self.occ_badge.show(); self._hint.show()
+        self._build_side()
+        self.side.show(); self.perimetre.show()
+        self.pager_widget.hide()
+        self._render_units_page()
+
+    def _detector_for_apply(self):
+        # Post-passe (commentaires/notes) : même détecteur que l'analyse.
+        return NullNer() if self._degraded else self.loader.get()
+
+    def _render_units_page(self):
+        units = self._ooxml.units
+        self.table.clear()
+        self.table.setColumnCount(2)
+        self.table.setHorizontalHeaderLabels(["Emplacement", "Texte extrait"])
+        self.table.setRowCount(len(units))
+        for r, u in enumerate(units):
+            self.table.setItem(r, 0, QTableWidgetItem(u.location))
+            item = QTableWidgetItem(u.text())
+            ents = self.session.entities_for_unit(r)
+            if ents:
+                col = QColor(color_for(ents[0].type)); col.setAlpha(70)
+                item.setBackground(col)
+            self.table.setItem(r, 1, item)
+
     def _build_side(self):
         from PySide6.QtGui import QFont
         bold = QFont(); bold.setBold(True)
@@ -353,7 +420,10 @@ class FileScreen(QWidget):
         else:
             self.session.set_value_enabled(etype, value, checked)
         self._refresh_counts()
-        self._render_page()
+        if isinstance(self.session, OoxmlReviewSession):
+            self._render_units_page()
+        else:
+            self._render_page()
 
     def _refresh_counts(self):
         for i in range(self.side.topLevelItemCount()):

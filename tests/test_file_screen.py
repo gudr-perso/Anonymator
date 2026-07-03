@@ -213,3 +213,33 @@ def test_file_no_banner_with_injected_detector(qtbot, tmp_path):
         qtbot.waitUntil(lambda: s.session is not None, timeout=5000)
         assert s._degraded is False
         assert s.banner.isVisibleTo(s) is False
+
+
+def test_file_screen_reviews_docx(tmp_path, qtbot):
+    from anonymator.referential import Referential
+    from anonymator.ner import FakeNer
+    from anonymator.ui.model_loader import ModelLoader
+    from anonymator.ui.preferences import Preferences
+    from anonymator.ui.file_screen import FileScreen
+    from anonymator.core.ooxml_review_session import OoxmlReviewSession
+    from tests.ooxml_fixtures import make_docx
+
+    src = make_docx(tmp_path / "d.docx")
+    prefs = Preferences(output_dir=str(tmp_path))
+    loader = ModelLoader(FakeNer({"Claire Martin": "PERSON"}))
+    screen = FileScreen(Referential.load_default(), loader, prefs, on_back=lambda: None)
+    qtbot.addWidget(screen)
+    screen.load_path(str(src))
+    assert screen.btn_review.isEnabled()
+
+    screen.analyze()
+    with qtbot.waitSignal(screen._worker.scan_finished, timeout=10000):
+        pass
+    qtbot.waitUntil(lambda: screen.session is not None, timeout=10000)
+    assert isinstance(screen.session, OoxmlReviewSession)
+    assert "PERSON" in screen.session.types()
+
+    result = screen.run()
+    assert result.output_path.exists()
+    from docx import Document
+    assert "[PERSONNE]" in Document(str(result.output_path)).paragraphs[0].text
