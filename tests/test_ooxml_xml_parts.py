@@ -80,3 +80,27 @@ def test_postprocess_docx_masks_parts_and_purges_metadata(tmp_path):
     assert "Claire Martin" not in footnotes and "[PERSONNE]" in footnotes
     assert "Alice Durand" not in core
     assert any(r["original"] == "Claire Martin" for r in report.to_rows())
+
+
+def test_postprocess_docx_masks_endnotes(tmp_path):
+    path = tmp_path / "e.docx"
+    parts = {
+        "[Content_Types].xml": '<?xml version="1.0"?><Types/>',
+        "word/document.xml":
+            f'<?xml version="1.0"?><w:document xmlns:w="{W}"><w:body/></w:document>',
+        "word/endnotes.xml":
+            f'<?xml version="1.0"?><w:endnotes xmlns:w="{W}">'
+            f'<w:endnote w:type="separator" w:id="1">{_para("")}</w:endnote>'
+            f'<w:endnote w:id="2">{_para("Fin par Claire Martin")}</w:endnote>'
+            f'</w:endnotes>',
+    }
+    with zipfile.ZipFile(path, "w") as z:
+        for name, blob in parts.items():
+            z.writestr(name, blob)
+    report = xml_parts.postprocess_docx(
+        path, FakeNer({"Claire Martin": "PERSON"}),
+        Referential.load_default(), AuditReport())
+    with zipfile.ZipFile(path) as z:
+        endnotes = z.read("word/endnotes.xml").decode("utf-8")
+    assert "Claire Martin" not in endnotes and "[PERSONNE]" in endnotes
+    assert any(r["locations"].startswith("Note de fin") for r in report.to_rows())

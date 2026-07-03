@@ -42,3 +42,31 @@ def test_metadata_purged(tmp_path):
 def test_report_present(tmp_path):
     _, _, report = _anonymize(tmp_path)
     assert any(r["original"] == "Claire Martin" for r in report.to_rows())
+
+
+def test_group_shape_masked(tmp_path):
+    # Récursion dans un vrai groupe de formes (le fixture n'en contient pas).
+    from pptx.util import Inches
+    from pptx.enum.shapes import MSO_SHAPE_TYPE
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    group = slide.shapes.add_group_shape()
+    box = group.shapes.add_textbox(Inches(1), Inches(1), Inches(4), Inches(1))
+    box.text_frame.text = "Client Claire Martin"
+    src = tmp_path / "grp.pptx"
+    prs.save(str(src))
+    out, _ = pptx_io.anonymize_document(
+        src, FakeNer({"Claire Martin": "PERSON"}),
+        Referential.load_default(), tmp_path, when=datetime(2026, 7, 3, 9, 0, 0))
+
+    texts = []
+
+    def collect(shapes):
+        for sh in shapes:
+            if sh.shape_type == MSO_SHAPE_TYPE.GROUP:
+                collect(sh.shapes)
+            elif getattr(sh, "has_text_frame", False):
+                texts.append(sh.text_frame.text)
+
+    collect(Presentation(str(out)).slides[0].shapes)
+    assert "Client [PERSONNE]" in texts
