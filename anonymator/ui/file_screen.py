@@ -26,7 +26,7 @@ from anonymator.ui.components.banner import ModelBanner
 from anonymator.core.ooxml_review_session import OoxmlReviewSession
 from anonymator.ui.ooxml_scan_worker import OoxmlScanWorker
 from anonymator.ui.components.perimetre_card import PerimetreCard
-from anonymator.files.ooxml import xml_parts, metadata  # noqa: F401
+from anonymator.files.ooxml import xml_parts
 
 PAGE_SIZE = 20
 
@@ -377,8 +377,8 @@ class FileScreen(QWidget):
         for r, u in enumerate(units):
             self.table.setItem(r, 0, QTableWidgetItem(u.location))
             item = QTableWidgetItem(u.text())
-            if self.session.entities_for_unit(r):
-                ents = self.session.entities_for_unit(r)
+            ents = self.session.entities_for_unit(r)
+            if ents:
                 col = QColor(color_for(ents[0].type)); col.setAlpha(70)
                 item.setBackground(col)
             self.table.setItem(r, 1, item)
