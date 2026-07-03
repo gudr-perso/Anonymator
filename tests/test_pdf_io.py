@@ -102,6 +102,47 @@ def test_scan_pdf_propagates_missed_occurrence(tmp_path):
     assert len(persons) == 2
 
 
+class _WindowNer:
+    """Simule la limite d'entrée de GLiNER : ne détecte les surfaces que dans
+    les `window` premiers caractères du texte reçu (au-delà, GLiNER tronque)."""
+    def __init__(self, mapping, window):
+        self._mapping, self._window = mapping, window
+
+    def detect(self, text, labels):
+        head = text[:self._window]
+        out = []
+        for surface, etype in self._mapping.items():
+            i = head.find(surface)
+            if i >= 0:
+                out.append(Entity(etype, surface, i, i + len(surface),
+                                  "ner", 1.0, True))
+        return out
+
+
+def _make_long_pdf(path, tail_name):
+    """Page dont le texte dépasse la fenêtre du NER, avec un nom tout en bas."""
+    doc = fitz.open()
+    page = doc.new_page()
+    filler = " ".join(f"remplissage{n:03d}" for n in range(180))  # ~2500 chars
+    page.insert_textbox(fitz.Rect(40, 40, 550, 780),
+                        filler + " " + tail_name, fontsize=9)
+    doc.save(str(path))
+    doc.close()
+    return path
+
+
+def test_scan_pdf_chunks_pages_so_ner_sees_whole_page(tmp_path):
+    """Une entité au-delà de la fenêtre d'entrée du NER n'est retrouvée que si
+    scan_pdf découpe la page avant de la passer au NER (régression gltest2)."""
+    src = _make_long_pdf(tmp_path / "long.pdf", "Jean Dupont")
+    # fenêtre > taille de chunk (1000) mais < page entière (~2500) : modélise
+    # GLiNER, qui voit un chunk entier mais tronque la page complète.
+    ner = _WindowNer({"Jean Dupont": "PERSON"}, window=1200)
+    pages = pdf_io.scan_pdf(src, ner, _ref())
+    assert any(e.type == "PERSON" and e.value == "Jean Dupont"
+               for e in pages[0].entities)
+
+
 def test_render_page_at_returns_png(tmp_path):
     src = make_native_pdf(tmp_path / "n.pdf", "un texte")
     png = pdf_io.render_page_at(src, 0)

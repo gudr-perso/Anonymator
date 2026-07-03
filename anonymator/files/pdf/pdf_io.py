@@ -6,7 +6,7 @@ from pathlib import Path
 from anonymator.ner import NerDetector
 from anonymator.referential import Referential
 from anonymator.model import Entity
-from anonymator.pipeline import detect
+from anonymator.core.chunking import detect_long
 from anonymator.anonymize import apply_masking
 from anonymator.report.audit import AuditReport
 from anonymator.output_naming import anonymized_path
@@ -35,7 +35,7 @@ def scan_pdf(path: Path, ner: NerDetector, ref: Referential) -> list[PageScan]:
         pages = extract.extract_pages(doc)
     finally:
         doc.close()
-    per_page = [detect(pt.text, ner, ref) for pt in pages]
+    per_page = [detect_long(pt.text, ner, ref) for pt in pages]
     per_page = propagate.propagate_across_pages(pages, per_page)
     return [PageScan(pt.page_index, pt.text, pt.words, ents)
             for pt, ents in zip(pages, per_page)]
@@ -51,7 +51,7 @@ def anonymize_pdf_text(path: Path, ner: NerDetector, ref: Referential,
     finally:
         doc.close()
     text = "\n\n".join(p.text for p in pages)
-    ents = [e for e in detect(text, ner, ref) if e.confirmed]
+    ents = [e for e in detect_long(text, ner, ref) if e.confirmed]
     report = AuditReport()
     for e in ents:
         report.add(e.type, e.value, ref.tag_for(e.type), "pdf")
