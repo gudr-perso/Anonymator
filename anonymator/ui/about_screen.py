@@ -53,7 +53,12 @@ class AboutScreen(QWidget):
         logo_path = Path(__file__).parent / "assets" / color("logo")
         if logo_path.exists():
             logo = QLabel(); logo.setAlignment(Qt.AlignHCenter)
-            logo.setPixmap(QPixmap(str(logo_path)).scaledToWidth(180, Qt.SmoothTransformation))
+            # Borne largeur ET hauteur : le logo CAP est carré (1024²), le logo
+            # CUMA large et court — KeepAspectRatio évite le rognage dans les deux cas.
+            pix = QPixmap(str(logo_path)).scaled(
+                260, 150, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            logo.setPixmap(pix)
+            logo.setFixedHeight(pix.height())   # réserve la hauteur exacte → plus de rognage
             hero.addWidget(logo, alignment=Qt.AlignHCenter)
         name_row = QHBoxLayout(); name_row.setAlignment(Qt.AlignHCenter)
         name = QLabel("Anonymator"); name.setObjectName("title")
@@ -61,9 +66,12 @@ class AboutScreen(QWidget):
         name_row.addWidget(name); name_row.addWidget(self.version_badge)
         hero.addLayout(name_row)
         pitch = QLabel("Anonymisez vos textes et fichiers en local. Protégez les "
-                       "données personnelles avant tout partage — sans rien envoyer en ligne.")
+                       "données personnelles avant tout partage, sans rien envoyer en ligne.")
         pitch.setObjectName("muted"); pitch.setWordWrap(True); pitch.setAlignment(Qt.AlignHCenter)
-        pitch.setMaximumWidth(460)
+        # Largeur fixe (et non maximumWidth) : un QLabel word-wrap ajouté avec
+        # alignement se dimensionne sinon à une largeur préférée trop étroite,
+        # ce qui repassait le pitch sur 4 lignes. 540 px → 2 lignes.
+        pitch.setFixedWidth(540)
         hero.addWidget(pitch, alignment=Qt.AlignHCenter)
         body.addLayout(hero)
 

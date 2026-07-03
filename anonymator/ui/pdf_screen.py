@@ -47,6 +47,7 @@ class PdfScreen(QWidget):
         root.setContentsMargins(0, 0, 0, 0); root.setSpacing(0)
         root.addWidget(HeaderBand())
         root.addWidget(NavBand("PDF", "scan", on_home=on_back))
+        root.addSpacing(14)   # laisse respirer le fond quadrillé au-dessus de la barre
         self.banner = ModelBanner(on_install=self._request_model)
         root.addWidget(self.banner)
 
@@ -77,7 +78,9 @@ class PdfScreen(QWidget):
             bar.addWidget(b)
         action_band = QFrame(); action_band.setObjectName("ActionBand")
         action_band.setLayout(bar)
-        root.addWidget(action_band)
+        band_row = QHBoxLayout(); band_row.setContentsMargins(18, 0, 18, 0)
+        band_row.addWidget(action_band)
+        root.addLayout(band_row)
 
         # ---- corps : canevas (gauche) + entités (droite) ----
         self.canvas = PdfCanvas()
@@ -99,7 +102,7 @@ class PdfScreen(QWidget):
         ent_card.body.addWidget(hint); ent_card.body.addWidget(self.side)
         self.side.hide()
 
-        body = QHBoxLayout(); body.setContentsMargins(18, 0, 18, 8); body.setSpacing(12)
+        body = QHBoxLayout(); body.setContentsMargins(18, 12, 18, 8); body.setSpacing(12)
         body.addWidget(canvas_card, 3); body.addWidget(ent_card, 2)
         root.addLayout(body, 1)
 
