@@ -47,6 +47,7 @@ class PdfScreen(QWidget):
         root.setContentsMargins(0, 0, 0, 0); root.setSpacing(0)
         root.addWidget(HeaderBand())
         root.addWidget(NavBand("PDF", "scan", on_home=on_back))
+        root.addSpacing(14)   # laisse respirer le fond quadrillé au-dessus de la barre
         self.banner = ModelBanner(on_install=self._request_model)
         root.addWidget(self.banner)
 
