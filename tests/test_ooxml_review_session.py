@@ -38,6 +38,21 @@ def test_types_and_values():
     assert session.total_occurrences() == 2
 
 
+def test_unconfirmed_for_unit():
+    units = [_unit("Corps", "IBAN FR00 ici")]
+    scanned = {0: [Entity("IBAN", "FR00", 5, 9, "deterministic", 1.0,
+                          confirmed=False)]}
+    ref = Referential.load_default()
+    s = OoxmlReviewSession(units, scanned, ref, lambda p: None, lambda p, r: None)
+    # décochée par défaut → non retenue, signalée non confirmée
+    assert s.entities_for_unit(0) == []
+    assert [e.value for e in s.unconfirmed_for_unit(0)] == ["FR00"]
+    assert s.is_value_confirmed("IBAN", "FR00") is False
+    s.set_value_enabled("IBAN", "FR00", True)
+    assert s.unconfirmed_for_unit(0) == []
+    assert len(s.entities_for_unit(0)) == 1
+
+
 def test_apply_masks_enabled_only():
     saved = {}
     session, saved = _session(saved)

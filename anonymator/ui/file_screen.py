@@ -403,6 +403,11 @@ class FileScreen(QWidget):
             if ents:
                 col = QColor(color_for(ents[0].type)); col.setAlpha(70)
                 item.setBackground(col)
+            else:
+                pend = self.session.unconfirmed_for_unit(r)
+                if pend:
+                    col = QColor(color_for(pend[0].type)); col.setAlpha(28)
+                    item.setBackground(col)
             self.table.setItem(r, 1, item)
 
     def _build_side(self):
@@ -503,6 +508,13 @@ class FileScreen(QWidget):
                 if ents:
                     col = QColor(color_for(ents[0].type)); col.setAlpha(70)
                     item.setBackground(col)
+                else:
+                    # cellule sans entité retenue : signale les « non confirmées »
+                    # (clé invalide) avec un fond atténué.
+                    pend = self.session.unconfirmed_for_cell(r, c)
+                    if pend:
+                        col = QColor(color_for(pend[0].type)); col.setAlpha(28)
+                        item.setBackground(col)
                 self.table.setItem(vr, c, item)
         last = self._page_count() - 1
         self.lbl_page.setText(f"Page {self.page + 1} / {self._page_count()}")

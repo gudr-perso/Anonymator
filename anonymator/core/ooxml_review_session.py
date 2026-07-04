@@ -60,6 +60,18 @@ class OoxmlReviewSession:
     def entities_for_unit(self, i: int) -> list[Entity]:
         return self._unit_retained(i)
 
+    def unconfirmed_for_unit(self, i: int) -> list[Entity]:
+        """Entités de l'unité au format valide mais clé invalide, décochées par
+        défaut : à surligner distinctement (non masquées, opt-in)."""
+        out = []
+        for e in self._scanned.get(i, []):
+            if not self._types_enabled.get(e.type, True):
+                continue
+            if e.confirmed or self._values_enabled.get((e.type, e.value), True):
+                continue
+            out.append(e)
+        return out
+
     def is_type_enabled(self, etype: str) -> bool:
         return self._types_enabled.get(etype, True)
 

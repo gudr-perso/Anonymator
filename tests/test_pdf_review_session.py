@@ -33,11 +33,29 @@ def _pagescan_two():
     return PageScan(0, "Claire Martin\nJean Dupont", words, ents)
 
 
+def _pagescan_iban():
+    words = [WordBox("FR00", (10, 10, 60, 20), 0, 4)]
+    ents = [Entity("IBAN", "FR00", 0, 4, "deterministic", 1.0, confirmed=False)]
+    return PageScan(0, "FR00", words, ents)
+
+
 def test_types_and_values():
     s = _session()
     assert s.types() == ["PERSON"]
     assert s.values_for("PERSON") == [("Claire Martin", 1)]
     assert s.total_occurrences() == 1
+
+
+def test_unconfirmed_entity_rects():
+    s = PdfReviewSession([_pagescan_iban()], Referential.load_default())
+    # non confirmée → absente des rects retenus, présente dans les non confirmés
+    assert s.retained_entity_rects(0) == []
+    assert [t for (_r, t) in s.unconfirmed_entity_rects(0)] == ["IBAN"]
+    assert s.is_value_confirmed("IBAN", "FR00") is False
+    # cochée → bascule en retenue
+    s.set_value_enabled("IBAN", "FR00", True)
+    assert s.unconfirmed_entity_rects(0) == []
+    assert [t for (_r, t) in s.retained_entity_rects(0)] == ["IBAN"]
 
 
 def test_retained_rects_by_page_default():

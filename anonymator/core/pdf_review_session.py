@@ -29,6 +29,7 @@ class PdfReviewSession:
         self._types_enabled: dict[str, bool] = {}
         self._values_enabled: dict[tuple[str, str], bool] = {}
         self._values_count: dict[tuple[str, str], int] = {}
+        self._values_confirmed: dict[tuple[str, str], bool] = {}
         self._excluded: set[int] = set()                 # indices dans self._occs
         self._manual: dict[int, list[Rect]] = {}
         self._page_texts: list[tuple[int, str]] = []      # (index, texte) en ordre
@@ -42,6 +43,8 @@ class PdfReviewSession:
                 key = (e.type, e.value)
                 self._values_count[key] = self._values_count.get(key, 0) + 1
                 self._values_enabled.setdefault(key, e.confirmed)
+                self._values_confirmed[key] = (
+                    self._values_confirmed.get(key, True) and e.confirmed)
 
     # --- lecture (API identique à FileReviewSession) ---
     def types(self) -> list[str]:
@@ -64,6 +67,18 @@ class PdfReviewSession:
             return False
         return True
 
+    def _occ_pending_unconfirmed(self, i: int) -> bool:
+        """Vrai si l'occurrence serait retenue mais reste décochée du seul fait
+        que sa clé de contrôle est invalide (opt-in)."""
+        occ = self._occs[i]
+        if i in self._excluded:
+            return False
+        if not self._types_enabled.get(occ.entity.type, True):
+            return False
+        if occ.entity.confirmed:
+            return False
+        return not self._values_enabled.get((occ.entity.type, occ.entity.value), True)
+
     def count_retained(self, etype: str) -> int:
         return sum(1 for i, occ in enumerate(self._occs)
                    if occ.entity.type == etype and self._occ_retained(i))
@@ -73,6 +88,10 @@ class PdfReviewSession:
 
     def is_value_enabled(self, etype: str, value: str) -> bool:
         return self._values_enabled.get((etype, value), True)
+
+    def is_value_confirmed(self, etype: str, value: str) -> bool:
+        """Faux = format reconnu mais contrôle de la clé (checksum) échoué."""
+        return self._values_confirmed.get((etype, value), True)
 
     # --- écriture ---
     def set_type_enabled(self, etype: str, enabled: bool) -> None:
@@ -119,6 +138,16 @@ class PdfReviewSession:
         out: list[tuple[Rect, str]] = []
         for i, occ in enumerate(self._occs):
             if occ.page == page and self._occ_retained(i):
+                for r in occ.rects:
+                    out.append((r, occ.entity.type))
+        return out
+
+    def unconfirmed_entity_rects(self, page: int) -> list[tuple[Rect, str]]:
+        """(rect, type) des entités « non confirmées » (clé invalide) sur la
+        page : overlays distincts (pointillé atténué), non caviardés par défaut."""
+        out: list[tuple[Rect, str]] = []
+        for i, occ in enumerate(self._occs):
+            if occ.page == page and self._occ_pending_unconfirmed(i):
                 for r in occ.rects:
                     out.append((r, occ.entity.type))
         return out

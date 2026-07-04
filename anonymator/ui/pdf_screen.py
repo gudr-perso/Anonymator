@@ -253,7 +253,9 @@ class PdfScreen(QWidget):
             top.setFlags(top.flags() | Qt.ItemIsUserCheckable)
             top.setCheckState(0, Qt.Checked if self.session.is_type_enabled(t) else Qt.Unchecked)
             for value, n in self.session.values_for(t):
-                child = QTreeWidgetItem([value, f"×{n}"])
+                confirmed = self.session.is_value_confirmed(t, value)
+                label = value if confirmed else f"{value}   ⚠ clé non conforme"
+                child = QTreeWidgetItem([label, f"×{n}"])
                 child.setForeground(1, QColor("#9aa8a0"))
                 child.setTextAlignment(1, Qt.AlignRight | Qt.AlignVCenter)
                 child.setData(0, Qt.UserRole, ("value", t, value))
@@ -295,7 +297,8 @@ class PdfScreen(QWidget):
         # Avant analyse (session absente) : aperçu sans overlays.
         if self.session is not None:
             self.canvas.set_overlays(self.session.retained_entity_rects(self.page),
-                                     self.session.manual_rects(self.page))
+                                     self.session.manual_rects(self.page),
+                                     self.session.unconfirmed_entity_rects(self.page))
         else:
             self.canvas.set_overlays([], [])
         self.lbl_page.setText(f"Page {self.page + 1} / {self._page_count}")
