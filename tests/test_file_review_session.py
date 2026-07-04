@@ -55,6 +55,27 @@ def test_exclude_single_cell(tmp_path):
     assert s.count_retained("PERSON") == 2
 
 
+def test_unconfirmed_for_cell(tmp_path):
+    from anonymator.model import Entity
+    src = tmp_path / "f.csv"
+    src.write_bytes("Nom;IBAN\nx;FR00\n".encode("cp1252"))
+    doc = csv_io.read_csv(src)
+    ref = Referential.load_default()
+    bad = Entity("IBAN", "FR00", 0, 4, "deterministic", 1.0, confirmed=False)
+    s = FileReviewSession(doc, {(1, 1): [bad]}, ref, {1})
+    # décochée par défaut → non retenue mais listée comme non confirmée
+    assert s.entities_for_cell(1, 1) == []
+    assert [e.value for e in s.unconfirmed_for_cell(1, 1)] == ["FR00"]
+    # cochée → passe en retenue, sort des non confirmées
+    s.set_value_enabled("IBAN", "FR00", True)
+    assert s.unconfirmed_for_cell(1, 1) == []
+    assert len(s.entities_for_cell(1, 1)) == 1
+    # colonne exclue → plus rien à signaler
+    s.set_value_enabled("IBAN", "FR00", False)
+    s.set_column_enabled(1, False)
+    assert s.unconfirmed_for_cell(1, 1) == []
+
+
 def test_masked_document_and_report(tmp_path):
     s = _session(tmp_path)
     s.set_value_enabled("PERSON", "Paul Durand", False)

@@ -129,23 +129,28 @@ class PdfCanvas(QGraphicsView):
             self._apply_fit_width()
 
     def set_overlays(self, entity_rects: list[tuple[Rect, str]],
-                     manual_rects: list[Rect]) -> None:
+                     manual_rects: list[Rect],
+                     unconfirmed_rects: list[tuple[Rect, str]] | None = None) -> None:
         for item in self._overlay_items:
             self._scene.removeItem(item)
         self._overlay_items = []
         for rect, etype in entity_rects:
             self._add_overlay(rect, QColor(color_for(etype)), dashed=False)
+        # « non confirmées » (clé invalide) : pointillé + fond atténué
+        for rect, etype in (unconfirmed_rects or []):
+            self._add_overlay(rect, QColor(color_for(etype)), dashed=True, faint=True)
         for rect in manual_rects:
             self._add_overlay(rect, QColor("#20202A"), dashed=True)
 
-    def _add_overlay(self, rect: Rect, color: QColor, dashed: bool) -> None:
+    def _add_overlay(self, rect: Rect, color: QColor, dashed: bool,
+                     faint: bool = False) -> None:
         x0, y0, x1, y1 = (v * self._zoom for v in rect)
         item = QGraphicsRectItem(QRectF(x0, y0, x1 - x0, y1 - y0))
         pen = QPen(color); pen.setWidth(2)
         if dashed:
             pen.setStyle(Qt.DashLine)
         item.setPen(pen)
-        fill = QColor(color); fill.setAlpha(70)
+        fill = QColor(color); fill.setAlpha(25 if faint else 70)
         item.setBrush(QBrush(fill))
         self._scene.addItem(item)
         self._overlay_items.append(item)

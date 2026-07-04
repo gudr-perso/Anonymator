@@ -86,6 +86,21 @@ class FileReviewSession:
         """Entités actuellement retenues pour la cellule (pilote le surlignage)."""
         return self._cell_retained(r, c)
 
+    def unconfirmed_for_cell(self, r: int, c: int) -> list[Entity]:
+        """Entités de la cellule au format valide mais clé invalide, décochées
+        par défaut : à surligner distinctement (non masquées, opt-in). Exclut
+        les cochées, les types désactivés, colonne exclue ou cellule exclue."""
+        if not self._columns_enabled.get(c, False) or (r, c) in self._cells_excluded:
+            return []
+        out = []
+        for e in self._cells.get((r, c), []):
+            if not self._types_enabled.get(e.type, True):
+                continue
+            if e.confirmed or self._values_enabled.get((e.type, e.value), True):
+                continue
+            out.append(e)
+        return out
+
     def is_value_enabled(self, etype: str, value: str) -> bool:
         """État de la case d'une valeur distincte (pour cocher l'UI)."""
         return self._values_enabled.get((etype, value), True)
