@@ -5,4 +5,4 @@ Source de vérité unique de la version du paquet. Lue au runtime par l'UI
 accès au dépôt. Ne bumper qu'au moment d'une release (cf. docs/RELEASE.md).
 """
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"

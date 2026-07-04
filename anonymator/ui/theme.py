@@ -19,7 +19,7 @@ THEMES = {
              "info": "#2aa6e8", "info_hover": "#138fdb",
              "grid_bg": "#0a1556", "grid_line": "#1e2a63",
              "hero_text": "#FFFFFF", "hero_muted": "rgba(255,255,255,0.82)",
-             "toggle_off": "#C3CCE0", "logo": "logo-cap.png",
+             "toggle_off": "#C3CCE0", "logo": "logo-app.png",
              "header_tag": ""},
 }
 
