@@ -9,6 +9,7 @@ from anonymator.ui.components.cards import Card
 from anonymator.ui.icons import icon
 from anonymator.ui.theme import color
 from anonymator import __version__
+from anonymator.brand import active_brand
 from anonymator.ui.about import REPO_URL
 
 EMBEDDED_COMPONENTS = [
@@ -63,7 +64,7 @@ class AboutScreen(QWidget):
             logo.setFixedHeight(pix.height())   # réserve la hauteur exacte → plus de rognage
             hero.addWidget(logo, alignment=Qt.AlignHCenter)
         name_row = QHBoxLayout(); name_row.setAlignment(Qt.AlignHCenter)
-        name = QLabel("Anonymator"); name.setObjectName("title")
+        name = QLabel(active_brand().product_name); name.setObjectName("title")
         self.version_badge = QLabel(f"v{__version__}"); self.version_badge.setObjectName("occBadge")
         name_row.addWidget(name); name_row.addWidget(self.version_badge)
         hero.addLayout(name_row)

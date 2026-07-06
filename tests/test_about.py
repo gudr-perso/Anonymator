@@ -26,3 +26,13 @@ def test_about_lines_accepts_explicit_version():
     joined = "\n".join(lines)
     assert "Anonymator v9.9.9" in joined
     assert "tag v9.9.9" in joined
+
+
+def test_about_lines_use_brand_product_name():
+    from anonymator.brand import lock_brand, reset_brand
+    try:
+        lock_brand("cuma")
+        joined = "\n".join(about_lines(version="1.2.3"))
+        assert "Cum'Anonyme v1.2.3" in joined
+    finally:
+        reset_brand()
