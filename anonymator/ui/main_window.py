@@ -7,6 +7,7 @@ from anonymator.referential import Referential
 from anonymator.ui.preferences import Preferences
 from anonymator.user_rules import UserRules
 from anonymator.ui.theme import build_qss, set_active_theme, active_theme
+from anonymator.brand import active_brand
 from anonymator.ui.model_loader import ModelLoader
 from anonymator.ui.home_screen import HomeScreen
 from anonymator.ui.text_screen import TextScreen
@@ -26,7 +27,7 @@ class MainWindow(QMainWindow):
     def __init__(self, loader: ModelLoader | None = None,
                  prefs_path: Path = PREFS_PATH):
         super().__init__()
-        self.setWindowTitle("Anonymator")
+        self.setWindowTitle(active_brand().product_name)
         ico = _ASSETS / "anonymator.ico"
         if ico.exists():
             self.setWindowIcon(QIcon(str(ico)))
@@ -39,7 +40,7 @@ class MainWindow(QMainWindow):
         self.stack = QStackedWidget()
         self.setCentralWidget(self.stack)
 
-        set_active_theme(self.prefs.theme)   # avant de construire la couche peinte/icônes
+        set_active_theme(self._effective_theme())   # avant de construire la couche peinte/icônes
         self._build_screens()
         self.show_home()
         self._apply_theme()
@@ -83,12 +84,19 @@ class MainWindow(QMainWindow):
         rules = UserRules.load(self.rules_path, fallback_terms=fallback)
         return ref.with_user_rules(rules)
 
+    def _effective_theme(self) -> str:
+        """Thème réellement appliqué : celui de la marque si verrouillée,
+        sinon la préférence utilisateur (mode dev)."""
+        b = active_brand()
+        return b.theme if b.locked else self.prefs.theme
+
     def _apply_theme(self):
-        set_active_theme(self.prefs.theme)
-        self.setStyleSheet(build_qss(self.prefs.theme))
+        theme = self._effective_theme()
+        set_active_theme(theme)
+        self.setStyleSheet(build_qss(theme))
 
     def _apply_prefs(self):
-        theme_changed = self.prefs.theme != active_theme()
+        theme_changed = self._effective_theme() != active_theme()
         self.prefs.save(self.prefs_path)
         self.ref = self._build_ref()
         self.text_screen.ref = self.ref
