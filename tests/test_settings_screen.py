@@ -99,3 +99,20 @@ def test_model_finished_emits_ready(qtbot):
             s._on_model_finished()
         assert ready == [True]
         assert "installé" in s.model_status_label.text().lower()
+
+
+def test_theme_selector_hidden_when_brand_locked(qtbot):
+    from anonymator.brand import lock_brand, reset_brand
+    try:
+        lock_brand("cap")
+        s = _settings(); qtbot.addWidget(s)
+        assert not hasattr(s, "theme_box")
+    finally:
+        reset_brand()
+
+
+def test_theme_selector_present_in_dev(qtbot):
+    from anonymator.brand import reset_brand
+    reset_brand()
+    s = _settings(); qtbot.addWidget(s)
+    assert hasattr(s, "theme_box")

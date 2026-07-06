@@ -7,6 +7,7 @@ from anonymator.ui.components.nav_band import NavBand
 from anonymator.ui.components.cards import Card
 from anonymator.ui.components.entity_card import EntityCard
 from anonymator.ui.theme import THEME_LABELS, label_for_theme, theme_for_label
+from anonymator.brand import is_locked
 from anonymator.referential import Referential
 from anonymator.core.model_status import is_model_available, installed_size
 from anonymator.ui.download_worker import DownloadWorker
@@ -38,13 +39,14 @@ class SettingsScreen(QWidget):
 
         # --- Carte GÉNÉRAL ---
         general = Card("palette", "Général")
-        general.body.addWidget(QLabel("Thème de l'application"))
-        self.theme_box = QComboBox()
-        self.theme_box.addItems([THEME_LABELS[k] for k in ("cuma", "cap")])
-        self.theme_box.setCurrentText(label_for_theme(prefs.theme))
-        self.theme_box.currentTextChanged.connect(
-            lambda lbl: self.select_theme(theme_for_label(lbl)))
-        general.body.addWidget(self.theme_box)
+        if not is_locked():
+            general.body.addWidget(QLabel("Thème de l'application"))
+            self.theme_box = QComboBox()
+            self.theme_box.addItems([THEME_LABELS[k] for k in ("cuma", "cap")])
+            self.theme_box.setCurrentText(label_for_theme(prefs.theme))
+            self.theme_box.currentTextChanged.connect(
+                lambda lbl: self.select_theme(theme_for_label(lbl)))
+            general.body.addWidget(self.theme_box)
         general.body.addWidget(QLabel("Dossier de sortie"))
         row = QHBoxLayout()
         self.dir_edit = QLineEdit(prefs.output_dir or "")
