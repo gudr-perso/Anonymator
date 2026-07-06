@@ -16,6 +16,8 @@ EMBEDDED_COMPONENTS = [
     ("GLiNER", "urchade/gliner_multi-v2.1 · détection d'entités", "Apache-2.0", "#00965E"),
 ]
 
+CONTACT_URL = "https://sumptuous-asphalt-a42.notion.site/5bbd0619270982e5b64981d87f8acd4e?pvs=105"
+
 
 def _strong(text: str) -> QLabel:
     l = QLabel(text); l.setStyleSheet("font-weight: 700;"); return l
@@ -99,4 +101,17 @@ class AboutScreen(QWidget):
             r.addLayout(c); r.addStretch(); r.addWidget(_license_badge(lbl, col))
             comp.body.addLayout(r)
         body.addWidget(comp)
+
+        # Carte contact
+        contact = Card("mail", "Contact")
+        contact.body.addWidget(_muted("Une question, un besoin, un retour ? "
+                                      "Écrivez-nous via le formulaire de contact."))
+        self.contact_btn = QPushButton("  Nous contacter")
+        self.contact_btn.setObjectName("secondary")
+        self.contact_btn.setIcon(icon("mail", color("text"), 18))
+        self.contact_btn.setCursor(Qt.PointingHandCursor)
+        self.contact_btn.clicked.connect(lambda: QDesktopServices.openUrl(QUrl(CONTACT_URL)))
+        contact.body.addWidget(self.contact_btn)
+        body.addWidget(contact)
+
         body.addStretch()

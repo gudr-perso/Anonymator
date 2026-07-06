@@ -1,4 +1,4 @@
-from anonymator.ui.about_screen import AboutScreen, EMBEDDED_COMPONENTS
+from anonymator.ui.about_screen import AboutScreen, EMBEDDED_COMPONENTS, CONTACT_URL
 from anonymator import __version__
 
 
@@ -12,6 +12,13 @@ def test_embedded_components_listed():
     names = [c[0] for c in EMBEDDED_COMPONENTS]
     assert "PyMuPDF" in names
     assert "GLiNER" in names
+
+
+def test_contact_button(qtbot):
+    scr = AboutScreen(on_back=lambda: None)
+    qtbot.addWidget(scr)
+    assert scr.contact_btn is not None
+    assert CONTACT_URL.startswith("https://")
 
 
 def test_back_navband(qtbot):
