@@ -3,12 +3,19 @@
 
 from PyInstaller.utils.hooks import collect_data_files
 
+import os
+from anonymator.brand import build_target
+
+# Marque de build (packaging, PAS runtime) : cap | cuma | dev (défaut).
+_BUILD_BRAND = os.environ.get('ANONYMATOR_BUILD_BRAND', 'dev')
+_ENTRY, _EXE_NAME, _ICON = build_target(_BUILD_BRAND)
+
 # Gabarits par défaut (default.docx / default.pptx) chargés en package data
 # par python-docx / python-pptx — indispensables dans l'exe figé.
 ooxml_datas = collect_data_files('docx') + collect_data_files('pptx')
 
 a = Analysis(
-    ['anonymator/__main__.py'],
+    [_ENTRY],
     pathex=[],
     binaries=[],
     datas=[
@@ -92,7 +99,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='anonymator',
+    name=_EXE_NAME,
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -103,7 +110,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='anonymator/ui/assets/anonymator.ico',
+    icon=f'anonymator/ui/assets/{_ICON}',
 )
 
 coll = COLLECT(
@@ -114,5 +121,5 @@ coll = COLLECT(
     strip=False,
     upx=False,
     upx_exclude=[],
-    name='anonymator',
+    name=_EXE_NAME,
 )
