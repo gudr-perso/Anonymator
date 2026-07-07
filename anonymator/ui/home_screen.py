@@ -6,6 +6,7 @@ from anonymator.ui.components.cards import NavCard
 from anonymator.ui.components.header import HeaderBand
 from anonymator.ui.components.nav_band import NavBand
 from anonymator.ui.theme import color
+from anonymator.brand import active_brand
 
 _ASSETS = Path(__file__).parent / "assets"
 
@@ -66,7 +67,7 @@ class HomeScreen(QWidget):
             logo = QLabel()
             logo.setPixmap(QPixmap(str(logo_path)).scaledToWidth(250, Qt.SmoothTransformation))
         else:
-            logo = QLabel("CUMA"); logo.setObjectName("title")
+            logo = QLabel(active_brand().product_name); logo.setObjectName("title")
             logo.setStyleSheet(
                 f"color: {color('primary')}; font-size: 34px; font-weight: 800;")
         title = QLabel("Anonymisez.\nPartagez l'essentiel.")
