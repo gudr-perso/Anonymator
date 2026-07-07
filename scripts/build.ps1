@@ -31,6 +31,10 @@ foreach ($b in $targets) {
     $zip = $meta[$b].zip
     if ($zip) {
         $distDir = Join-Path $root "dist\$($meta[$b].exe)"
+        # LICENSE visible a la racine du dossier distribue (AGPL) - cf. docs/RELEASE.md.
+        # Le .spec le place dans _internal\ ; on le copie a cote de l'exe avant de zipper.
+        $lic = Join-Path $distDir '_internal\LICENSE'
+        if (Test-Path $lic) { Copy-Item $lic (Join-Path $distDir 'LICENSE') -Force }
         $zipPath = Join-Path $root "dist\$zip"
         if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
         Compress-Archive -Path $distDir -DestinationPath $zipPath
