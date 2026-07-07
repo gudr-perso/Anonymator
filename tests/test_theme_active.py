@@ -18,7 +18,9 @@ def test_home_logo_filename_follows_theme():
         set_active_theme("cuma")
         assert color("logo") == "logo.png"
         set_active_theme("cap")
-        assert color("logo") == "logo-cap.png"
+        # thème CAP figé sur l'icône générique de l'app (cf. release v0.4.0,
+        # qui a remplacé le logo CAP Consulting par logo-app.png)
+        assert color("logo") == "logo-app.png"
     finally:
         set_active_theme(DEFAULT_THEME)
 
