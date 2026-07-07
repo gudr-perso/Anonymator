@@ -30,3 +30,5 @@ def test_hero_text_fallback_uses_brand_name_not_hardcoded_cuma(qtbot, tmp_path, 
     texts = _label_texts(s)
     assert "CUMA" not in texts            # plus de « CUMA » codé en dur
     assert "CAP'nonyme" in texts          # le repli suit la marque active
+    # pied « la puissance du groupe » retiré (vocabulaire réseau, non générique)
+    assert not any("groupe" in t for t in texts)

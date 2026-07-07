@@ -80,12 +80,6 @@ class HomeScreen(QWidget):
             f"color:{color('hero_muted')}; font-size:16px; line-height:140%;")
         hv.addWidget(logo); hv.addSpacing(120); hv.addWidget(title); hv.addWidget(sub)
         hv.addStretch()
-        # tagline déjà présente dans le logo officiel → on ne la répète qu'en repli texte
-        if not has_logo:
-            foot = QLabel("la puissance du "
-                          f"<span style='color:{color('accent')};font-weight:700'>groupe</span>")
-            foot.setTextFormat(Qt.RichText)
-            hv.addWidget(foot)
 
         right = QWidget()
         rv = QVBoxLayout(right)
