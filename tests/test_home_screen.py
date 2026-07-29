@@ -66,3 +66,35 @@ def test_about_card_triggers_callback(qtbot):
 def test_home_has_navband(qtbot):
     h = _home(True); qtbot.addWidget(h)
     assert h.findChild(NavBand) is not None
+
+
+def test_invite_description_not_truncated_in_short_window(qtbot):
+    """Fenêtre peu haute : la description du bandeau était rognée sur le bas.
+    Un QLabel à retour à la ligne accepte de descendre à une seule ligne, donc
+    la mise en page lui prenait la hauteur qui manquait ailleurs."""
+    h = _home(False); qtbot.addWidget(h)
+    h.resize(1152, 420); h.show()
+    qtbot.waitExposed(h)
+    d = h.model_card_desc
+    assert d.height() >= d.heightForWidth(d.width())
+
+
+def test_invite_description_not_truncated_at_several_sizes(qtbot):
+    h = _home(False); qtbot.addWidget(h)
+    h.show(); qtbot.waitExposed(h)
+    d = h.model_card_desc
+    for size in [(1152, 400), (1152, 700), (900, 480), (1400, 900)]:
+        h.resize(*size)
+        qtbot.wait(30)
+        need = d.heightForWidth(d.width())
+        assert d.height() >= need, f"tronqué en {size}"
+        # ...sans pour autant absorber la place libre en grande fenêtre.
+        assert d.height() <= need + 4, f"étiré inutilement en {size}"
+
+
+def test_invite_announces_real_download_size(qtbot):
+    from anonymator.core.model_status import MODEL_DOWNLOAD_SIZE
+    h = _home(False); qtbot.addWidget(h)
+    txt = h.model_card_desc.text()
+    assert MODEL_DOWNLOAD_SIZE in txt
+    assert "300 Mo" not in txt

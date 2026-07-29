@@ -1,5 +1,6 @@
 from pathlib import Path
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QLabel, QPushButton
+from PySide6.QtWidgets import (QWidget, QHBoxLayout, QVBoxLayout, QLabel,
+                               QPushButton, QSizePolicy)
 from PySide6.QtGui import QPainter, QPen, QColor, QPixmap
 from PySide6.QtCore import Qt
 from anonymator.ui.components.cards import NavCard
@@ -7,8 +8,23 @@ from anonymator.ui.components.header import HeaderBand
 from anonymator.ui.components.nav_band import NavBand
 from anonymator.ui.theme import color
 from anonymator.brand import active_brand
+from anonymator.core.model_status import MODEL_DOWNLOAD_SIZE
 
 _ASSETS = Path(__file__).parent / "assets"
+
+
+def _keep_wrapped_height(label: QLabel) -> None:
+    """Empêche un QLabel `wordWrap` d'être rogné quand la place vient à manquer.
+
+    Par défaut un tel label peut être comprimé jusqu'à une seule ligne : la mise
+    en page lui reprend la hauteur qui manque ailleurs et le texte est coupé.
+    `heightForWidth` + politique verticale « Minimum » lui font réclamer la
+    hauteur réellement nécessaire à sa largeur — sans l'étirer pour autant
+    (`MinimumExpanding` lui ferait absorber la place libre en grande fenêtre)."""
+    policy = label.sizePolicy()
+    policy.setHeightForWidth(True)
+    policy.setVerticalPolicy(QSizePolicy.Minimum)
+    label.setSizePolicy(policy)
 
 
 def _rgba(hex_color: str, alpha: float) -> str:
@@ -88,9 +104,16 @@ class HomeScreen(QWidget):
         mc = QVBoxLayout(self.model_card); mc.setContentsMargins(16, 14, 16, 14); mc.setSpacing(8)
         mc_title = QLabel("🧠  Activer la détection intelligente")
         mc_title.setStyleSheet("font-weight: 700; font-size: 15px;")
-        mc_desc = QLabel("Noms, adresses et organisations — téléchargement unique (~300 Mo). "
-                         "Les détections par règles (IBAN, e-mail, téléphone…) fonctionnent déjà sans elle.")
+        mc_desc = QLabel(f"Noms, adresses et organisations — téléchargement unique "
+                         f"({MODEL_DOWNLOAD_SIZE}). Les détections par règles "
+                         f"(IBAN, e-mail, téléphone…) fonctionnent déjà sans elle.")
         mc_desc.setWordWrap(True); mc_desc.setObjectName("muted")
+        # Un QLabel à retour à la ligne accepte de se réduire à une seule ligne :
+        # dans une fenêtre peu haute, la mise en page lui prenait la hauteur
+        # manquante et le texte était rogné. On lui fait réclamer la hauteur
+        # réellement nécessaire à sa largeur courante.
+        _keep_wrapped_height(mc_desc)
+        self.model_card_desc = mc_desc
         mc_btns = QHBoxLayout()
         self.btn_model_download = QPushButton("Télécharger maintenant")
         self.btn_model_download.setObjectName("primary")

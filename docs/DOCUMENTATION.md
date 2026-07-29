@@ -43,7 +43,7 @@ L'application est distribuée sous forme d'un **exécutable Windows autonome**
 (`anonymator.exe`), produit par PyInstaller à partir du fichier de spécification
 `anonymator.spec`. Aucune installation de Python n'est requise sur le poste cible.
 
-**Distribution du modèle IA.** Le modèle GLiNER (~300 Mo) n'est **pas** embarqué
+**Distribution du modèle IA.** Le modèle GLiNER (~2,2 Go) n'est **pas** embarqué
 dans l'exécutable. Il est téléchargé au premier lancement depuis Hugging Face et
 mis en cache localement dans `%USERPROFILE%\.cache\huggingface`. Les lancements
 suivants s'effectuent hors ligne.
@@ -237,7 +237,7 @@ Anonymator ne nécessite **aucun droit administrateur** ni installation système
 2. **Dézipper** l'archive dans un dossier de votre choix.
 3. **Lancer** `anonymator.exe` dans le dossier dézippé.
 4. Au **premier lancement uniquement**, l'application propose de télécharger le
-   modèle de détection intelligente **GLiNER (~300 Mo)**. Une **connexion
+   modèle de détection intelligente **GLiNER (~2,2 Go)**. Une **connexion
    Internet** est nécessaire pour cette seule étape.
    - Vous pouvez cliquer **« Télécharger maintenant »** pour l'activer tout de suite,
      ou **« Plus tard »** pour commencer sans lui.

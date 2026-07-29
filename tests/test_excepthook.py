@@ -1,6 +1,8 @@
 # tests/test_excepthook.py
 import sys
 from unittest.mock import patch
+from PySide6.QtCore import QThread
+from PySide6.QtWidgets import QApplication
 from anonymator.__main__ import install_excepthook, _excepthook
 
 
@@ -24,6 +26,55 @@ def test_excepthook_shows_message_box(qtbot):
     assert crit.called
     shown = " ".join(str(a) for a in crit.call_args.args)
     assert "ValueError" in shown or "boom détaillé" in shown
+
+
+def test_excepthook_shows_dialog_on_gui_thread(qtbot, tmp_path):
+    """`sys.excepthook` est aussi appelé depuis les threads de travail (worker
+    de téléchargement) : construire un QMessageBox hors du thread GUI est un
+    comportement indéfini côté Qt. Le dialogue doit être reposté sur le thread
+    principal, sans bloquer le thread émetteur."""
+    gui_thread = QApplication.instance().thread()
+    seen, worker_unblocked = [], []
+
+    class _Boom(QThread):
+        def run(self):
+            try:
+                raise ValueError("levée depuis un worker")
+            except ValueError:
+                _excepthook(*sys.exc_info())
+            worker_unblocked.append(True)
+
+    with patch("anonymator.__main__._CRASH_LOG", tmp_path / "crash.log"), \
+         patch("anonymator.__main__.QMessageBox.critical",
+               side_effect=lambda *a, **k: seen.append(QThread.currentThread())):
+        t = _Boom(); t.start()
+        qtbot.waitUntil(lambda: bool(seen), timeout=3000)
+        t.wait(3000)
+
+    assert seen == [gui_thread]
+    assert worker_unblocked          # le worker n'attend pas la fermeture du dialogue
+
+
+def test_excepthook_logs_from_worker_thread(qtbot, tmp_path):
+    """La journalisation doit rester synchrone, quel que soit le thread."""
+    log = tmp_path / "crash.log"
+    shown = []
+
+    class _Boom(QThread):
+        def run(self):
+            try:
+                raise RuntimeError("trace worker")
+            except RuntimeError:
+                _excepthook(*sys.exc_info())
+
+    with patch("anonymator.__main__._CRASH_LOG", log), \
+         patch("anonymator.__main__.QMessageBox.critical",
+               side_effect=lambda *a, **k: shown.append(a)):
+        t = _Boom(); t.start(); t.wait(3000)
+        assert log.exists() and "trace worker" in log.read_text(encoding="utf-8")
+        # Le dialogue est en file d'attente : le consommer ici, sinon il sortirait
+        # du `patch` et ouvrirait un vrai QMessageBox modal.
+        qtbot.waitUntil(lambda: bool(shown), timeout=3000)
 
 
 def test_excepthook_writes_crash_log(qtbot, tmp_path):

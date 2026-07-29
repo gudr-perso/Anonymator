@@ -86,8 +86,23 @@ def test_model_progress_updates_bar(qtbot):
     with patch("anonymator.ui.settings_screen.is_model_available", return_value=False):
         s = _settings(); qtbot.addWidget(s)
         s._on_model_progress(150 * 1024 * 1024, 300 * 1024 * 1024)
-        assert s.model_progress.maximum() == 300 * 1024 * 1024
-        assert s.model_progress.value() == 150 * 1024 * 1024
+        # La barre est pilotée en pourcentage : les octets ne rentrent pas
+        # forcément dans un int C++ 32 bits (cf. test ci-dessous).
+        assert s.model_progress.maximum() == 100
+        assert s.model_progress.value() == 50
+        assert "50 %" in s.model_dl_status.text()
+
+
+def test_model_progress_handles_sizes_above_int32(qtbot):
+    """Le dépôt du modèle dépasse 2 Gio : passer les octets bruts à QProgressBar
+    lève un OverflowError (int C++ 32 bits) → dialogue « Erreur inattendue »."""
+    big = 3 * 1024 ** 3
+    with patch("anonymator.ui.settings_screen.is_model_available", return_value=False):
+        s = _settings(); qtbot.addWidget(s)
+        s._on_model_progress(big // 4, big)
+        assert s.model_progress.maximum() == 100
+        assert s.model_progress.value() == 25
+        assert "25 %" in s.model_dl_status.text()
 
 def test_model_finished_emits_ready(qtbot):
     with patch("anonymator.ui.settings_screen.is_model_available", return_value=False):

@@ -9,7 +9,8 @@ from anonymator.ui.components.entity_card import EntityCard
 from anonymator.ui.theme import THEME_LABELS, label_for_theme, theme_for_label
 from anonymator.brand import is_locked
 from anonymator.referential import Referential
-from anonymator.core.model_status import is_model_available, installed_size
+from anonymator.core.model_status import (is_model_available, installed_size,
+                                          MODEL_DOWNLOAD_SIZE)
 from anonymator.ui.download_worker import DownloadWorker
 
 _TYPES = ["PERSON", "ADDRESS", "ORG", "EMAIL", "PHONE", "IBAN", "BIC",
@@ -75,10 +76,10 @@ class SettingsScreen(QWidget):
         self._dl_worker = None
         model_card = Card("cpu", "Modèle de détection intelligente")
         explain = QLabel(
-            "La détection intelligente des noms, adresses et organisations utilise "
-            "le modèle GLiNER (~300 Mo), téléchargé une seule fois puis utilisé hors ligne. "
-            "Sans lui, les détections par règles (IBAN, e-mail, téléphone, mots de passe…) "
-            "fonctionnent quand même.")
+            f"La détection intelligente des noms, adresses et organisations utilise "
+            f"le modèle GLiNER ({MODEL_DOWNLOAD_SIZE}), téléchargé une seule fois puis "
+            f"utilisé hors ligne. Sans lui, les détections par règles (IBAN, e-mail, "
+            f"téléphone, mots de passe…) fonctionnent quand même.")
         explain.setWordWrap(True); explain.setObjectName("muted")
         model_card.body.addWidget(explain)
         self.model_status_label = QLabel(""); model_card.body.addWidget(self.model_status_label)
@@ -126,11 +127,13 @@ class SettingsScreen(QWidget):
 
     def _on_model_progress(self, received: int, total: int):
         if total > 0:
-            self.model_progress.setRange(0, total)
-            self.model_progress.setValue(received)
+            # Barre pilotée en pourcentage : QProgressBar prend des int C++
+            # 32 bits, et le modèle pèse plus de 2 Gio (→ OverflowError).
+            pct = min(100, max(0, received * 100 // total))
+            self.model_progress.setRange(0, 100)
+            self.model_progress.setValue(pct)
             self.model_dl_status.setText(
-                f"{self._human_mb(received)} / {self._human_mb(total)} "
-                f"— {received * 100 // total} %")
+                f"{self._human_mb(received)} / {self._human_mb(total)} — {pct} %")
         else:
             self.model_progress.setRange(0, 0)
 
