@@ -89,12 +89,39 @@ def ensure_std_streams() -> None:
         sys.stderr = devnull
 
 
+def install_os_trust_store() -> bool:
+    """Fait valider le TLS par le magasin de certificats du système.
+
+    Par défaut `httpx`/`huggingface_hub` valident contre le paquet `certifi`,
+    qui ne contient que des autorités publiques. Or les antivirus qui inspectent
+    le HTTPS (Norton, Kaspersky, ESET…) se placent en intermédiaire et présentent
+    un certificat signé par une autorité **locale** : installée dans le magasin
+    Windows — d'où les navigateurs qui fonctionnent — mais absente de `certifi`.
+    Le téléchargement du modèle échouait alors sur « CERTIFICATE_VERIFY_FAILED :
+    unable to get local issuer certificate », sans recours possible : reconstruire
+    un bundle échoue à son tour (OpenSSL 3 rejette ces autorités générées, « Basic
+    Constraints of CA cert not marked critical »).
+
+    `truststore` délègue la validation au système, qui connaît cette autorité.
+    **La vérification reste entière** — on ne désactive aucun contrôle.
+
+    Renvoie False si `truststore` est absent : le téléchargement fonctionne
+    quand même en l'absence d'interception TLS."""
+    try:
+        import truststore
+    except ImportError:      # dépendance optionnelle — pas de raison de planter
+        return False
+    truststore.inject_into_ssl()
+    return True
+
+
 def build_window() -> MainWindow:
     return MainWindow()
 
 
 def main() -> int:
     ensure_std_streams()
+    install_os_trust_store()
     app = QApplication(sys.argv)
     install_excepthook()
     win = build_window()

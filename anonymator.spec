@@ -30,6 +30,10 @@ a = Analysis(
         ('anonymator/ui/assets/icons', 'anonymator/ui/assets/icons'),
     ] + ooxml_datas,
     hiddenimports=[
+        # Importé paresseusement dans un try/except au démarrage : on le déclare
+        # pour garantir sa présence dans l'exe gelé (validation TLS via le
+        # magasin Windows, cf. install_os_trust_store).
+        'truststore',
         'anonymator.ui.colors',
         'anonymator.ui.theme',
         'anonymator.ui.preferences',

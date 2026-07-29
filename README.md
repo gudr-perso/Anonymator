@@ -67,6 +67,7 @@ Détecte et remplace les données personnelles (noms, emails, IBAN, numéros de 
 | Symptôme | Solution |
 |----------|----------|
 | Téléchargement très lent au 1er lancement | Connexion Internet requise (~2,2 Go) ; patienter |
+| Échec du téléchargement : `CERTIFICATE_VERIFY_FAILED` | Antivirus inspectant le HTTPS (Norton, Kaspersky…). L'app valide via le magasin de certificats Windows depuis la v0.4.3 ; sinon, ajouter une exception pour l'exécutable |
 | Fichier CSV mal parsé | Vérifier encodage (Latin-1/UTF-8) et séparateur |
 | `.pdf` scanné (image seule) | OCR non supporté en v1 — message clair, aucun plantage |
 | Nom manqué lors de la détection | Ajouter manuellement via la sélection de texte (mode Texte) |
