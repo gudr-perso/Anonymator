@@ -121,3 +121,58 @@ def test_unchecking_a_value_updates_the_grid(qtbot, tmp_path):
 def test_perimeter_card_stays_hidden_for_xlsx(qtbot, tmp_path):
     s = _reviewed(qtbot, tmp_path)
     assert s.perimetre_card.isHidden()
+
+
+# ---- interrupteur « première ligne = en-têtes », par feuille ----
+
+def test_header_switch_reflects_the_current_sheet(qtbot, tmp_path):
+    s = _reviewed(qtbot, tmp_path)
+    assert s.header_switch.isChecked() is True        # Clients a des titres
+    s.sheet_box.setCurrentText("Tiers")
+    assert s.header_switch.isChecked() is False       # une seule ligne
+
+
+def test_header_switch_reanalyses_the_sheet(qtbot, tmp_path):
+    """Un classeur ne peut pas se re-rendre sans rescan : le choix de
+    l'utilisateur ne veut rien dire tant que les colonnes n'ont pas été
+    reclassées."""
+    from unittest.mock import patch
+    from PySide6.QtWidgets import QMessageBox
+    s = _reviewed(qtbot, tmp_path)
+    with patch("anonymator.ui.file_screen.QMessageBox.question",
+               return_value=QMessageBox.Yes):
+        s.header_switch.setChecked(False)
+    qtbot.waitUntil(lambda: s.session is not None and not s._busy, timeout=15000)
+    assert s._xlsx.has_header["Clients"] is False
+    assert s._sheet == "Clients"                       # feuille conservée
+    assert s.table.item(0, 1).text() == "contact_nom"   # ligne 1 = donnée
+
+
+def test_header_switch_can_be_declined(qtbot, tmp_path):
+    from unittest.mock import patch
+    from PySide6.QtWidgets import QMessageBox
+    s = _reviewed(qtbot, tmp_path)
+    with patch("anonymator.ui.file_screen.QMessageBox.question",
+               return_value=QMessageBox.No):
+        s.header_switch.setChecked(False)
+    assert s.header_switch.isChecked() is True
+    assert s._xlsx.has_header["Clients"] is True
+
+
+def test_header_change_reports_manual_choices(qtbot, tmp_path):
+    """Les noms restent détectables sans en-tête (par le NER cette fois, non
+    plus par le typage de colonne) : la clé (type, valeur) survit, et le
+    décochage avec elle. Le forçage, positionnel, survit aussi."""
+    from unittest.mock import patch
+    from PySide6.QtWidgets import QMessageBox
+    s = _reviewed(qtbot, tmp_path, mapping={"Leclerc": "PERSON",
+                                            "Berger": "PERSON",
+                                            "Poirier": "PERSON"})
+    s.session.set_value_enabled("PERSON", "Berger", False)
+    s.apply_column_override(3, MASK, "ORG")
+    with patch("anonymator.ui.file_screen.QMessageBox.question",
+               return_value=QMessageBox.Yes):
+        s.header_switch.setChecked(False)
+    qtbot.waitUntil(lambda: s.session is not None and not s._busy, timeout=15000)
+    assert s.session.is_value_enabled("PERSON", "Berger") is False
+    assert s.session.column_override(("Clients", 3)) == (MASK, "ORG")

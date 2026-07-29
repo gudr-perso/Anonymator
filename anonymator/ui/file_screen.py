@@ -302,17 +302,13 @@ class FileScreen(QWidget):
         périmètre : une revue faite sous l'ancienne hypothèse ne peut pas être
         rejouée telle quelle. Elle représente du travail manuel, on demande
         avant de la relancer, et on reporte les arbitrages sur la suivante."""
+        if self._xlsx is not None:
+            self._on_sheet_header_toggled(checked)
+            return
         if self.doc is None:
             return
         if self.session is not None:
-            answer = QMessageBox.question(
-                self, "Relancer l'analyse ?",
-                "Changer l'hypothèse d'en-tête modifie le périmètre des "
-                "colonnes : l'analyse doit être relancée.\n\n"
-                "Vos choix (valeurs et catégories décochées) seront reportés "
-                "sur la nouvelle analyse.",
-                QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-            if answer != QMessageBox.Yes:
+            if not self._confirm_reanalysis():
                 self.header_switch.blockSignals(True)
                 self.header_switch.setChecked(not checked)   # retour à l'état
                 self.header_switch.blockSignals(False)
@@ -325,6 +321,33 @@ class FileScreen(QWidget):
         self.page = 0
         self._fill_preview(self.doc.rows[:50])
         self._set_meta()
+
+    def _confirm_reanalysis(self) -> bool:
+        answer = QMessageBox.question(
+            self, "Relancer l'analyse ?",
+            "Changer l'hypothèse d'en-tête modifie le périmètre des "
+            "colonnes : l'analyse doit être relancée.\n\n"
+            "Vos choix (valeurs, catégories et colonnes forcées) seront "
+            "reportés sur la nouvelle analyse.",
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+        return answer == QMessageBox.Yes
+
+    def _on_sheet_header_toggled(self, checked: bool):
+        """Côté classeur, l'analyse repart tout de suite. Un CSV sait
+        re-afficher son aperçu sans rescan — ses lignes sont déjà en mémoire ;
+        une feuille, elle, n'existe à l'écran que par le résultat du scan."""
+        if self._sheet is None:
+            return
+        if self.session is not None and not self._confirm_reanalysis():
+            self.header_switch.blockSignals(True)
+            self.header_switch.setChecked(not checked)   # retour à l'état
+            self.header_switch.blockSignals(False)
+            return
+        self._pending_choices = self._capture_choices()
+        self._sheet_headers[self._sheet] = checked
+        self._sheet_to_restore = self._sheet
+        self.session = None
+        self.analyze()
 
     def _fill_preview(self, rows):
         if not rows:
