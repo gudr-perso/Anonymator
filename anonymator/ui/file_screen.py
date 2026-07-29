@@ -48,6 +48,10 @@ class FileScreen(QWidget):
         self.doc = None
         self.session: FileReviewSession | None = None
         self._ooxml = None
+        # Forme de l'aperçu : "grid" (CSV, classeur) ou "units" (docx/pptx).
+        # Remplace un test sur la classe de la session : à trois sessions, un
+        # troisième `elif isinstance(...)` serait la faute.
+        self._view = "grid"
         self.page = 0
         self._busy = False
         self._degraded = False
@@ -306,13 +310,10 @@ class FileScreen(QWidget):
         out_dir = Path(self.prefs.output_dir) if self.prefs.output_dir else self.path.parent
         when = when or datetime.now()
         if self.session is not None:
+            # Toutes les sessions savent s'appliquer et se rendre : l'écran n'a
+            # pas à savoir de quel format il s'agit.
             out = anonymized_path(self.path, out_dir, when)
-            if isinstance(self.session, OoxmlReviewSession):
-                report = self.session.apply_and_save(out)
-                return FileResult(out, report)
-            masked = self.session.masked_document()
-            report = self.session.report()
-            csv_io.write_csv(masked, out)
+            report = self.session.apply_and_save(out)
             return FileResult(out, report)
         try:
             ner = self.loader.get()
@@ -435,6 +436,7 @@ class FileScreen(QWidget):
         QMessageBox.warning(self, "Erreur d'analyse", msg)
 
     def _on_scanned(self, scanned):
+        self._view = "grid"
         self.session = FileReviewSession(self.doc, scanned, self.ref, self._cols)
         self._restore_choices(self._pending_choices)
         self._pending_choices = None
@@ -449,6 +451,7 @@ class FileScreen(QWidget):
 
     def _on_ooxml_scanned(self, res):
         self._ooxml = res
+        self._view = "units"
         if res.fmt == "docx":
             save_fn = lambda out: res.doc.save(str(out))
             post_fn = lambda out, rep: xml_parts.postprocess_docx(
@@ -497,8 +500,9 @@ class FileScreen(QWidget):
         ital = QFont(); ital.setItalic(True)
         self.side.blockSignals(True)
         self.side.clear()
+        counts = self.session.counts_retained()
         for t in self.session.types():
-            top = QTreeWidgetItem([t, f"×{self.session.count_retained(t)}"])
+            top = QTreeWidgetItem([t, f"×{counts.get(t, 0)}"])
             top.setForeground(0, QColor(color_for(t)))
             top.setForeground(1, QColor(color("text_muted")))
             top.setTextAlignment(1, Qt.AlignRight | Qt.AlignVCenter)
@@ -538,16 +542,20 @@ class FileScreen(QWidget):
         else:
             self.session.set_value_enabled(etype, value, checked)
         self._refresh_counts()
-        if isinstance(self.session, OoxmlReviewSession):
+        self._render_current()
+
+    def _render_current(self):
+        if self._view == "units":
             self._render_units_page()
         else:
             self._render_page()
 
     def _refresh_counts(self):
+        counts = self.session.counts_retained()      # une passe pour tous les types
         for i in range(self.side.topLevelItemCount()):
             top = self.side.topLevelItem(i)
             _, t, _ = top.data(0, Qt.UserRole)
-            top.setText(1, f"×{self.session.count_retained(t)}")
+            top.setText(1, f"×{counts.get(t, 0)}")
 
     def _data_rows(self):
         start = 1 if self.doc.has_header else 0
