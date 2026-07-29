@@ -60,6 +60,13 @@ class Referential:
         return {c for c, e in self._by_code.items()
                 if e["method"] == "deterministic" and self.is_active(c)}
 
+    def active_codes(self) -> list[str]:
+        """Codes des types actifs, dans l'ordre du référentiel.
+
+        Sert au forçage manuel d'une colonne : proposer un type inactif
+        offrirait un masquage qui ne se produirait jamais."""
+        return [c for c in self._by_code if self.is_active(c)]
+
     def ner_stoplist(self) -> set[str]:
         return {normalize(t) for t in self._stoplist}
 

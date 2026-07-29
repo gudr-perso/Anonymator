@@ -82,3 +82,18 @@ def test_with_user_rules_replaces_ruleset():
         UserRules([Rule("simple", "PRJ-*", "mask", True, "")]))
     assert not ref.user_rules.keep_matches("service client")
     assert [r.pattern for r, _ in ref.user_rules.mask_rules()] == ["PRJ-*"]
+
+
+def test_active_codes_lists_only_active_types():
+    """Le menu de forçage d'une colonne ne propose que des types qui masquent
+    réellement quelque chose."""
+    ref = Referential.load_default()
+    codes = ref.active_codes()
+    assert "PERSON" in codes and "PHONE" in codes
+    assert "POSTAL_CODE" not in codes and "BIC" not in codes and "URL" not in codes
+
+
+def test_active_codes_follows_overrides():
+    ref = Referential.load_default(overrides={"PERSON": False, "URL": True})
+    codes = ref.active_codes()
+    assert "PERSON" not in codes and "URL" in codes
