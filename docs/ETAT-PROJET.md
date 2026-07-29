@@ -1,7 +1,7 @@
 # Anonymator — État du projet & comment continuer
 
 > Point de reprise. Lis ce fichier en premier quand tu rouvres le projet (y compris depuis un autre PC).
-> Dernière mise à jour : 2026-07-09.
+> Dernière mise à jour : 2026-07-29.
 
 ---
 
@@ -122,12 +122,14 @@ docs/                 ETAT-PROJET.md (ce fichier), DOCUMENTATION.md, RELEASE.md,
 
 - **Python** : sur la machine d'origine, `python`/`python3` sont des stubs Windows Store → toujours `.venv/Scripts/python`. Sur un autre PC, vérifier l'interpréteur ; recréer le venv si besoin :
   `python -m venv .venv` puis `.venv/Scripts/python -m pip install -r requirements.txt`.
+- **Version de Python** : venv reconstruit en **3.14.6** le 2026-07-29 (il était en 3.13, désinstallé depuis). Toute la pile a des wheels 3.14 (torch 2.13, PySide6 6.11.1, PyMuPDF 1.28, gliner 0.2.28) ; 478 tests verts et les deux exes se lancent. Aucune version de Python n'est épinglée : vérifier la disponibilité des wheels `cp3XX` avant de sauter de version.
 - **Le `.venv/` n'est pas dans git** (voir `.gitignore`). À recréer sur chaque machine.
-- **pCloud + grosses dépendances** : `torch` (via gliner) et `PySide6` pèsent des centaines de Mo. Avant de les installer, **exclure `.venv/` de la synchro pCloud** (ou créer le venv hors du dossier pCloud). Détails : `docs/installation-gliner.md`.
-- **`.git` synchronisé par pCloud** : branche/historique/fichiers peuvent changer en cours de session → vérifier l'état (`git status`, `git log`) avant de committer.
+- **pCloud + grosses dépendances** : `torch` (via gliner) et `PySide6` pèsent des centaines de Mo. Avant de les installer, **exclure `.venv/` de la synchro pCloud** (ou créer le venv hors du dossier pCloud). Détails : `docs/installation-gliner.md`. Après un build complet le dossier contient ~3,9 Go non versionnés (`.venv` 1,6 Go, `dist` 2,0 Go, `build` 344 Mo).
+- **`.git` synchronisé par pCloud** : branche/historique/fichiers peuvent changer en cours de session → vérifier l'état (`git status`, `git log`) avant de committer. **Le `.git` peut aussi disparaître purement et simplement** (constaté le 2026-07-29) : le dossier reste complet mais n'est plus un dépôt. Remède : `git clone` du remote ailleurs, puis recopier son `.git/` dans le dossier de travail — `git status` révèle alors ce qui n'avait pas été poussé.
+- **Fins de ligne** : `core.autocrlf=true` ici, mais certains blobs du dépôt ont été poussés en CRLF depuis une autre machine → ces fichiers apparaissent modifiés en permanence alors que `git diff` est vide. Ne pas les committer (commit de blancs) ; nettoyer un jour d'un coup avec `git add --renormalize .`.
 - **Lancer les tests** : `.venv/Scripts/python -m pytest -q` (→ `478 passed, 1 deselected`). Plateforme offscreen gérée automatiquement via `tests/conftest.py`.
 - **Lancer l'appli** : `.venv/Scripts/python -m anonymator` (mode dev, sélecteur de thème actif).
-- **Builder les exes** : `scripts/build.ps1` (spec paramétré par `ANONYMATOR_BUILD_BRAND`, zippe par marque, copie le `LICENSE` à la racine du dossier distribué).
+- **Builder les exes** : `scripts/build.ps1 cap|cuma|dev|all` (spec paramétré par `ANONYMATOR_BUILD_BRAND`, zippe par marque, copie le `LICENSE` à la racine du dossier distribué). Compter ~4 min par marque. **Ne pas rediriger la sortie avec `2>&1`** : PyInstaller écrit ses `INFO` sur stderr, PowerShell les transforme en erreurs et le `$ErrorActionPreference = 'Stop'` du script avorte le build dès la première ligne.
 
 ## Git / remote
 
