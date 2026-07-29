@@ -1,9 +1,15 @@
-from datetime import datetime
+from datetime import datetime, date
 import openpyxl
 from openpyxl.styles import Font
 from anonymator.referential import Referential
-from anonymator.ner import FakeNer
+from anonymator.ner import FakeNer, NullNer
 from anonymator.files.anonymize_file import anonymize_xlsx
+from anonymator.files.xlsx_io import sheet_has_header
+
+
+def _anonymize(src, tmp_path, ner):
+    return anonymize_xlsx(src, ner, Referential.load_default(), tmp_path,
+                          when=datetime(2026, 6, 24, 17, 18, 0))
 
 def _make_book(path):
     wb = openpyxl.Workbook()
@@ -35,3 +41,116 @@ def test_masks_string_cells_all_sheets_preserves_formatting(tmp_path):
     assert wb["Tiers"]["A1"].value == "Fournisseur [PERSONNE]"
     assert openpyxl.load_workbook(src)["Balance"]["A2"].value == "Claire Martin"
     assert any(r["original"] == "Claire Martin" for r in res.report.to_rows())
+
+
+def _clients_book(path, n=24):
+    """Feuille type extraction client : en-têtes explicites, colonnes mêlant
+    identités, mesures et nomenclature."""
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Clients"
+    for c, h in enumerate(["code_client", "contact_nom", "telephone",
+                           "secteur", "ca_2025", "date_entree"], start=1):
+        ws.cell(row=1, column=c, value=h)
+    secteurs = ["Industrie", "BTP", "Textile"]
+    for i in range(n):
+        r = i + 2
+        ws.cell(row=r, column=1, value="C%07d" % (i + 1))
+        ws.cell(row=r, column=2, value=["Leclerc", "Berger", "Poirier"][i % 3])
+        ws.cell(row=r, column=3, value="03 73 41 92 %02d" % i)
+        ws.cell(row=r, column=4, value=secteurs[i % 3])
+        ws.cell(row=r, column=5, value=1000 + i)
+        ws.cell(row=r, column=6, value=date(2020, 1, 1 + (i % 28)))
+    wb.save(path)
+
+
+def test_xlsx_typed_column_masks_every_row_without_model(tmp_path):
+    """Le typage par en-tête ne dépend pas du NER : sans modèle, la colonne
+    de noms et celle de téléphones sont traitées intégralement."""
+    src = tmp_path / "clients.xlsx"
+    _clients_book(src)
+    res = _anonymize(src, tmp_path, NullNer())
+    ws = openpyxl.load_workbook(res.output_path)["Clients"]
+    assert [ws.cell(row=r, column=2).value for r in (2, 3, 4)] == ["[PERSONNE]"] * 3
+    assert [ws.cell(row=r, column=3).value for r in (2, 3, 4)] == ["[TEL]"] * 3
+
+
+def test_xlsx_keeps_nomenclature_and_measures(tmp_path):
+    src = tmp_path / "clients.xlsx"
+    _clients_book(src)
+    res = _anonymize(src, tmp_path, FakeNer({"Industrie": "ORG", "BTP": "ORG"}))
+    ws = openpyxl.load_workbook(res.output_path)["Clients"]
+    assert ws.cell(row=2, column=4).value == "Industrie"
+    assert ws.cell(row=2, column=5).value == 1000
+    assert ws.cell(row=2, column=6).value == datetime(2020, 1, 1)
+
+
+def test_xlsx_header_row_is_never_masked(tmp_path):
+    src = tmp_path / "clients.xlsx"
+    _clients_book(src)
+    res = _anonymize(src, tmp_path, NullNer())
+    ws = openpyxl.load_workbook(res.output_path)["Clients"]
+    assert ws.cell(row=1, column=2).value == "contact_nom"
+    assert ws.cell(row=1, column=3).value == "telephone"
+
+
+def test_xlsx_report_locates_masked_cells(tmp_path):
+    src = tmp_path / "clients.xlsx"
+    _clients_book(src)
+    res = _anonymize(src, tmp_path, NullNer())
+    rows = res.report.to_rows()
+    assert any(r["type"] == "PHONE" for r in rows)
+    assert any(r["type"] == "PERSON" for r in rows)
+
+
+def _all_text_book(path, headers, n=24):
+    """Feuille dont aucune colonne n'est typée : le signal des types de
+    cellules est aveugle."""
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Feuille"
+    for c, h in enumerate(headers, start=1):
+        ws.cell(row=1, column=c, value=h)
+    for i in range(n):
+        ws.cell(row=i + 2, column=1, value=["Leclerc", "Berger", "Poirier"][i % 3])
+        ws.cell(row=i + 2, column=2, value="La Rochelle" if i % 2 else "Nantes")
+        ws.cell(row=i + 2, column=3, value=["Industrie", "BTP", "Textile"][i % 3])
+    wb.save(path)
+    return wb
+
+
+def test_sheet_has_header_falls_back_on_column_vocabulary(tmp_path):
+    """Feuille 100 % textuelle : les types de cellules ne disent rien, mais la
+    ligne 1 est faite de noms de colonnes."""
+    src = tmp_path / "texte.xlsx"
+    _all_text_book(src, ["contact_nom", "ville", "secteur"])
+    assert sheet_has_header(openpyxl.load_workbook(src)["Feuille"]) is True
+
+
+def test_sheet_has_header_stays_false_on_a_data_row(tmp_path):
+    src = tmp_path / "sansentete.xlsx"
+    _all_text_book(src, ["Claire Martin", "Nantes", "Industrie"])
+    assert sheet_has_header(openpyxl.load_workbook(src)["Feuille"]) is False
+
+
+def test_sheet_has_header_keeps_type_signal_authoritative(tmp_path):
+    """Le vocabulaire n'est consulté qu'en dernier recours : une ligne 1 qui
+    n'est pas entièrement textuelle reste un refus."""
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws["A1"] = "contact_nom"; ws["B1"] = 2026        # un nombre en ligne 1
+    ws["A2"] = "Leclerc"; ws["B2"] = "Nantes"
+    src = tmp_path / "mixte.xlsx"; wb.save(src)
+    assert sheet_has_header(openpyxl.load_workbook(src).active) is False
+
+
+def test_all_text_sheet_is_typed_by_its_headers(tmp_path):
+    """Effet visé : le typage par en-tête redevient possible sans modèle."""
+    src = tmp_path / "texte.xlsx"
+    _all_text_book(src, ["contact_nom", "ville", "secteur"])
+    res = _anonymize(src, tmp_path, NullNer())
+    ws = openpyxl.load_workbook(res.output_path)["Feuille"]
+    assert ws["A1"].value == "contact_nom"          # titres préservés
+    assert ws["A2"].value == "[PERSONNE]"
+    assert ws["B2"].value == "[ADRESSE]"
+    assert ws["C2"].value == "Industrie"            # nomenclature intacte

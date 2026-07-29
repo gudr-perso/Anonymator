@@ -7,7 +7,9 @@ class FileScanWorker(QThread):
     scan_finished = Signal(object)  # dict[(row,col) -> list[Entity]]; Signal(object) for tuple-keyed dict
     error = Signal(str)
 
-    def __init__(self, doc, loader, ref, cols: set[int]):
+    def __init__(self, doc, loader, ref, cols):
+        """`cols` : plan par colonne (cf. columns.classify_columns) ou simple
+        ensemble d'index, traité alors comme du texte libre."""
         super().__init__()
         self._doc, self._loader, self._ref, self._cols = doc, loader, ref, cols
 

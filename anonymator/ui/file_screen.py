@@ -2,7 +2,8 @@ from datetime import datetime
 from pathlib import Path
 from PySide6.QtWidgets import (QWidget, QFrame, QVBoxLayout, QHBoxLayout, QPushButton,
                                QLabel, QTableWidget, QTableWidgetItem, QFileDialog,
-                               QMessageBox, QTreeWidget, QTreeWidgetItem, QLineEdit)
+                               QMessageBox, QTreeWidget, QTreeWidgetItem, QLineEdit,
+                               QCheckBox)
 from PySide6.QtGui import QColor
 from PySide6.QtCore import Qt
 from anonymator.ui.components.grid import paint_grid
@@ -10,7 +11,7 @@ from anonymator.ui.theme import color
 from anonymator.files.anonymize_file import (anonymize_file, UnsupportedFormat, FileResult)
 from anonymator.files import csv_io
 from anonymator.output_naming import anonymized_path
-from anonymator.files.columns import default_maskable_columns
+from anonymator.files.anonymize_file import csv_column_plans
 from anonymator.core.file_review_session import FileReviewSession
 from anonymator.ui.file_scan_worker import FileScanWorker
 from anonymator.ui.file_anonymize_worker import FileAnonymizeWorker
@@ -52,6 +53,7 @@ class FileScreen(QWidget):
         self._degraded = False
         self._worker: FileScanWorker | None = None
         self._anon_worker: FileAnonymizeWorker | None = None
+        self._pending_choices: dict | None = None
 
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0); root.setSpacing(0)
@@ -94,6 +96,14 @@ class FileScreen(QWidget):
         self.table.horizontalHeader().setStretchLastSection(True)
         self.table.verticalHeader().setDefaultAlignment(Qt.AlignCenter)
         table_card = Card("document", "Écritures comptables — extrait")
+        # La détection d'en-tête est une heuristique : sur un fichier sans
+        # colonne numérique elle se trompe, et tout le typage par nom de
+        # colonne tombe avec elle. L'utilisateur doit pouvoir trancher.
+        self.header_switch = QCheckBox("Première ligne = en-têtes")
+        self.header_switch.setObjectName("headerSwitch")
+        self.header_switch.toggled.connect(self._on_header_toggled)
+        self.header_switch.hide()
+        table_card.head.addWidget(self.header_switch)
         table_card.body.addWidget(self.table)
 
         from PySide6.QtWidgets import QHeaderView
@@ -195,18 +205,78 @@ class FileScreen(QWidget):
         self.doc = None
         self.session = None
         self._ooxml = None
+        self._pending_choices = None   # arbitrages d'un autre fichier : sans objet
         self.side.hide(); self.pager_widget.hide()
         self.occ_badge.hide(); self._hint.hide()
         suffix = self.path.suffix.lower()
         self.btn_review.setEnabled(suffix in (".csv", ".txt", ".docx", ".pptx"))
         if suffix == ".csv":
             self.doc = csv_io.read_csv(self.path)
+            self.header_switch.blockSignals(True)     # reflet, pas une action
+            self.header_switch.setChecked(self.doc.has_header)
+            self.header_switch.blockSignals(False)
+            self.header_switch.show()
             self._fill_preview(self.doc.rows[:50])
         else:
+            self.header_switch.hide()
             self.table.clear()
             self.table.setRowCount(0)
             self.table.setColumnCount(0)
         self.perimetre_card.setVisible(False)
+        self._set_meta()
+
+    def _capture_choices(self) -> dict | None:
+        """Arbitrages manuels de la revue en cours, indexés par type et par
+        valeur : ils survivent à un changement de plan de colonnes."""
+        if self.session is None:
+            return None
+        types = {t: self.session.is_type_enabled(t) for t in self.session.types()}
+        values = {(t, v): self.session.is_value_enabled(t, v)
+                  for t in self.session.types()
+                  for v, _n in self.session.values_for(t)}
+        return {"types": types, "values": values}
+
+    def _restore_choices(self, choices: dict | None) -> None:
+        """Réapplique les décochages qui gardent un sens dans la nouvelle
+        analyse ; ignore en silence ce qui a disparu."""
+        if not choices or self.session is None:
+            return
+        for etype, enabled in choices["types"].items():
+            if etype in self.session.types():
+                self.session.set_type_enabled(etype, enabled)
+        known = {(t, v) for t in self.session.types()
+                 for v, _n in self.session.values_for(t)}
+        for (etype, value), enabled in choices["values"].items():
+            if (etype, value) in known:
+                self.session.set_value_enabled(etype, value, enabled)
+
+    def _on_header_toggled(self, checked: bool):
+        """L'hypothèse d'en-tête décide du typage des colonnes, donc du
+        périmètre : une revue faite sous l'ancienne hypothèse ne peut pas être
+        rejouée telle quelle. Elle représente du travail manuel, on demande
+        avant de la relancer, et on reporte les arbitrages sur la suivante."""
+        if self.doc is None:
+            return
+        if self.session is not None:
+            answer = QMessageBox.question(
+                self, "Relancer l'analyse ?",
+                "Changer l'hypothèse d'en-tête modifie le périmètre des "
+                "colonnes : l'analyse doit être relancée.\n\n"
+                "Vos choix (valeurs et catégories décochées) seront reportés "
+                "sur la nouvelle analyse.",
+                QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+            if answer != QMessageBox.Yes:
+                self.header_switch.blockSignals(True)
+                self.header_switch.setChecked(not checked)   # retour à l'état
+                self.header_switch.blockSignals(False)
+                return
+            self._pending_choices = self._capture_choices()
+        self.doc.has_header = checked
+        self.session = None
+        self.side.hide(); self._hint.hide(); self.occ_badge.hide()
+        self.pager_widget.hide()
+        self.page = 0
+        self._fill_preview(self.doc.rows[:50])
         self._set_meta()
 
     def _fill_preview(self, rows):
@@ -225,6 +295,11 @@ class FileScreen(QWidget):
             for c in range(width):
                 self.table.setItem(r, c, QTableWidgetItem(row[c] if c < len(row) else ""))
 
+    def _header_override(self) -> bool | None:
+        """Choix explicite de l'utilisateur, à substituer à la détection
+        automatique. None hors CSV : la question ne se pose pas."""
+        return None if self.doc is None else self.doc.has_header
+
     def run(self, when: datetime | None = None):
         if not self.path:
             return None
@@ -241,7 +316,8 @@ class FileScreen(QWidget):
             return FileResult(out, report)
         try:
             ner = self.loader.get()
-            result = anonymize_file(self.path, ner, self.ref, out_dir, when)
+            result = anonymize_file(self.path, ner, self.ref, out_dir, when,
+                                    has_header=self._header_override())
         except UnsupportedFormat as e:
             QMessageBox.warning(self, "Format non supporté", str(e))
             return None
@@ -270,7 +346,8 @@ class FileScreen(QWidget):
         loader = ModelLoader(NullNer()) if self._degraded else self.loader
         self._set_busy(True)
         self._anon_worker = FileAnonymizeWorker(
-            self.path, loader, self.ref, out_dir, datetime.now())
+            self.path, loader, self.ref, out_dir, datetime.now(),
+            has_header=self._header_override())
         self._anon_worker.done.connect(self._on_anonymized)
         self._anon_worker.error.connect(self._on_run_error)
         self._anon_worker.finished.connect(self._anon_worker.deleteLater)
@@ -323,14 +400,16 @@ class FileScreen(QWidget):
             return
         if self.doc is None:
             return
-        cols = default_maskable_columns(self.doc.rows, self.doc.has_header)
+        plans = csv_column_plans(self.doc)
+        cols = set(plans)
         self._cols = cols
+        self._column_plans = plans
         self._degraded = not (self.loader.has_detector() or is_model_available())
         # Le détecteur est construit DANS le worker (pas ici, sur le thread UI) :
         # une construction lente affiche l'overlay, un échec remonte via `error`.
         loader = ModelLoader(NullNer()) if self._degraded else self.loader
         self._set_busy(True)
-        self._worker = FileScanWorker(self.doc, loader, self.ref, cols)
+        self._worker = FileScanWorker(self.doc, loader, self.ref, plans)
         self._worker.scan_finished.connect(self._on_scanned)
         self._worker.error.connect(self._on_scan_error)
         self._worker.finished.connect(self._worker.deleteLater)
@@ -357,6 +436,8 @@ class FileScreen(QWidget):
 
     def _on_scanned(self, scanned):
         self.session = FileReviewSession(self.doc, scanned, self.ref, self._cols)
+        self._restore_choices(self._pending_choices)
+        self._pending_choices = None
         self._set_busy(False)
         self.banner.setVisible(self._degraded)
         self.occ_badge.setText(f"{_fmt_int(self.session.total_occurrences())} occ.")

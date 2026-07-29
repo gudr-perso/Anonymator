@@ -1,10 +1,11 @@
 from dataclasses import dataclass
 from datetime import datetime
+from functools import partial
 from pathlib import Path
 from anonymator.ner import NerDetector
 from anonymator.referential import Referential
 from anonymator.model import Entity
-from anonymator.pipeline import detect
+from anonymator.pipeline import detect, detect_column
 from anonymator.anonymize import apply_masking
 from anonymator.dedup import detect_unique
 from anonymator.report.audit import AuditReport
@@ -12,7 +13,8 @@ from anonymator.output_naming import anonymized_path
 from anonymator.files import csv_io
 from anonymator.files import txt_io
 from anonymator.files import xlsx_io
-from anonymator.files.columns import default_maskable_columns
+from anonymator.files.columns import (
+    SKIP, TEXT, TYPED, ColumnPlan, classify_columns)
 
 
 @dataclass
@@ -60,19 +62,54 @@ def anonymize_pptx(path: Path, ner: NerDetector, ref: Referential,
     return FileResult(out, report)
 
 
+def csv_column_plans(doc, include: set[int] | None = None,
+                     exclude: set[int] | None = None) -> dict[int, ColumnPlan]:
+    """Plan de traitement des colonnes, choix explicites de l'appelant appliqués.
+
+    `include` force l'analyse d'une colonne écartée par défaut ; `exclude` la
+    retire. Ne sont retournées que les colonnes réellement analysées."""
+    plans = classify_columns(doc.rows, doc.has_header)
+    if include is not None:
+        plans = {c: plans.get(c, ColumnPlan(TEXT, reason="inclusion explicite"))
+                 for c in include}
+        plans = {c: (p if p.policy != SKIP
+                     else ColumnPlan(TEXT, reason="inclusion explicite"))
+                 for c, p in plans.items()}
+    if exclude:
+        plans = {c: p for c, p in plans.items() if c not in exclude}
+    return {c: p for c, p in plans.items() if p.policy != SKIP}
+
+
+def _as_plans(cols) -> dict[int, ColumnPlan]:
+    """Accepte un simple ensemble d'index (colonnes en texte libre) ou un plan
+    déjà calculé par `classify_columns`."""
+    if isinstance(cols, dict):
+        return cols
+    return {c: ColumnPlan(TEXT) for c in cols}
+
+
 def scan_csv(doc, ner: NerDetector, ref: Referential,
-             cols: set[int]) -> dict[tuple[int, int], list[Entity]]:
-    """Détecte les entités par cellule (dédupliqué) sur les colonnes `cols`.
+             cols) -> dict[tuple[int, int], list[Entity]]:
+    """Détecte les entités par cellule (dédupliqué), colonne par colonne.
     Clés = (ligne, colonne) ; valeurs = entités détectées dans la cellule.
-    Offsets des entités relatifs à la valeur de cellule (cf. dedup.detect_unique)."""
+    Offsets des entités relatifs à la valeur de cellule (cf. dedup.detect_unique).
+
+    Le cache est propre à chaque colonne : une même valeur peut relever d'une
+    colonne typée ici et d'une colonne libre ailleurs."""
+    plans = _as_plans(cols)
     data_start = 1 if doc.has_header else 0
-    values = [doc.rows[r][c]
-              for r in range(data_start, len(doc.rows))
-              for c in cols if c < len(doc.rows[r])]
-    cache = detect_unique(values, lambda v: detect(v, ner, ref))
+    rows_range = range(data_start, len(doc.rows))
     result: dict[tuple[int, int], list[Entity]] = {}
-    for r in range(data_start, len(doc.rows)):
-        for c in cols:
+    for c, plan in plans.items():
+        if plan.policy == SKIP:
+            continue
+        if plan.policy == TYPED and plan.etype:
+            detector = partial(detect_column, etype=plan.etype, ref=ref)
+        else:
+            detector = lambda v: detect(v, ner, ref)  # noqa: E731
+        values = [doc.rows[r][c] for r in rows_range if c < len(doc.rows[r])]
+        cache = detect_unique(values, detector)
+        for r in rows_range:
             if c >= len(doc.rows[r]):
                 continue
             ents = cache.get(doc.rows[r][c], [])
@@ -100,13 +137,13 @@ def apply_csv(doc, retained_by_cell: dict[tuple[int, int], list[Entity]],
 def anonymize_csv(path: Path, ner: NerDetector, ref: Referential,
                   output_dir: Path, when: datetime,
                   include: set[int] | None = None,
-                  exclude: set[int] | None = None) -> FileResult:
+                  exclude: set[int] | None = None,
+                  has_header: bool | None = None) -> FileResult:
     doc = csv_io.read_csv(path)
-    cols = set(include) if include is not None else default_maskable_columns(
-        doc.rows, doc.has_header)
-    if exclude:
-        cols -= set(exclude)
-    scanned = scan_csv(doc, ner, ref, cols)
+    if has_header is not None:
+        doc.has_header = has_header    # l'utilisateur tranche, pas le sniffer
+    plans = csv_column_plans(doc, include=include, exclude=exclude)
+    scanned = scan_csv(doc, ner, ref, plans)
     scanned = {k: [e for e in v if e.confirmed]      # direct : ignore les non confirmés
                for k, v in scanned.items()}
     scanned = {k: v for k, v in scanned.items() if v}
@@ -123,13 +160,15 @@ class UnsupportedFormat(Exception):
 def anonymize_file(path: Path, ner: NerDetector, ref: Referential,
                    output_dir: Path, when: datetime,
                    include: set[int] | None = None,
-                   exclude: set[int] | None = None) -> FileResult:
+                   exclude: set[int] | None = None,
+                   has_header: bool | None = None) -> FileResult:
     suffix = path.suffix.lower()
     if suffix == ".txt":
         return anonymize_txt(path, ner, ref, output_dir, when)
     if suffix == ".csv":
         return anonymize_csv(path, ner, ref, output_dir, when,
-                             include=include, exclude=exclude)
+                             include=include, exclude=exclude,
+                             has_header=has_header)
     if suffix == ".xlsx":
         if include is not None or exclude is not None:
             raise NotImplementedError(

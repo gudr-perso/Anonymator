@@ -1,5 +1,6 @@
 from datetime import datetime
 from unittest.mock import patch
+from PySide6.QtWidgets import QMessageBox
 from anonymator.referential import Referential
 from anonymator.ner import FakeNer
 from anonymator.ui.model_loader import ModelLoader
@@ -268,3 +269,138 @@ def test_file_screen_reviews_docx(tmp_path, qtbot):
     assert result.output_path.exists()
     from docx import Document
     assert "[PERSONNE]" in Document(str(result.output_path)).paragraphs[0].text
+
+
+# ---- interrupteur « première ligne = en-têtes » ----
+
+def _no_sniff_csv(tmp_path):
+    """Fichier 100 % texte : csv.Sniffer n'y détecte pas d'en-tête."""
+    src = tmp_path / "h.csv"
+    src.write_bytes(("contact_nom;secteur\n"
+                     "Leclerc;Industrie\n"
+                     "Berger;BTP\n").encode("cp1252"))
+    return src
+
+
+def test_header_switch_reflects_detection(qtbot, tmp_path):
+    src = tmp_path / "f.csv"
+    src.write_bytes("Nom;Montant\nClaire Martin;100,00\n".encode("cp1252"))
+    s = _screen(); qtbot.addWidget(s)
+    s.load_path(str(src))
+    assert s.header_switch.isVisible() or not s.isVisible()   # affiché pour un CSV
+    assert s.header_switch.isChecked() is True                # sniffer : en-tête
+
+
+def test_header_switch_hidden_for_non_csv(qtbot, tmp_path):
+    src = tmp_path / "n.txt"
+    src.write_bytes("Claire Martin".encode("cp1252"))
+    s = _screen(); qtbot.addWidget(s)
+    s.load_path(str(src))
+    assert s.header_switch.isHidden()
+
+
+def test_header_switch_updates_document_and_preview(qtbot, tmp_path):
+    src = _no_sniff_csv(tmp_path)
+    s = _screen(); qtbot.addWidget(s)
+    s.load_path(str(src))
+    assert s.doc.has_header is False
+    assert s.table.rowCount() == 3            # la ligne de titres compte comme donnée
+    s.header_switch.setChecked(True)
+    assert s.doc.has_header is True
+    assert s.table.rowCount() == 2
+    assert s.table.horizontalHeaderItem(0).text() == "contact_nom"
+
+
+def _reviewed_screen(qtbot, tmp_path):
+    """Écran avec une revue déjà faite, en-tête assumé (le sniffer, lui,
+    hésite selon le nombre de lignes de données)."""
+    src = tmp_path / "f.csv"
+    src.write_bytes(
+        "Nom;Montant\nClaire Martin;100,00\nPaul Durand;50,00\n".encode("cp1252"))
+    s = _screen({"Claire Martin": "PERSON", "Paul Durand": "PERSON"})
+    qtbot.addWidget(s)
+    s.load_path(str(src))
+    s.header_switch.setChecked(True)      # sans revue : aucun dialogue
+    s.analyze()
+    qtbot.waitUntil(lambda: s.session is not None, timeout=5000)
+    return s
+
+
+def test_header_switch_asks_before_discarding_review(qtbot, tmp_path):
+    """Une revue représente du travail manuel : on ne la jette pas sur un
+    clic de case à cocher sans demander."""
+    s = _reviewed_screen(qtbot, tmp_path)
+    with patch("anonymator.ui.file_screen.QMessageBox.question",
+               return_value=QMessageBox.No) as ask:
+        s.header_switch.setChecked(False)
+    assert ask.called
+    assert s.session is not None          # revue conservée
+    assert s.doc.has_header is True       # hypothèse inchangée
+    assert s.header_switch.isChecked() is True   # case revenue à son état
+
+
+def test_header_switch_discards_review_once_confirmed(qtbot, tmp_path):
+    s = _reviewed_screen(qtbot, tmp_path)
+    with patch("anonymator.ui.file_screen.QMessageBox.question",
+               return_value=QMessageBox.Yes):
+        s.header_switch.setChecked(False)
+    assert s.session is None
+    assert s.doc.has_header is False
+    assert s.side.isHidden()
+
+
+def test_header_switch_restores_choices_after_reanalysis(qtbot, tmp_path):
+    """Le plan de colonnes change, pas les arbitrages de l'utilisateur : ses
+    décochages sont réappliqués à la nouvelle analyse."""
+    s = _reviewed_screen(qtbot, tmp_path)
+    s.session.set_value_enabled("PERSON", "Paul Durand", False)
+    s.session.set_type_enabled("PERSON", True)
+    with patch("anonymator.ui.file_screen.QMessageBox.question",
+               return_value=QMessageBox.Yes):
+        s.header_switch.setChecked(False)
+    s.analyze()
+    qtbot.waitUntil(lambda: s.session is not None, timeout=5000)
+    assert s.session.is_value_enabled("PERSON", "Paul Durand") is False
+    assert s.session.is_value_enabled("PERSON", "Claire Martin") is True
+
+
+def test_header_switch_without_review_needs_no_confirmation(qtbot, tmp_path):
+    src = _no_sniff_csv(tmp_path)
+    s = _screen(); qtbot.addWidget(s)
+    s.load_path(str(src))
+    with patch("anonymator.ui.file_screen.QMessageBox.question") as ask:
+        s.header_switch.setChecked(True)
+    assert not ask.called
+    assert s.doc.has_header is True
+
+
+def test_header_switch_drives_direct_anonymization(qtbot, tmp_path):
+    """Sans revue, l'anonymisation directe doit suivre le choix de l'UI et non
+    la détection automatique."""
+    src = _no_sniff_csv(tmp_path)
+    loader = ModelLoader(FakeNer({}))
+    s = FileScreen(Referential.load_default(), loader,
+                   Preferences(output_dir=str(tmp_path)), on_back=lambda: None)
+    qtbot.addWidget(s)
+    s.load_path(str(src))
+    s.header_switch.setChecked(True)
+    res = s.run(when=datetime(2026, 1, 2, 3, 4, 5))
+    out = res.output_path.read_bytes().decode("cp1252")
+    assert out.splitlines()[0] == "contact_nom;secteur"
+    assert out.count("[PERSONNE]") == 2
+
+
+def test_pending_choices_do_not_leak_to_another_file(qtbot, tmp_path):
+    """Les arbitrages reportés valent pour le fichier en cours, pas pour le
+    suivant, même si un nom s'y retrouve."""
+    s = _reviewed_screen(qtbot, tmp_path)
+    s.session.set_value_enabled("PERSON", "Paul Durand", False)
+    with patch("anonymator.ui.file_screen.QMessageBox.question",
+               return_value=QMessageBox.Yes):
+        s.header_switch.setChecked(False)
+    other = tmp_path / "autre.csv"
+    other.write_bytes("Nom;Montant\nPaul Durand;10,00\n".encode("cp1252"))
+    s.load_path(str(other))
+    s.analyze()
+    qtbot.waitUntil(lambda: s.session is not None, timeout=5000)
+    assert s.session.is_value_enabled("PERSON", "Paul Durand") is True
