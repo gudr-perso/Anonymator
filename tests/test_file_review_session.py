@@ -86,3 +86,49 @@ def test_masked_document_and_report(tmp_path):
     assert {r["original"] for r in rows} == {"Claire Martin"}
     # le document original n'est pas muté
     assert s.doc.rows[1][0] == "Claire Martin"
+
+
+def test_column_override_masks_a_free_text_column(tmp_path):
+    """Forcer une colonne masque même les cellules où rien n'a été détecté."""
+    from anonymator.core.tabular_review_session import MASK
+    src = tmp_path / "f.csv"
+    src.write_bytes("Nom;Note\nClaire Martin;RAS\nPaul Durand;a rappeler\n"
+                    .encode("cp1252"))
+    doc = csv_io.read_csv(src)
+    doc.has_header = True
+    ref = Referential.load_default()
+    s = FileReviewSession(doc, {}, ref, {0, 1})
+    s.set_column_override(1, MASK, "ORG")
+    md = s.masked_document()
+    assert md.rows[0][1] == "Note"          # la ligne de titres reste intacte
+    assert md.rows[1][1] == "[ORG]"
+    assert md.rows[2][1] == "[ORG]"
+
+
+def test_column_override_clear_wins_over_detection(tmp_path):
+    from anonymator.core.tabular_review_session import CLEAR
+    s = _session(tmp_path)
+    s.set_column_override(0, CLEAR)
+    assert s.count_retained("PERSON") == 0
+    assert s.masked_document().rows[1][0] == "Claire Martin"
+
+
+def test_column_plan_reason_is_available(tmp_path):
+    from anonymator.files.columns import classify_columns
+    src = tmp_path / "f.csv"
+    src.write_bytes("telephone;montant\n03 73 41 92 92;100,00\n".encode("cp1252"))
+    doc = csv_io.read_csv(src)
+    doc.has_header = True
+    plans = classify_columns(doc.rows, doc.has_header)
+    s = FileReviewSession(doc, {}, Referential.load_default(), {0}, plans)
+    assert "telephone" in s.column_reason(0)
+    assert s.default_type_for(0) == "PHONE"
+
+
+def test_apply_and_save_writes_the_csv(tmp_path):
+    s = _session(tmp_path)
+    out = tmp_path / "out.csv"
+    report = s.apply_and_save(out)
+    text = out.read_bytes().decode("cp1252")
+    assert "[PERSONNE]" in text
+    assert {r["original"] for r in report.to_rows()} == {"Claire Martin", "Paul Durand"}
