@@ -158,11 +158,13 @@ def test_run_clicked_surfaces_detector_load_failure(qtbot, tmp_path):
     assert warn.called
 
 
-def test_review_disabled_for_xlsx(qtbot, tmp_path):
+def test_review_enabled_for_xlsx(qtbot, tmp_path):
+    """La revue est ouverte aux classeurs (chantier 3) : le bouton doit être
+    actif dès le chargement, avant même toute lecture du fichier."""
     src = tmp_path / "f.xlsx"; src.write_bytes(b"PK\x03\x04stub")   # extension xlsx
     s = _screen(); qtbot.addWidget(s)
     s.load_path(str(src))
-    assert s.btn_review.isEnabled() is False
+    assert s.btn_review.isEnabled() is True
 
 
 def test_txt_routes_to_text_review(qtbot, tmp_path):

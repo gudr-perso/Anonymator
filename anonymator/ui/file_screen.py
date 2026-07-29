@@ -27,7 +27,9 @@ from anonymator.ner import NullNer
 from anonymator.ui.model_loader import ModelLoader
 from anonymator.ui.components.banner import ModelBanner
 from anonymator.core.ooxml_review_session import OoxmlReviewSession
+from anonymator.core.xlsx_review_session import XlsxReviewSession
 from anonymator.ui.ooxml_scan_worker import OoxmlScanWorker
+from anonymator.ui.xlsx_scan_worker import XlsxScanWorker
 from anonymator.ui.components.perimetre_card import PerimetreCard
 from anonymator.files.ooxml import xml_parts
 
@@ -54,6 +56,10 @@ class FileScreen(QWidget):
         self.doc = None
         self.session: FileReviewSession | None = None
         self._ooxml = None
+        self._xlsx = None            # XlsxScanResult de la revue en cours
+        self._sheet: str | None = None
+        self._sheet_to_restore: str | None = None
+        self._sheet_headers: dict[str, bool] = {}   # choix explicites par feuille
         # Forme de l'aperçu : "grid" (CSV, classeur) ou "units" (docx/pptx).
         # Remplace un test sur la classe de la session : à trois sessions, un
         # troisième `elif isinstance(...)` serait la faute.
@@ -116,6 +122,13 @@ class FileScreen(QWidget):
         self.header_switch.setObjectName("headerSwitch")
         self.header_switch.toggled.connect(self._on_header_toggled)
         self.header_switch.hide()
+        # Une feuille à la fois : la lecture tabulaire est l'objet même de la
+        # revue, et concaténer les feuilles la perdrait.
+        self.sheet_box = QComboBox()
+        self.sheet_box.setObjectName("sheetBox")
+        self.sheet_box.currentTextChanged.connect(self._on_sheet_changed)
+        self.sheet_box.hide()
+        table_card.head.addWidget(self.sheet_box)
         table_card.head.addWidget(self.header_switch)
         table_card.body.addWidget(self.table)
 
@@ -199,6 +212,8 @@ class FileScreen(QWidget):
         parts = [kind]
         if self.doc is not None:
             parts.append(f"{_fmt_int(len(self.doc.rows))} lignes")
+        elif self._xlsx is not None:
+            parts.append(f"{len(self._xlsx.sheets)} feuille(s)")
         if status is not None:
             parts.append(status)
         elif self.session is not None:
@@ -218,11 +233,18 @@ class FileScreen(QWidget):
         self.doc = None
         self.session = None
         self._ooxml = None
+        self._xlsx = None
+        self._sheet = None
+        self._sheet_to_restore = None
+        self._sheet_headers = {}
+        self._view = "grid"
         self._pending_choices = None   # arbitrages d'un autre fichier : sans objet
         self.side.hide(); self.pager_widget.hide()
         self.occ_badge.hide(); self._hint.hide()
+        self.sheet_box.hide()
         suffix = self.path.suffix.lower()
-        self.btn_review.setEnabled(suffix in (".csv", ".txt", ".docx", ".pptx"))
+        self.btn_review.setEnabled(
+            suffix in (".csv", ".txt", ".xlsx", ".docx", ".pptx"))
         if suffix == ".csv":
             self.doc = csv_io.read_csv(self.path)
             self.header_switch.blockSignals(True)     # reflet, pas une action
@@ -231,6 +253,8 @@ class FileScreen(QWidget):
             self.header_switch.show()
             self._fill_preview(self.doc.rows[:50])
         else:
+            # Un classeur n'est pas lu ici : sa grille apparaît avec l'analyse,
+            # qui le charge hors thread UI (cf. XlsxScanWorker).
             self.header_switch.hide()
             self.table.clear()
             self.table.setRowCount(0)
@@ -418,6 +442,18 @@ class FileScreen(QWidget):
             self._worker.finished.connect(self._forget_worker)
             self._worker.start()
             return
+        if self.path and self.path.suffix.lower() == ".xlsx":
+            self._degraded = not (self.loader.has_detector() or is_model_available())
+            loader = ModelLoader(NullNer()) if self._degraded else self.loader
+            self._set_busy(True)
+            self._worker = XlsxScanWorker(self.path, loader, self.ref,
+                                          self._sheet_headers)
+            self._worker.scan_finished.connect(self._on_xlsx_scanned)
+            self._worker.error.connect(self._on_scan_error)
+            self._worker.finished.connect(self._worker.deleteLater)
+            self._worker.finished.connect(self._forget_worker)
+            self._worker.start()
+            return
         if self.doc is None:
             return
         plans = csv_column_plans(self.doc)
@@ -469,6 +505,49 @@ class FileScreen(QWidget):
         self.page = 0
         self._build_side()
         self.side.show(); self.pager_widget.show()
+        self._render_page()
+
+    def _on_xlsx_scanned(self, res):
+        self._xlsx = res
+        self._view = "grid"
+        self.session = XlsxReviewSession(res, self.ref)
+        self.sheet_box.blockSignals(True)
+        self.sheet_box.clear()
+        self.sheet_box.addItems(res.sheets)
+        # Après une relance, on revient sur la feuille que l'utilisateur
+        # regardait : le rescan est un moyen, pas une navigation.
+        wanted = self._sheet_to_restore
+        self._sheet = (wanted if wanted in res.sheets
+                       else (res.sheets[0] if res.sheets else None))
+        self._sheet_to_restore = None
+        if self._sheet is not None:
+            self.sheet_box.setCurrentText(self._sheet)
+        self.sheet_box.blockSignals(False)
+        self.sheet_box.show()
+        self._restore_choices(self._pending_choices)
+        self._pending_choices = None
+        self._set_busy(False)
+        self.banner.setVisible(self._degraded)
+        self.occ_badge.setText(f"{_fmt_int(self.session.total_occurrences())} occ.")
+        self.occ_badge.show(); self._hint.show()
+        self.header_switch.blockSignals(True)        # reflet, pas une action
+        self.header_switch.setChecked(self._grid_has_header())
+        self.header_switch.blockSignals(False)
+        self.header_switch.show()
+        self.page = 0
+        self._build_side()
+        self.side.show(); self.pager_widget.show()
+        self.perimetre_card.hide()
+        self._render_page()
+
+    def _on_sheet_changed(self, title: str):
+        if not title or self._xlsx is None:
+            return
+        self._sheet = title
+        self.page = 0
+        self.header_switch.blockSignals(True)
+        self.header_switch.setChecked(self._grid_has_header())
+        self.header_switch.blockSignals(False)
         self._render_page()
 
     def _on_ooxml_scanned(self, res):
@@ -585,10 +664,24 @@ class FileScreen(QWidget):
 
     # ---------- grille courante (CSV ou feuille de classeur) ----------
     def _grid_rows(self) -> list[list[str]]:
+        if self._xlsx is not None:
+            return self._xlsx.matrices.get(self._sheet, [])
         return self.doc.rows if self.doc is not None else []
 
     def _grid_has_header(self) -> bool:
+        if self._xlsx is not None:
+            return bool(self._xlsx.has_header.get(self._sheet, False))
         return bool(self.doc is not None and self.doc.has_header)
+
+    def _cell_entities(self, r: int, c: int):
+        if self._xlsx is not None:
+            return self.session.entities_for_cell(self._sheet, r, c)
+        return self.session.entities_for_cell(r, c)
+
+    def _cell_unconfirmed(self, r: int, c: int):
+        if self._xlsx is not None:
+            return self.session.unconfirmed_for_cell(self._sheet, r, c)
+        return self.session.unconfirmed_for_cell(r, c)
 
     def _page_count(self):
         n = len(self._data_rows())
@@ -607,10 +700,11 @@ class FileScreen(QWidget):
     def _render_page(self):
         if self.session is None:
             return
+        grid = self._grid_rows()
         rows = self._data_rows()
-        width = max((len(r) for r in self.doc.rows), default=0)
+        width = max((len(r) for r in grid), default=0)
         page_rows = rows[self.page * PAGE_SIZE:(self.page + 1) * PAGE_SIZE]
-        header = self.doc.rows[0] if self.doc.has_header else None
+        header = grid[0] if (grid and self._grid_has_header()) else None
         self.table.clear()
         self.table.setColumnCount(width)
         self.table.setRowCount(len(page_rows))
@@ -620,18 +714,17 @@ class FileScreen(QWidget):
             [header[c] if (header and c < len(header)) else f"col{c}"
              for c in range(width)])
         for vr, r in enumerate(page_rows):
-            retained_cols = {c: self.session.entities_for_cell(r, c) for c in range(width)}
             for c in range(width):
-                val = self.doc.rows[r][c] if c < len(self.doc.rows[r]) else ""
+                val = grid[r][c] if c < len(grid[r]) else ""
                 item = QTableWidgetItem(val)
-                ents = retained_cols.get(c) or []
+                ents = self._cell_entities(r, c)
                 if ents:
                     col = QColor(color_for(ents[0].type)); col.setAlpha(70)
                     item.setBackground(col)
                 else:
                     # cellule sans entité retenue : signale les « non confirmées »
                     # (clé invalide) avec un fond atténué.
-                    pend = self.session.unconfirmed_for_cell(r, c)
+                    pend = self._cell_unconfirmed(r, c)
                     if pend:
                         col = QColor(color_for(pend[0].type)); col.setAlpha(28)
                         item.setBackground(col)
@@ -647,8 +740,9 @@ class FileScreen(QWidget):
     # ---------- arbitrage par colonne ----------
     def _column_key(self, col: int):
         """Clé de colonne pour la session : un index pour un CSV, un couple
-        (feuille, index) pour un classeur."""
-        return col
+        (feuille, index) pour un classeur — deux feuilles n'ont aucune raison
+        de partager un plan."""
+        return (self._sheet, col) if self._xlsx is not None else col
 
     def _header_label(self, col: int) -> str:
         rows = self._grid_rows()
