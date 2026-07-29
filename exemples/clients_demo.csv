@@ -1,0 +1,121 @@
+﻿code_client;raison_sociale;contact_prenom;contact_nom;email;telephone;ville;code_postal;categorie;secteur;effectif;commercial;date_entree;derniere_commande;ca_2023;ca_2024;ca_2025;taux_marge_pct;statut
+C0000001;Bureau Sablons SA;Sandra;Leclerc;sandra.leclerc@bureau-sablons.net;03 73 41 92 92;Tours;37000;STAT_GRAND_COMPTE;Textile;32010;Marchand P.;2019-11-10;2025-08-02;4639330;5972150;5230650;27,7;Actif
+C0000002;Ateliers Tanguy EURL;Delphine;Salvatore;delphine.salvatore@ateliers-tanguy.net;05 32 14 79 60;Nantes;44000;STAT_PME;Agroalimentaire;123;Delaunay S.;2016-08-03;2025-02-06;61860;63660;54720;26,2;Actif
+C0000003;Amicale Verlaine;Marion;Berger;marion.berger@amicale-verlaine.eu;05 40 67 02 70;Toulouse;31000;STAT_ASSOCIATION;Textile;31;Prevost C.;2020-02-24;2025-11-15;10260;9350;7650;6,9;Inactif
+C0000004;Studio Valmont EURL;Sarah;Nguyen;sarah.nguyen@studio-valmont.eu;04 39 83 91 84;Nantes;44000;STAT_PME;Commerce de gros;43;Marchand P.;2023-10-01;2026-06-18;8450;8010;7710;15,3;Actif
+C0000005;Damien Lacroix EI;Damien;Lacroix;damien.lacroix@damien-lacroix.fr;04 29 54 55 68;Grenoble;38000;STAT_INDEPENDANT;Services numeriques;2;Ohayon M.;2022-03-27;2025-09-08;610;850;900;18,6;Actif
+C0000006;Federation Tanguy;Chloe;Vasseur;chloe.vasseur@federation-tanguy.com;02 17 81 63 92;Brest;29200;STAT_ASSOCIATION;Agroalimentaire;49;Ohayon M.;2018-09-08;2025-09-07;32120;36150;41270;22,8;Actif
+C0000007;Compagnie Vertaline SASU;Karim;Carpentier;karim.carpentier@compagnie-vertaline.eu;01 51 64 11 09;Lille;59000;STAT_PME;Formation;59;Marchand P.;2019-12-04;2025-03-05;26610;28240;22870;30,0;Actif
+C0000008;Comptoir Beauvoir SAS;Olivier;Roussel;olivier.roussel@comptoir-beauvoir.eu;04 55 04 75 30;La Rochelle;17000;STAT_GRAND_COMPTE;BTP;7229;Delaunay S.;2018-05-28;2026-03-28;5894320;4722670;6363760;33,1;Inactif
+C0000009;Amicale Havrais;Cedric;Poirier;cedric.poirier@amicale-havrais.fr;04 93 68 13 34;Marseille;13008;STAT_ASSOCIATION;Agroalimentaire;3;Kerbrat A.;2024-08-05;2025-06-06;3150;4320;3680;25,2;Actif
+C0000010;Compagnie Tanguy SA;Manon;Barbier;manon.barbier@compagnie-tanguy.com;05 66 24 08 38;Paris;75011;STAT_TPE;Textile;3;Prevost C.;2020-07-16;2025-02-02;1790;1840;2150;13,9;Actif
+C0000011;Societe Valmont SAS;Ines;Poirier;ines.poirier@societe-valmont.com;02 29 13 65 76;Nantes;44000;STAT_PME;Agroalimentaire;115;Vasseur L.;2016-07-02;2025-12-03;111220;116370;98660;34,7;Actif
+C0000012;Studio Ombelle EURL;Delphine;Carpentier;delphine.carpentier@studio-ombelle.com;01 99 34 76 84;Clermont-Ferrand;63000;STAT_PME;Textile;15;Prevost C.;2017-04-19;2025-06-28;20470;19890;23240;33,6;Actif
+C0000013;Maison Caravelle SA;Claire;Tardif;claire.tardif@maison-caravelle.net;02 71 31 97 61;Rennes;35000;STAT_ETI;Industrie;381;Vasseur L.;2022-05-25;2026-03-15;27890;26320;34470;19,6;Actif
+C0000014;Union Kerlan;Sebastien;Gaillard;sebastien.gaillard@union-kerlan.fr;01 32 37 09 25;La Rochelle;17000;STAT_ASSOCIATION;Energie;13;Delaunay S.;2018-12-13;2025-04-04;610;740;900;33,2;Actif
+C0000015;Federation Nordanse;Laure;Rousseau;laure.rousseau@federation-nordanse.net;01 26 13 97 50;Lyon;69003;STAT_ASSOCIATION;Industrie;13;Kerbrat A.;2025-01-24;2026-02-14;2270;2070;2470;13,7;Actif
+C0000016;Comptoir Rivetoile SA;Fabien;Hebert;fabien.hebert@comptoir-rivetoile.com;03 70 95 83 15;Metz;57000;STAT_GRAND_COMPTE;Textile;13186;Marchand P.;2025-01-18;2026-02-27;9812510;11901240;10477850;17,6;Actif
+C0000017;Societe Marnier SAS;Marion;Roussel;marion.roussel@societe-marnier.net;02 38 34 84 36;Caen;14000;STAT_GRAND_COMPTE;BTP;16797;Delaunay S.;2024-12-01;2025-05-03;8425530;8104210;6653680;34,5;Actif
+C0000018;Etablissements Verlaine SA;Helene;Cordier;helene.cordier@etablissements-verlaine.com;01 38 05 73 77;Paris;75011;STAT_ETI;Energie;4169;Marchand P.;2024-08-13;2025-09-09;12072410;13154010;17124540;9,9;Inactif
+C0000019;Ateliers Aubrac SA;Baptiste;Delaunay;baptiste.delaunay@ateliers-aubrac.net;02 98 59 17 69;Paris;75011;STAT_ETI;Industrie;490;Ohayon M.;2022-05-24;2026-03-30;947870;837000;1105360;22,0;Actif
+C0000020;Amelie Carpentier EI;Amelie;Carpentier;amelie.carpentier@amelie-carpentier.eu;03 40 06 47 47;Clermont-Ferrand;63000;STAT_INDEPENDANT;Services numeriques;2;Vasseur L.;2022-08-15;2025-07-16;630;870;900;17,7;Actif
+C0000021;Groupe Gravelin SARL;Amelie;Rossi;amelie.rossi@groupe-gravelin.net;04 12 02 12 56;Rennes;35000;STAT_TPE;Sante;6;Ohayon M.;2020-09-19;2025-11-05;2330;2060;1850;18,9;Actif
+C0000022;Bureau Verlaine SARL;Sebastien;Neveu;sebastien.neveu@bureau-verlaine.fr;03 25 53 77 80;Bordeaux;33000;STAT_TPE;Sante;7;Kerbrat A.;2022-02-16;2025-09-19;3100;4300;3570;14,2;Actif
+C0000023;Bureau Kerlan SASU;Antoine;Andersen;antoine.andersen@bureau-kerlan.eu;04 84 30 72 41;Strasbourg;67000;STAT_TPE;Conseil;3;Vasseur L.;2021-07-04;2026-04-13;680;880;900;13,5;Actif
+C0000024;Etablissements Vertaline SARL;Helene;Tardif;helene.tardif@etablissements-vertaline.fr;02 05 82 04 26;Poitiers;86000;STAT_PME;Distribution;43;Prevost C.;2021-01-25;2026-06-18;15970;22800;18280;5,5;Actif
+C0000025;Cabinet Rivetoile SAS;Sarah;Guerin;sarah.guerin@cabinet-rivetoile.eu;05 97 11 80 49;Brest;29200;STAT_PME;Distribution;34;Marchand P.;2017-02-07;2026-03-11;45370;38990;43900;7,9;Prospect
+C0000026;Ateliers Gravelin SAS;Romain;Da Silva;romain.da-silva@ateliers-gravelin.net;01 12 32 89 38;Reims;51100;STAT_PME;Agroalimentaire;208;Ohayon M.;2017-02-13;2026-05-24;174680;249050;249660;9,8;Actif
+C0000027;Societe Ferrand EURL;Sarah;Cordier;sarah.cordier@societe-ferrand.eu;03 54 79 19 73;Bordeaux;33000;STAT_PME;Agroalimentaire;57;Delaunay S.;2023-10-07;2025-12-06;222270;255080;245780;35,4;Actif
+C0000028;Cabinet Sablons SASU;Laure;Fontaine;laure.fontaine@cabinet-sablons.fr;02 63 24 74 53;Tours;37000;STAT_PME;Commerce de gros;232;Marchand P.;2023-12-19;2026-02-22;297510;270600;375680;7,6;Actif
+C0000029;Agence Rivetoile SAS;Hugo;Vasseur;hugo.vasseur@agence-rivetoile.fr;05 54 79 77 67;Marseille;13008;STAT_GRAND_COMPTE;Commerce de gros;12041;Ohayon M.;2018-02-20;2026-03-01;3252660;3964320;4240120;21,6;Inactif
+C0000030;Bureau Vertaline SAS;Julien;Tardif;julien.tardif@bureau-vertaline.eu;01 52 94 59 23;Nimes;30000;STAT_ETI;Formation;732;Marchand P.;2023-01-20;2025-04-02;72960;60500;61100;21,8;Actif
+C0000031;Bureau Kerlan SA;Maxime;Rossi;maxime.rossi@bureau-kerlan.com;02 64 60 00 44;Nimes;30000;STAT_ETI;Textile;310;Kerbrat A.;2024-12-18;2026-01-24;67990;66430;66440;5,4;Actif
+C0000032;Etablissements Rivetoile SASU;Yann;Salvatore;yann.salvatore@etablissements-rivetoile.fr;02 20 83 78 13;Marseille;13008;STAT_TPE;BTP;9;Marchand P.;2021-09-12;2025-06-14;7820;9040;12440;25,8;Actif
+C0000033;Atelier Ferrand SASU;Amelie;Nguyen;amelie.nguyen@atelier-ferrand.fr;02 41 58 41 12;Nantes;44000;STAT_PME;Agroalimentaire;24;Kerbrat A.;2017-07-18;2026-03-20;30900;25190;32890;9,1;Actif
+C0000034;Studio Verlaine SARL;Sophie;Rousseau;sophie.rousseau@studio-verlaine.net;03 80 36 83 87;Lyon;69003;STAT_PME;Agroalimentaire;26;Marchand P.;2024-02-14;2025-02-17;12040;10100;9150;36,8;Actif
+C0000035;Agence Solaris SAS;Damien;Blanchard;damien.blanchard@agence-solaris.net;04 56 64 74 56;Rennes;35000;STAT_ETI;Agroalimentaire;555;Kerbrat A.;2017-03-25;2025-10-24;35010;31060;29540;37,8;Actif
+C0000036;Claire Torres EI;Claire;Torres;claire.torres@claire-torres.net;03 49 45 73 30;Angers;49000;STAT_INDEPENDANT;Commerce de gros;1;Ohayon M.;2023-05-18;2026-04-18;2420;2350;2520;12,9;Actif
+C0000037;Cabinet Aubrac SCOP;Delphine;Poirier;delphine.poirier@cabinet-aubrac.com;05 74 67 68 56;Metz;57000;STAT_PME;Sante;124;Kerbrat A.;2021-07-31;2025-02-08;93240;80430;105270;34,6;Prospect
+C0000038;Agence Tremieres EURL;Mathieu;Andersen;mathieu.andersen@agence-tremieres.eu;03 84 41 32 35;Dijon;21000;STAT_PME;Services numeriques;22;Prevost C.;2025-03-01;2026-03-03;14600;15380;17490;31,7;Actif
+C0000039;Association Ombelle;Sebastien;Leclerc;sebastien.leclerc@association-ombelle.fr;03 32 20 81 20;Nimes;30000;STAT_ASSOCIATION;Formation;4;Vasseur L.;2020-02-16;2025-07-14;810;750;900;36,7;En negociation
+C0000040;Compagnie Havrais SA;Julien;Perrot;julien.perrot@compagnie-havrais.fr;01 44 16 59 76;Strasbourg;67000;STAT_ETI;Industrie;701;Ohayon M.;2021-08-21;2025-10-14;117720;126690;120380;12,8;Actif
+C0000041;Studio Ombelle SCOP;Sarah;Vasseur;sarah.vasseur@studio-ombelle.eu;02 60 04 95 51;Paris;75011;STAT_PME;Agroalimentaire;40;Marchand P.;2016-04-13;2026-01-05;5310;5220;6710;24,9;Actif
+C0000042;Etablissements Beauvoir SASU;Laure;Hebert;laure.hebert@etablissements-beauvoir.net;03 46 57 68 42;Caen;14000;STAT_TPE;Agroalimentaire;5;Marchand P.;2018-10-05;2026-06-16;11290;13950;12180;21,2;Prospect
+C0000043;Studio Ombelle SASU;Guillaume;Lemoine;guillaume.lemoine@studio-ombelle.eu;03 67 83 68 42;Rennes;35000;STAT_PME;Services numeriques;195;Prevost C.;2018-05-04;2026-05-13;155870;137880;182830;26,1;Actif
+C0000044;Nadia Lemoine EI;Nadia;Lemoine;nadia.lemoine@nadia-lemoine.eu;04 62 28 92 50;Pau;64000;STAT_INDEPENDANT;Conseil;2;Kerbrat A.;2023-08-24;2025-02-16;2880;3970;5410;10,3;Actif
+C0000045;Atelier Pontarlier EURL;Karim;Leclerc;karim.leclerc@atelier-pontarlier.com;04 36 81 59 79;Lyon;69003;STAT_PME;Transport-Logistique;30;Vasseur L.;2019-08-27;2025-04-04;12130;9680;11650;8,7;Actif
+C0000046;Cedric Rossi EI;Cedric;Rossi;cedric.rossi@cedric-rossi.com;04 48 26 44 55;Nimes;30000;STAT_INDEPENDANT;Services numeriques;2;Marchand P.;2018-04-26;2025-06-20;1020;990;900;33,2;Actif
+C0000047;Cabinet Marnier EURL;Guillaume;Aubert;guillaume.aubert@cabinet-marnier.com;01 04 01 91 76;Lyon;69003;STAT_TPE;Energie;4;Delaunay S.;2019-05-30;2026-04-02;4330;4570;5530;34,0;Actif
+C0000048;CCAS de Rennes;Romain;Leclerc;romain.leclerc@ccas-rennes.fr;04 67 66 98 84;Rennes;35000;STAT_COLLECTIVITE;Distribution;253;Marchand P.;2016-11-09;2025-05-24;10040;9210;11090;28,3;Actif
+C0000049;Studio Ferrand SA;Antoine;Rousseau;antoine.rousseau@studio-ferrand.net;04 71 08 68 71;Lyon;69003;STAT_TPE;Industrie;5;Delaunay S.;2019-03-09;2026-04-21;16340;19500;15740;7,9;Actif
+C0000050;Syndicat mixte Havrais;Laure;Delaunay;laure.delaunay@syndicat-mixte-havrais.net;02 69 96 45 97;Pau;64000;STAT_COLLECTIVITE;Formation;28;Delaunay S.;2017-02-04;2025-10-03;1490;1640;2270;29,5;Actif
+C0000051;Maison Beauvoir SARL;Lucie;Da Silva;lucie.da-silva@maison-beauvoir.fr;02 81 14 18 28;Marseille;13008;STAT_PME;Sante;144;Delaunay S.;2020-04-13;2025-11-23;163110;173820;189870;6,3;Actif
+C0000052;Atelier Solaris SA;Marion;Roussel;marion.roussel@atelier-solaris.fr;03 86 34 09 69;Lyon;69003;STAT_PME;Distribution;72;Vasseur L.;2021-02-13;2025-08-17;5480;6250;7740;11,1;Actif
+C0000053;Bureau Mistral SAS;Romain;Meunier;romain.meunier@bureau-mistral.fr;01 23 61 38 58;Marseille;13008;STAT_TPE;Agroalimentaire;3;Prevost C.;2016-12-12;2025-08-15;9290;12700;10320;5,8;Inactif
+C0000054;Agence Marnier SAS;Laure;Neveu;laure.neveu@agence-marnier.fr;03 09 30 95 99;Bordeaux;33000;STAT_TPE;Distribution;3;Marchand P.;2024-04-26;2025-12-08;680;900;900;30,0;Inactif
+C0000055;Groupe Verlaine SA;Thomas;Torres;thomas.torres@groupe-verlaine.com;05 88 10 28 95;Rennes;35000;STAT_PME;Textile;12;Kerbrat A.;2024-09-14;2025-06-19;1370;1440;1250;10,9;Actif
+C0000056;Comptoir Mistral SAS;Sebastien;Gaillard;sebastien.gaillard@comptoir-mistral.net;02 48 69 01 84;Angers;49000;STAT_TPE;Conseil;2;Vasseur L.;2021-01-09;2025-04-02;1820;1850;1540;20,5;Actif
+C0000057;Pierre Hebert EI;Pierre;Hebert;pierre.hebert@pierre-hebert.fr;03 68 24 40 01;Lyon;69003;STAT_INDEPENDANT;Conseil;1;Prevost C.;2017-08-22;2025-04-03;960;780;900;35,4;Actif
+C0000058;Agence Mistral SAS;Amelie;Neveu;amelie.neveu@agence-mistral.net;04 65 60 02 34;Nimes;30000;STAT_ETI;Industrie;280;Prevost C.;2019-02-16;2026-05-10;87800;87350;119400;7,1;Actif
+C0000059;Societe Gravelin SARL;Sebastien;Bourgeois;sebastien.bourgeois@societe-gravelin.eu;03 53 95 46 03;Grenoble;38000;STAT_TPE;Distribution;2;Marchand P.;2017-01-02;2025-10-25;850;940;900;6,2;Prospect
+C0000060;Societe Verlaine SA;Ines;Andersen;ines.andersen@societe-verlaine.net;02 56 29 71 61;Bordeaux;33000;STAT_TPE;Textile;6;Marchand P.;2021-09-28;2025-09-22;780;700;900;23,3;Actif
+C0000061;Maison Valmont SASU;Julie;Meunier;julie.meunier@maison-valmont.com;02 69 10 08 19;Lille;59000;STAT_PME;Agroalimentaire;88;Delaunay S.;2023-11-07;2026-04-05;32290;30030;27750;25,1;Actif
+C0000062;Agence Marnier SARL;Elodie;Benali;elodie.benali@agence-marnier.net;01 15 14 63 84;Metz;57000;STAT_TPE;Agroalimentaire;3;Kerbrat A.;2024-12-18;2025-04-23;960;890;900;9,6;Actif
+C0000063;Etablissements Montclair SCOP;Olivier;Delaunay;olivier.delaunay@etablissements-montclair.eu;05 42 74 01 94;Grenoble;38000;STAT_TPE;Textile;8;Prevost C.;2019-04-15;2025-02-23;1590;2250;2400;5,1;Actif
+C0000064;Comptoir Gravelin SAS;Julie;Benali;julie.benali@comptoir-gravelin.net;01 79 01 85 94;Brest;29200;STAT_ETI;BTP;588;Delaunay S.;2019-10-19;2026-01-25;1614250;1554990;1373540;28,8;Actif
+C0000065;Groupe Solaris SA;Olivier;Poirier;olivier.poirier@groupe-solaris.net;01 80 40 67 62;Rennes;35000;STAT_PME;Commerce de gros;127;Delaunay S.;2020-02-27;2025-09-24;51820;49360;39770;25,0;Inactif
+C0000066;Ateliers Brossard SCOP;Nadia;Torres;nadia.torres@ateliers-brossard.fr;05 18 78 96 67;Nantes;44000;STAT_PME;Textile;48;Ohayon M.;2023-02-16;2025-08-08;102300;101020;97520;21,9;Actif
+C0000067;Bureau Vertaline EURL;Romain;Bourgeois;romain.bourgeois@bureau-vertaline.fr;01 24 11 48 79;Pau;64000;STAT_PME;Textile;168;Vasseur L.;2019-09-20;2025-01-13;17750;19990;26240;7,3;Actif
+C0000068;Maison Tremieres SAS;Karim;Okonkwo;karim.okonkwo@maison-tremieres.eu;03 87 12 22 68;Rennes;35000;STAT_ETI;Agroalimentaire;692;Delaunay S.;2024-12-13;2026-01-18;1693600;1471360;1186010;36,0;Actif
+C0000069;Bureau Brossard SA;Sebastien;Da Silva;sebastien.da-silva@bureau-brossard.net;01 99 57 69 02;Caen;14000;STAT_GRAND_COMPTE;Sante;12623;Kerbrat A.;2020-08-18;2026-02-02;6918220;7098280;6018260;5,0;Actif
+C0000070;Aurelie Leclerc EI;Aurelie;Leclerc;aurelie.leclerc@aurelie-leclerc.com;01 14 84 73 54;Brest;29200;STAT_INDEPENDANT;Services numeriques;2;Delaunay S.;2023-01-24;2025-07-17;790;820;900;36,8;Prospect
+C0000071;Agence Aubrac SCOP;Pierre;Guerin;pierre.guerin@agence-aubrac.net;02 04 53 50 89;Grenoble;38000;STAT_PME;BTP;112;Delaunay S.;2018-06-05;2026-04-12;19250;22670;23360;31,3;Actif
+C0000072;Agence Gravelin SA;Pierre;Perrot;pierre.perrot@agence-gravelin.fr;03 62 91 69 58;Angers;49000;STAT_TPE;Distribution;3;Vasseur L.;2019-11-08;2025-09-18;5220;4850;4900;6,2;Actif
+C0000073;Bureau Valmont SASU;Olivier;Lacroix;olivier.lacroix@bureau-valmont.fr;03 29 36 81 48;La Rochelle;17000;STAT_TPE;Energie;9;Ohayon M.;2021-03-17;2025-05-17;6830;5460;4600;22,2;Actif
+C0000074;Atelier Verlaine SAS;Hugo;Kowalski;hugo.kowalski@atelier-verlaine.com;03 35 04 80 09;Bordeaux;33000;STAT_PME;Services numeriques;18;Prevost C.;2019-09-30;2025-01-05;13300;16390;19680;15,8;En negociation
+C0000075;Sandra Berger EI;Sandra;Berger;sandra.berger@sandra-berger.com;05 29 26 89 33;Lille;59000;STAT_INDEPENDANT;Distribution;2;Prevost C.;2017-09-17;2026-06-08;760;870;900;35,4;Actif
+C0000076;Maison Ferrand SASU;Romain;Rousseau;romain.rousseau@maison-ferrand.net;01 52 02 46 78;Nantes;44000;STAT_PME;Sante;21;Ohayon M.;2017-08-02;2026-05-09;76030;100910;126590;32,5;Actif
+C0000077;Association Rivetoile;Pierre;Andersen;pierre.andersen@association-rivetoile.eu;05 89 49 52 35;Marseille;13008;STAT_ASSOCIATION;BTP;48;Kerbrat A.;2019-04-15;2025-04-26;26140;22650;24470;24,1;Actif
+C0000078;Cabinet Tanguy SAS;Helene;Lemoine;helene.lemoine@cabinet-tanguy.eu;04 06 38 44 67;Caen;14000;STAT_TPE;Distribution;3;Prevost C.;2022-12-17;2026-03-06;1100;950;900;5,1;Actif
+C0000079;Cabinet Ferrand SAS;Nadia;Meunier;nadia.meunier@cabinet-ferrand.fr;02 00 79 81 66;Poitiers;86000;STAT_PME;Conseil;97;Delaunay S.;2024-02-22;2025-04-21;95630;132350;160610;13,6;Actif
+C0000080;Comptoir Tanguy EURL;Camille;Leclerc;camille.leclerc@comptoir-tanguy.eu;01 67 81 24 91;Nimes;30000;STAT_TPE;Distribution;4;Kerbrat A.;2021-10-26;2026-02-24;7560;6140;8140;35,8;Inactif
+C0000081;Bureau Beauvoir SASU;Baptiste;Okonkwo;baptiste.okonkwo@bureau-beauvoir.eu;02 61 62 05 67;Grenoble;38000;STAT_TPE;Commerce de gros;6;Ohayon M.;2024-03-09;2025-12-04;1550;1470;1360;8,0;Actif
+C0000082;Ateliers Vertaline SCOP;Mathieu;Kowalski;mathieu.kowalski@ateliers-vertaline.fr;01 15 04 26 85;Bordeaux;33000;STAT_TPE;Textile;3;Delaunay S.;2016-09-02;2026-01-07;850;890;900;20,2;Actif
+C0000083;Agence Havrais EURL;Maxime;Andersen;maxime.andersen@agence-havrais.net;01 11 08 94 36;Grenoble;38000;STAT_PME;Conseil;26;Vasseur L.;2017-04-02;2026-02-24;48700;55970;58140;32,1;Actif
+C0000084;Association Pontarlier;Sarah;Lacroix;sarah.lacroix@association-pontarlier.eu;04 49 90 48 26;Paris;75011;STAT_ASSOCIATION;Energie;4;Prevost C.;2017-04-03;2025-01-07;840;790;900;26,4;Actif
+C0000085;Ateliers Valmont SASU;Romain;Gaillard;romain.gaillard@ateliers-valmont.net;05 88 97 98 00;Reims;51100;STAT_PME;Agroalimentaire;85;Ohayon M.;2025-03-09;2025-05-26;52380;59110;73490;26,0;Actif
+C0000086;Ateliers Ferrand SAS;Marion;Perrot;marion.perrot@ateliers-ferrand.com;04 35 39 51 87;Nimes;30000;STAT_GRAND_COMPTE;Textile;5054;Kerbrat A.;2022-11-04;2025-11-23;6273600;5437930;7193680;17,9;Actif
+C0000087;Ateliers Pontarlier SARL;Lucie;Guerin;lucie.guerin@ateliers-pontarlier.com;04 80 68 31 50;Paris;75011;STAT_PME;Formation;10;Delaunay S.;2017-03-06;2025-09-14;21200;19490;21750;26,2;Actif
+C0000088;Bureau Caravelle EURL;Claire;Torres;claire.torres@bureau-caravelle.fr;02 00 46 64 70;Caen;14000;STAT_PME;BTP;183;Marchand P.;2021-02-14;2025-01-01;214440;285040;251610;13,7;Actif
+C0000089;Groupe Valmont SCOP;Thomas;Vasseur;thomas.vasseur@groupe-valmont.fr;04 96 27 24 23;Caen;14000;STAT_PME;Energie;24;Kerbrat A.;2023-06-10;2025-08-27;5060;5380;5350;7,3;Actif
+C0000090;Etablissements Caravelle SAS;Ines;Nguyen;ines.nguyen@etablissements-caravelle.eu;05 57 80 02 38;Pau;64000;STAT_PME;Sante;36;Prevost C.;2018-10-27;2026-03-09;4500;4740;6120;21,2;Inactif
+C0000091;Groupe Havrais SA;Damien;Blanchard;damien.blanchard@groupe-havrais.com;05 26 55 70 83;Caen;14000;STAT_TPE;Formation;3;Vasseur L.;2017-09-01;2026-05-09;1410;1190;1350;13,8;Actif
+C0000092;Atelier Ombelle SASU;Antoine;Chevalier;antoine.chevalier@atelier-ombelle.net;02 15 50 18 69;Grenoble;38000;STAT_PME;Industrie;13;Kerbrat A.;2023-07-23;2026-05-03;18160;16520;20610;19,1;Actif
+C0000093;Maison Beauvoir SASU;Laure;Carpentier;laure.carpentier@maison-beauvoir.fr;04 37 38 29 11;Metz;57000;STAT_PME;Sante;15;Ohayon M.;2016-05-29;2025-07-04;34770;31380;41370;18,5;Actif
+C0000094;Alice Carpentier EI;Alice;Carpentier;alice.carpentier@alice-carpentier.com;05 62 88 28 08;Tours;37000;STAT_INDEPENDANT;BTP;2;Delaunay S.;2024-03-16;2025-02-02;1770;2430;3090;28,6;Actif
+C0000095;Etablissements Sablons SASU;Hugo;Tardif;hugo.tardif@etablissements-sablons.net;05 14 21 27 64;Dijon;21000;STAT_PME;Distribution;163;Marchand P.;2024-09-18;2025-07-24;389420;417180;433210;29,9;Actif
+C0000096;Ateliers Kerlan SASU;Baptiste;Andersen;baptiste.andersen@ateliers-kerlan.com;02 10 50 07 30;Metz;57000;STAT_TPE;Sante;6;Delaunay S.;2020-06-08;2025-03-21;9010;9040;8650;33,6;Actif
+C0000097;Bureau Montclair SAS;Alice;Leclerc;alice.leclerc@bureau-montclair.com;05 10 62 11 63;Angers;49000;STAT_ETI;Formation;420;Vasseur L.;2020-02-12;2025-02-19;2757480;2347900;2017710;22,8;Actif
+C0000098;Bureau Ferrand EURL;Laure;Lacroix;laure.lacroix@bureau-ferrand.net;04 80 53 29 83;Nantes;44000;STAT_PME;BTP;99;Ohayon M.;2019-08-04;2026-05-03;41990;58570;55890;32,2;En negociation
+C0000099;Etablissements Verlaine SCOP;Sandra;Torres;sandra.torres@etablissements-verlaine.com;05 07 94 14 94;Rennes;35000;STAT_TPE;Sante;8;Marchand P.;2025-02-18;2025-02-09;3380;3950;4590;33,9;Actif
+C0000100;Atelier Tanguy EURL;Camille;Dupuis;camille.dupuis@atelier-tanguy.net;05 13 93 80 82;Bordeaux;33000;STAT_PME;Distribution;104;Kerbrat A.;2016-03-10;2025-08-08;26100;24890;30690;17,8;Actif
+C0000101;Maison Belleroche SAS;Damien;Neveu;damien.neveu@maison-belleroche.eu;03 20 59 36 86;Marseille;13008;STAT_ETI;Conseil;2173;Prevost C.;2018-01-30;2026-04-16;6609550;6187820;6890560;36,1;Actif
+C0000102;Comptoir Tremieres SAS;Sophie;Roussel;sophie.roussel@comptoir-tremieres.com;02 92 97 13 83;Toulouse;31000;STAT_ETI;Sante;4060;Kerbrat A.;2016-07-24;2025-03-31;445930;535810;507000;36,5;Actif
+C0000103;Societe Aubrac SA;Julien;Nguyen;julien.nguyen@societe-aubrac.eu;01 97 42 31 06;Poitiers;86000;STAT_ETI;Transport-Logistique;1601;Vasseur L.;2017-10-24;2025-07-30;343790;351840;406100;28,5;Actif
+C0000104;Comptoir Kerlan SA;Maxime;Salvatore;maxime.salvatore@comptoir-kerlan.net;02 67 83 75 30;Le Mans;72000;STAT_ETI;Services numeriques;2241;Marchand P.;2016-04-15;2025-07-02;6266000;5216310;4667520;16,4;En negociation
+C0000105;Agence Belleroche SAS;Laure;Renaud;laure.renaud@agence-belleroche.eu;05 25 92 37 08;Metz;57000;STAT_ETI;Energie;1277;Prevost C.;2022-11-27;2025-02-09;109490;151510;170060;5,0;Inactif
+C0000106;Studio Nordanse SAS;Aurelie;Lacroix;aurelie.lacroix@studio-nordanse.fr;05 20 84 41 20;Lille;59000;STAT_PME;Services numeriques;38;Prevost C.;2021-06-28;2025-09-27;14350;14440;13400;32,6;En negociation
+C0000107;Compagnie Solaris SCOP;Maxime;Lemoine;maxime.lemoine@compagnie-solaris.com;01 56 69 24 56;Le Mans;72000;STAT_TPE;Sante;3;Kerbrat A.;2019-06-28;2025-07-10;800;1020;900;28,2;Actif
+C0000108;Studio Sablons SA;Amelie;Andersen;amelie.andersen@studio-sablons.net;03 33 36 90 89;Tours;37000;STAT_ETI;Sante;405;Vasseur L.;2019-12-13;2025-07-27;493040;606180;820110;33,7;Actif
+C0000109;Union Valmont;Lucie;Fontaine;lucie.fontaine@union-valmont.fr;02 54 80 31 41;Metz;57000;STAT_ASSOCIATION;Commerce de gros;5;Marchand P.;2021-10-31;2026-07-11;720;900;900;20,4;Inactif
+C0000110;Ateliers Solaris SAS;Aurelie;Roussel;aurelie.roussel@ateliers-solaris.fr;05 13 80 47 49;Strasbourg;67000;STAT_PME;Distribution;75;Vasseur L.;2017-07-12;2026-01-12;8160;10500;11230;29,7;Actif
+C0000111;Bureau Sablons SAS;Thomas;Nguyen;thomas.nguyen@bureau-sablons.fr;02 69 61 27 00;Rouen;76000;STAT_GRAND_COMPTE;Industrie;5588;Marchand P.;2024-07-12;2025-12-14;12336580;10429710;8521200;21,9;Actif
+C0000112;Comptoir Valmont SARL;Maxime;Marchand;maxime.marchand@comptoir-valmont.com;04 36 13 72 42;La Rochelle;17000;STAT_PME;Industrie;239;Vasseur L.;2021-02-08;2025-11-07;24200;20520;27250;27,5;Actif
+C0000113;Nadia Berger EI;Nadia;Berger;nadia.berger@nadia-berger.com;04 35 20 29 60;Rouen;76000;STAT_INDEPENDANT;Formation;2;Prevost C.;2025-03-04;2025-12-09;740;850;900;14,1;En negociation
+C0000114;Groupe Pontarlier SAS;Sebastien;Okonkwo;sebastien.okonkwo@groupe-pontarlier.net;03 26 18 31 97;Bordeaux;33000;STAT_TPE;Formation;5;Prevost C.;2022-08-28;2026-06-28;890;1210;1150;29,1;Actif
+C0000115;Studio Belleroche SARL;Helene;Carpentier;helene.carpentier@studio-belleroche.fr;02 92 97 74 44;Caen;14000;STAT_PME;Transport-Logistique;38;Delaunay S.;2023-05-20;2026-02-07;253030;214470;185350;5,9;Actif
+C0000116;Studio Havrais SA;Guillaume;Meunier;guillaume.meunier@studio-havrais.fr;01 29 95 11 00;Marseille;13008;STAT_PME;Textile;166;Kerbrat A.;2018-03-02;2025-01-30;6540;8470;10170;11,9;En negociation
+C0000117;Maison Pontarlier SCOP;Sandra;Salvatore;sandra.salvatore@maison-pontarlier.net;02 71 53 68 06;Lyon;69003;STAT_PME;Conseil;184;Marchand P.;2018-05-20;2025-03-24;22590;21950;25890;29,6;Prospect
+C0000118;Comptoir Gravelin SA;Aurelie;Dupuis;aurelie.dupuis@comptoir-gravelin.eu;01 57 82 51 94;Lille;59000;STAT_PME;Energie;63;Vasseur L.;2016-01-07;2026-05-02;2810;3900;3870;11,5;Prospect
+C0000119;Societe Vertaline SAS;Mathieu;Cordier;mathieu.cordier@societe-vertaline.fr;04 15 79 06 93;Strasbourg;67000;STAT_TPE;Distribution;8;Delaunay S.;2019-09-12;2026-06-18;760;790;900;14,8;Actif
+C0000120;Ateliers Caravelle SA;Manon;Dupuis;manon.dupuis@ateliers-caravelle.com;01 54 34 00 66;Marseille;13008;STAT_TPE;Textile;2;Marchand P.;2024-08-14;2025-03-25;960;880;900;12,5;Actif
