@@ -10,7 +10,7 @@ Détecte et remplace les données personnelles (noms, emails, IBAN, numéros de 
 
 1. Télécharger et dézipper `Anonymator-vX.X.zip`.
 2. Lancer `anonymator.exe` dans le dossier dézippé.
-3. Au **premier lancement**, l'application télécharge le modèle de détection GLiNER (~300 Mo).
+3. Au **premier lancement**, l'application télécharge le modèle de détection GLiNER (~2,2 Go).
    Une connexion Internet est nécessaire pour cette étape initiale uniquement.
    Les lancements suivants fonctionnent hors-ligne.
 
@@ -66,7 +66,7 @@ Détecte et remplace les données personnelles (noms, emails, IBAN, numéros de 
 
 | Symptôme | Solution |
 |----------|----------|
-| Téléchargement très lent au 1er lancement | Connexion Internet requise (~300 Mo) ; patienter |
+| Téléchargement très lent au 1er lancement | Connexion Internet requise (~2,2 Go) ; patienter |
 | Fichier CSV mal parsé | Vérifier encodage (Latin-1/UTF-8) et séparateur |
 | `.pdf` scanné (image seule) | OCR non supporté en v1 — message clair, aucun plantage |
 | Nom manqué lors de la détection | Ajouter manuellement via la sélection de texte (mode Texte) |
