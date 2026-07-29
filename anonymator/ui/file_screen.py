@@ -239,21 +239,31 @@ class FileScreen(QWidget):
         self._set_meta()
 
     def _capture_choices(self) -> dict | None:
-        """Arbitrages manuels de la revue en cours, indexés par type et par
-        valeur : ils survivent à un changement de plan de colonnes."""
+        """Arbitrages manuels de la revue en cours. Types et valeurs sont
+        indexés par (type, valeur) : ils survivent à un changement de plan de
+        colonnes. Les forçages de colonne, eux, sont positionnels par nature —
+        et la position reste valide, car changer l'hypothèse d'en-tête déplace
+        des lignes, pas des colonnes."""
         if self.session is None:
             return None
         types = {t: self.session.is_type_enabled(t) for t in self.session.types()}
         values = {(t, v): self.session.is_value_enabled(t, v)
                   for t in self.session.types()
                   for v, _n in self.session.values_for(t)}
-        return {"types": types, "values": values}
+        return {"types": types, "values": values,
+                "columns": self.session.column_overrides()}
 
     def _restore_choices(self, choices: dict | None) -> None:
-        """Réapplique les décochages qui gardent un sens dans la nouvelle
-        analyse ; ignore en silence ce qui a disparu."""
+        """Réapplique les arbitrages qui gardent un sens dans la nouvelle
+        analyse ; ignore en silence ce qui a disparu.
+
+        Les colonnes d'abord : un forçage crée des entités, et les décochages
+        de valeurs doivent pouvoir porter dessus."""
         if not choices or self.session is None:
             return
+        for key, (mode, etype) in choices.get("columns", {}).items():
+            if self.session.has_column(key):
+                self.session.set_column_override(key, mode, etype)
         for etype, enabled in choices["types"].items():
             if etype in self.session.types():
                 self.session.set_type_enabled(etype, enabled)

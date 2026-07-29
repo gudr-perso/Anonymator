@@ -103,3 +103,36 @@ def test_returning_to_auto_restores_the_plan(qtbot, tmp_path):
     assert s.session.count_retained("PERSON") == 0
     s.apply_column_override(0, AUTO)
     assert s.session.count_retained("PERSON") == 2
+
+
+def test_column_override_survives_a_header_change(qtbot, tmp_path):
+    """Basculer « première ligne = en-têtes » déplace des lignes, jamais des
+    colonnes : l'arbitrage positionnel garde son sens et doit être reporté."""
+    from unittest.mock import patch
+    from PySide6.QtWidgets import QMessageBox
+    s = _reviewed(qtbot, tmp_path)
+    s.apply_column_override(2, MASK, "ORG")
+    with patch("anonymator.ui.file_screen.QMessageBox.question",
+               return_value=QMessageBox.Yes):
+        s.header_switch.setChecked(False)
+    s.analyze()
+    qtbot.waitUntil(lambda: s.session is not None, timeout=5000)
+    assert s.session.column_override(2) == (MASK, "ORG")
+    assert s.session.count_retained("ORG") == 3     # la ligne 1 est devenue donnée
+
+
+def test_override_of_a_vanished_column_is_dropped(qtbot, tmp_path):
+    """Reporter un arbitrage sur un fichier plus étroit ne doit pas lever."""
+    from unittest.mock import patch
+    from PySide6.QtWidgets import QMessageBox
+    s = _reviewed(qtbot, tmp_path)
+    s.apply_column_override(2, MASK, "ORG")
+    with patch("anonymator.ui.file_screen.QMessageBox.question",
+               return_value=QMessageBox.Yes):
+        s.header_switch.setChecked(False)
+    other = tmp_path / "etroit.csv"
+    other.write_bytes("Nom;Ville\nLeclerc;Tours\n".encode("cp1252"))
+    s.load_path(str(other))
+    s.analyze()
+    qtbot.waitUntil(lambda: s.session is not None, timeout=5000)
+    assert s.session.column_overrides() == {}       # arbitrage d'un autre fichier
