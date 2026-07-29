@@ -3,8 +3,8 @@ from pathlib import Path
 from PySide6.QtWidgets import (QWidget, QFrame, QVBoxLayout, QHBoxLayout, QPushButton,
                                QLabel, QTableWidget, QTableWidgetItem, QFileDialog,
                                QMessageBox, QTreeWidget, QTreeWidgetItem, QLineEdit,
-                               QCheckBox)
-from PySide6.QtGui import QColor
+                               QCheckBox, QMenu, QComboBox)
+from PySide6.QtGui import QColor, QCursor
 from PySide6.QtCore import Qt
 from anonymator.ui.components.grid import paint_grid
 from anonymator.ui.theme import color
@@ -12,7 +12,9 @@ from anonymator.files.anonymize_file import (anonymize_file, UnsupportedFormat, 
 from anonymator.files import csv_io
 from anonymator.output_naming import anonymized_path
 from anonymator.files.anonymize_file import csv_column_plans
+from anonymator.files.columns import classify_columns
 from anonymator.core.file_review_session import FileReviewSession
+from anonymator.core.tabular_review_session import AUTO, CLEAR, MASK
 from anonymator.ui.file_scan_worker import FileScanWorker
 from anonymator.ui.file_anonymize_worker import FileAnonymizeWorker
 from anonymator.ui.colors import color_for
@@ -30,6 +32,10 @@ from anonymator.ui.components.perimetre_card import PerimetreCard
 from anonymator.files.ooxml import xml_parts
 
 PAGE_SIZE = 20
+
+# Marqueur d'un arbitrage manuel dans l'intitulé de colonne : l'en-tête doit
+# dire d'un coup d'œil que le plan automatique a été recouvert.
+_OVERRIDE_MARK = {MASK: "🔒 ", CLEAR: "🔓 "}
 
 
 def _fmt_int(n: int) -> str:
@@ -99,6 +105,9 @@ class FileScreen(QWidget):
         self.table.setAlternatingRowColors(False)
         self.table.horizontalHeader().setStretchLastSection(True)
         self.table.verticalHeader().setDefaultAlignment(Qt.AlignCenter)
+        head = self.table.horizontalHeader()
+        head.setSectionsClickable(True)
+        head.sectionClicked.connect(self._on_header_clicked)
         table_card = Card("document", "Écritures comptables — extrait")
         # La détection d'en-tête est une heuristique : sur un fichier sans
         # colonne numérique elle se trompe, et tout le typage par nom de
@@ -404,7 +413,9 @@ class FileScreen(QWidget):
         plans = csv_column_plans(self.doc)
         cols = set(plans)
         self._cols = cols
-        self._column_plans = plans
+        # Plan complet, colonnes écartées comprises : c'est leur `reason` qui
+        # explique à l'utilisateur pourquoi elles sont hors périmètre.
+        self._full_plans = classify_columns(self.doc.rows, self.doc.has_header)
         self._degraded = not (self.loader.has_detector() or is_model_available())
         # Le détecteur est construit DANS le worker (pas ici, sur le thread UI) :
         # une construction lente affiche l'overlay, un échec remonte via `error`.
@@ -437,7 +448,8 @@ class FileScreen(QWidget):
 
     def _on_scanned(self, scanned):
         self._view = "grid"
-        self.session = FileReviewSession(self.doc, scanned, self.ref, self._cols)
+        self.session = FileReviewSession(self.doc, scanned, self.ref, self._cols,
+                                         self._full_plans)
         self._restore_choices(self._pending_choices)
         self._pending_choices = None
         self._set_busy(False)
@@ -558,8 +570,15 @@ class FileScreen(QWidget):
             top.setText(1, f"×{counts.get(t, 0)}")
 
     def _data_rows(self):
-        start = 1 if self.doc.has_header else 0
-        return list(range(start, len(self.doc.rows)))
+        start = 1 if self._grid_has_header() else 0
+        return list(range(start, len(self._grid_rows())))
+
+    # ---------- grille courante (CSV ou feuille de classeur) ----------
+    def _grid_rows(self) -> list[list[str]]:
+        return self.doc.rows if self.doc is not None else []
+
+    def _grid_has_header(self) -> bool:
+        return bool(self.doc is not None and self.doc.has_header)
 
     def _page_count(self):
         n = len(self._data_rows())
@@ -585,9 +604,11 @@ class FileScreen(QWidget):
         self.table.clear()
         self.table.setColumnCount(width)
         self.table.setRowCount(len(page_rows))
-        if header:
-            self.table.setHorizontalHeaderLabels(
-                [header[c] if c < len(header) else f"col{c}" for c in range(width)])
+        # Les intitulés sont toujours posés : sans QTableWidgetItem d'en-tête,
+        # il n'y a nulle part où accrocher l'infobulle ni le marqueur d'état.
+        self.table.setHorizontalHeaderLabels(
+            [header[c] if (header and c < len(header)) else f"col{c}"
+             for c in range(width)])
         for vr, r in enumerate(page_rows):
             retained_cols = {c: self.session.entities_for_cell(r, c) for c in range(width)}
             for c in range(width):
@@ -605,12 +626,102 @@ class FileScreen(QWidget):
                         col = QColor(color_for(pend[0].type)); col.setAlpha(28)
                         item.setBackground(col)
                 self.table.setItem(vr, c, item)
+        self._decorate_headers(width)
         last = self._page_count() - 1
         self.lbl_page.setText(f"Page {self.page + 1} / {self._page_count()}")
         self.btn_first.setEnabled(self.page > 0)
         self.btn_prev.setEnabled(self.page > 0)
         self.btn_next.setEnabled(self.page < last)
         self.btn_last.setEnabled(self.page < last)
+
+    # ---------- arbitrage par colonne ----------
+    def _column_key(self, col: int):
+        """Clé de colonne pour la session : un index pour un CSV, un couple
+        (feuille, index) pour un classeur."""
+        return col
+
+    def _header_label(self, col: int) -> str:
+        rows = self._grid_rows()
+        if self._grid_has_header() and rows and col < len(rows[0]):
+            return rows[0][col]
+        return f"col{col}"
+
+    def _column_tooltip(self, key, mode: str, etype: str | None) -> str:
+        reason = self.session.column_reason(key) or "colonne non classée"
+        if mode == MASK:
+            return (f"Colonne forcée : toutes les cellules non vides sont "
+                    f"masquées en {self.ref.label_for(etype)}.\n"
+                    f"Plan automatique : {reason}.")
+        if mode == CLEAR:
+            return (f"Colonne libérée : hors du périmètre.\n"
+                    f"Plan automatique : {reason}.")
+        return (f"Plan automatique : {reason}.\n"
+                f"Cliquez l'en-tête pour forcer cette colonne.")
+
+    def _decorate_headers(self, width: int):
+        """Rend lisibles, sur l'en-tête, l'état de la colonne et sa raison."""
+        if self.session is None:
+            return
+        for c in range(width):
+            item = self.table.horizontalHeaderItem(c)
+            if item is None:
+                continue
+            key = self._column_key(c)
+            mode, etype = self.session.column_override(key)
+            item.setText(_OVERRIDE_MARK.get(mode, "") + self._header_label(c))
+            item.setToolTip(self._column_tooltip(key, mode, etype))
+
+    def _build_column_menu(self, col: int):
+        """Menu des trois états d'une colonne. Rendu séparément de son
+        exécution : c'est ce qui le rend vérifiable sans piloter la souris."""
+        key = self._column_key(col)
+        mode, etype = self.session.column_override(key)
+        menu = QMenu(self)
+        actions = {}
+
+        reason = self.session.column_reason(key) or "colonne non classée"
+        auto = menu.addAction(f"Auto — {reason}")
+        auto.setCheckable(True)
+        auto.setChecked(mode == AUTO)
+        actions[auto] = (AUTO, None)
+
+        sub = menu.addMenu("Tout anonymiser")
+        deduced = self.session.default_type_for(key)
+        codes = self.ref.active_codes()
+        if deduced in codes:
+            codes = [deduced] + [c for c in codes if c != deduced]
+        for code in codes:
+            label = self.ref.label_for(code)
+            if code == deduced:
+                label += "   (déduit)"
+            act = sub.addAction(label)
+            act.setCheckable(True)
+            act.setChecked(mode == MASK and etype == code)
+            actions[act] = (MASK, code)
+
+        clear = menu.addAction("Tout libérer")
+        clear.setCheckable(True)
+        clear.setChecked(mode == CLEAR)
+        actions[clear] = (CLEAR, None)
+        return menu, actions
+
+    def _on_header_clicked(self, col: int):
+        if self.session is None or self._view != "grid":
+            return
+        menu, actions = self._build_column_menu(col)
+        chosen = menu.exec(QCursor.pos())
+        if chosen in actions:
+            self.apply_column_override(col, *actions[chosen])
+
+    def apply_column_override(self, col: int, mode: str,
+                              etype: str | None = None):
+        """Applique l'arbitrage et rafraîchit tout ce qu'il déplace : les
+        entités d'une colonne forcée entrent dans l'arbre, donc le compteur
+        d'occurrences et les cases à cocher bougent aussi."""
+        self.session.set_column_override(self._column_key(col), mode, etype)
+        self._build_side()
+        self.occ_badge.setText(f"{_fmt_int(self.session.total_occurrences())} occ.")
+        self._render_current()
 
     def _request_model(self):
         if self.on_request_model is not None:
