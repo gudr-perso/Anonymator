@@ -1,9 +1,11 @@
+from dataclasses import dataclass, field
 from datetime import datetime
 from functools import partial
 from pathlib import Path
 
 import openpyxl
 
+from anonymator.model import Entity
 from anonymator.ner import NerDetector
 from anonymator.referential import Referential
 from anonymator.pipeline import detect, detect_column
@@ -12,7 +14,7 @@ from anonymator.dedup import detect_unique
 from anonymator.report.audit import AuditReport
 from anonymator.output_naming import anonymized_path
 from anonymator.files.columns import (
-    SKIP, TYPED, classify_columns, looks_like_header_row)
+    SKIP, TYPED, ColumnPlan, classify_columns, looks_like_header_row)
 
 
 def _is_formula(cell) -> bool:
@@ -62,42 +64,98 @@ def _sheet_matrix(ws) -> list[list[str]]:
     return [[_cell_text(c) for c in row] for row in ws.iter_rows()]
 
 
-def anonymize_workbook(path: Path, ner: NerDetector, ref: Referential,
-                       output_dir: Path, when: datetime) -> tuple[Path, AuditReport]:
-    """Anonymise chaque feuille colonne par colonne.
+@dataclass
+class XlsxScanResult:
+    """Tout ce qu'une revue doit connaître d'un classeur, sans rien y écrire.
 
-    Le plan de traitement est décidé une fois par colonne (cf. columns.py) :
-    une colonne typée est masquée en entier sans passer par le NER, une
-    nomenclature ou une mesure reste intacte."""
+    Le classeur openpyxl reste ouvert : c'est lui qu'on masquera à la fin, ce
+    qui préserve la mise en forme et les formules."""
+    workbook: object
+    sheets: list[str]
+    matrices: dict[str, list[list[str]]]
+    plans: dict[str, dict[int, ColumnPlan]]
+    has_header: dict[str, bool]
+    scanned: dict[tuple[str, int, int], list[Entity]] = field(default_factory=dict)
+
+
+def scan_workbook(path: Path, ner: NerDetector, ref: Referential,
+                  header_overrides: dict[str, bool] | None = None) -> XlsxScanResult:
+    """Lit le classeur, classe ses colonnes et détecte les entités, sans rien
+    écrire. Séparer le scan de l'application est ce qui rend la revue possible :
+    l'utilisateur tranche entre les deux (cf. files/ooxml/scan.py).
+
+    Le plan de traitement est décidé une fois par colonne et par feuille (cf.
+    columns.py) : une colonne typée est masquée en entier sans passer par le
+    NER, une nomenclature ou une mesure reste intacte.
+
+    Indices de `scanned` : ceux de la matrice, donc décalés de 1 par rapport
+    aux coordonnées openpyxl (ligne 1 du classeur = ligne 0 de la matrice)."""
     wb = openpyxl.load_workbook(path)
-    report = AuditReport()
+    overrides = header_overrides or {}
+    sheets: list[str] = []
+    matrices: dict[str, list[list[str]]] = {}
+    plans: dict[str, dict[int, ColumnPlan]] = {}
+    headers: dict[str, bool] = {}
+    scanned: dict[tuple[str, int, int], list[Entity]] = {}
     for ws in wb.worksheets:
-        rows = list(ws.iter_rows())
-        if not rows:
+        title = ws.title
+        sheets.append(title)
+        matrix = _sheet_matrix(ws)
+        matrices[title] = matrix
+        if not matrix:
+            plans[title] = {}
+            headers[title] = False
             continue
-        has_header = sheet_has_header(ws)
-        plans = classify_columns(_sheet_matrix(ws), has_header)
-        data_rows = rows[1:] if has_header else rows
-        for col, plan in plans.items():
+        has_header = overrides.get(title, sheet_has_header(ws))
+        headers[title] = has_header
+        sheet_plans = classify_columns(matrix, has_header)
+        plans[title] = sheet_plans
+        start = 1 if has_header else 0
+        for col, plan in sheet_plans.items():
             if plan.policy == SKIP:
                 continue
             if plan.policy == TYPED and plan.etype:
                 detector = partial(detect_column, etype=plan.etype, ref=ref)
             else:
                 detector = lambda v: detect(v, ner, ref)  # noqa: E731
-            cells = [row[col] for row in data_rows
-                     if col < len(row) and not _is_formula(row[col])
-                     and row[col].value is not None]
-            cache = detect_unique([_cell_text(c) for c in cells], detector)
-            for cell in cells:
-                value = _cell_text(cell)
-                ents = cache.get(value, [])
-                if not ents:
-                    continue
-                location = f"{ws.title}!{cell.coordinate}"
-                for e in ents:
-                    report.add(e.type, e.value, ref.tag_for(e.type), location)
-                cell.value = apply_masking(value, ents, ref)
+            rows = [r for r in range(start, len(matrix))
+                    if col < len(matrix[r]) and matrix[r][col]]
+            cache = detect_unique([matrix[r][col] for r in rows], detector)
+            for r in rows:
+                ents = cache.get(matrix[r][col], [])
+                if ents:
+                    scanned[(title, r, col)] = ents
+    return XlsxScanResult(wb, sheets, matrices, plans, headers, scanned)
+
+
+def apply_workbook(result: XlsxScanResult,
+                   retained: dict[tuple[str, int, int], list[Entity]],
+                   ref: Referential,
+                   report: AuditReport | None = None) -> AuditReport:
+    """Écrit les entités retenues dans les cellules du classeur.
+
+    Une cellule de formule n'est jamais réécrite : sa source n'est pas une
+    donnée, et l'écraser détruirait le calcul."""
+    report = report if report is not None else AuditReport()
+    for (title, r, c), ents in retained.items():
+        if not ents:
+            continue
+        cell = result.workbook[title].cell(row=r + 1, column=c + 1)
+        if _is_formula(cell):
+            continue
+        value = _cell_text(cell)
+        location = f"{title}!{cell.coordinate}"
+        for e in ents:
+            report.add(e.type, e.value, ref.tag_for(e.type), location)
+        cell.value = apply_masking(value, ents, ref)
+    return report
+
+
+def anonymize_workbook(path: Path, ner: NerDetector, ref: Referential,
+                       output_dir: Path, when: datetime) -> tuple[Path, AuditReport]:
+    """Chemin direct, sans revue : scan puis application immédiate."""
+    result = scan_workbook(path, ner, ref)
+    report = apply_workbook(result, result.scanned, ref)
     out = anonymized_path(path, output_dir, when)
-    wb.save(out)
+    result.workbook.save(out)
     return out, report
