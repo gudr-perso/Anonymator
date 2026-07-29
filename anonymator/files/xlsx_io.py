@@ -153,9 +153,16 @@ def apply_workbook(result: XlsxScanResult,
 
 def anonymize_workbook(path: Path, ner: NerDetector, ref: Referential,
                        output_dir: Path, when: datetime) -> tuple[Path, AuditReport]:
-    """Chemin direct, sans revue : scan puis application immédiate."""
+    """Chemin direct, sans revue : scan puis application immédiate.
+
+    Sans revue, il n'y a pas d'opt-in : on filtre les entités non confirmées
+    (format plausible mais contrôle de clé KO) plutôt que de masquer une
+    fausse détection. Même règle que `anonymize_csv` — la revue, elle, les
+    laisse décochées mais cochables."""
     result = scan_workbook(path, ner, ref)
-    report = apply_workbook(result, result.scanned, ref)
+    retained = {k: [e for e in v if e.confirmed] for k, v in result.scanned.items()}
+    retained = {k: v for k, v in retained.items() if v}
+    report = apply_workbook(result, retained, ref)
     out = anonymized_path(path, output_dir, when)
     result.workbook.save(out)
     return out, report

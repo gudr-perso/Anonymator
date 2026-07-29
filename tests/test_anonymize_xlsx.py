@@ -75,6 +75,25 @@ def test_xlsx_typed_column_masks_every_row_without_model(tmp_path):
     assert [ws.cell(row=r, column=3).value for r in (2, 3, 4)] == ["[TEL]"] * 3
 
 
+def test_xlsx_direct_path_skips_unconfirmed_like_csv(tmp_path):
+    """Chemin direct, sans revue : une entité au format plausible mais dont le
+    contrôle de clé échoue (ici un IBAN à checksum invalide) n'est pas masquée,
+    exactement comme sur le chemin CSV. Sans revue pour l'opt-in, la prudence
+    est de la laisser en clair plutôt que de masquer une fausse détection."""
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Notes"
+    ws["A1"] = "commentaire"
+    ws["A2"] = "voir IBAN FR7612345678901234567890123"    # checksum KO
+    ws["A3"] = "IBAN FR7630006000011234567890189 conforme"  # checksum OK
+    src = tmp_path / "notes.xlsx"
+    wb.save(src)
+    res = _anonymize(src, tmp_path, NullNer())
+    out = openpyxl.load_workbook(res.output_path)["Notes"]
+    assert "FR7612345678901234567890123" in out["A2"].value   # non confirmé : intact
+    assert "[IBAN]" in out["A3"].value                        # confirmé : masqué
+
+
 def test_xlsx_keeps_nomenclature_and_measures(tmp_path):
     src = tmp_path / "clients.xlsx"
     _clients_book(src)
