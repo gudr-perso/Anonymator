@@ -1,6 +1,9 @@
 # Brainstorming / visual companion (local only)
 .superpowers/
 
+# Claude Code — réglages locaux et personnels (permissions du poste)
+.claude/settings.local.json
+
 # Python
 __pycache__/
 *.py[cod]
