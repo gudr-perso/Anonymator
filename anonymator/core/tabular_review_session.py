@@ -50,14 +50,13 @@ class TabularReviewSession(ReviewSessionBase):
         return plan.reason if plan else ""
 
     def default_type_for(self, col_key) -> str | None:
-        """Type à proposer pour un forçage « tout anonymiser ».
+        """Type déduit du plan, à pré-cocher dans « tout anonymiser ».
 
-        Un type déduit mais inactif (POSTAL_CODE, BIC, URL) ne produirait
-        rien : mieux vaut ne rien proposer et laisser l'utilisateur choisir
-        qu'offrir un forçage silencieusement sans effet."""
+        Renvoyé même s'il est inactif (POSTAL_CODE, BIC, URL) : un forçage
+        manuel passe outre le garde du référentiel (cf. detect_column
+        `force=True`), donc proposer le type déduit a désormais un effet réel."""
         plan = self.plans.get(col_key)
-        etype = plan.etype if plan else None
-        return etype if etype and self.ref.is_active(etype) else None
+        return plan.etype if plan else None
 
     def column_override(self, col_key) -> tuple[str, str | None]:
         return self._overrides.get(col_key, (AUTO, None))
@@ -78,7 +77,7 @@ class TabularReviewSession(ReviewSessionBase):
         else:
             self._overrides[col_key] = (mode, etype)
         if mode == MASK:
-            forced = {k: detect_column(v, etype, self.ref)
+            forced = {k: detect_column(v, etype, self.ref, force=True)
                       for k, v in self.column_values(col_key).items()}
             self._forced[col_key] = {k: v for k, v in forced.items() if v}
         self._reindex()

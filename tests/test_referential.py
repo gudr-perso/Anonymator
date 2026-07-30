@@ -85,12 +85,30 @@ def test_with_user_rules_replaces_ruleset():
 
 
 def test_active_codes_lists_only_active_types():
-    """Le menu de forçage d'une colonne ne propose que des types qui masquent
-    réellement quelque chose."""
+    """La détection automatique ne retient que les types actifs."""
     ref = Referential.load_default()
     codes = ref.active_codes()
     assert "PERSON" in codes and "PHONE" in codes
     assert "POSTAL_CODE" not in codes and "BIC" not in codes and "URL" not in codes
+
+
+def test_mask_pseudo_type_is_defined_and_inactive():
+    """Type neutre pour le masquage manuel d'une colonne sans type sémantique.
+    Inactif : il ne doit jamais sortir de la détection automatique."""
+    ref = Referential.load_default()
+    assert ref.tag_for("MASK") == "[MASQUÉ]"
+    assert ref.is_active("MASK") is False
+    assert "MASK" not in ref.active_codes()
+
+
+def test_forceable_codes_include_inactive_but_not_the_neutral_mask():
+    """Le forçage manuel étant explicite, il propose tous les vrais types, y
+    compris les inactifs. Le pseudo-type neutre MASK est présenté à part."""
+    ref = Referential.load_default()
+    codes = ref.forceable_codes()
+    assert "PERSON" in codes            # actif
+    assert "POSTAL_CODE" in codes       # inactif, forçable
+    assert "MASK" not in codes          # neutre, ajouté séparément par l'UI
 
 
 def test_active_codes_follows_overrides():

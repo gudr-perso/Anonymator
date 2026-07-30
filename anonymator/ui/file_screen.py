@@ -813,18 +813,29 @@ class FileScreen(QWidget):
         actions[auto] = (AUTO, None)
 
         sub = menu.addMenu("Tout anonymiser")
+        # Un forçage est une décision explicite : on propose tous les types,
+        # y compris inactifs (le déduit d'abord), plus un masquage neutre pour
+        # les colonnes sans type sémantique (nomenclatures).
         deduced = self.session.default_type_for(key)
-        codes = self.ref.active_codes()
+        codes = self.ref.forceable_codes()
         if deduced in codes:
             codes = [deduced] + [c for c in codes if c != deduced]
         for code in codes:
             label = self.ref.label_for(code)
             if code == deduced:
                 label += "   (déduit)"
+            elif not self.ref.is_active(code):
+                label += "   (inactif)"
             act = sub.addAction(label)
             act.setCheckable(True)
             act.setChecked(mode == MASK and etype == code)
             actions[act] = (MASK, code)
+        sub.addSeparator()
+        neutral = sub.addAction(
+            f"{self.ref.label_for('MASK')} → {self.ref.tag_for('MASK')}")
+        neutral.setCheckable(True)
+        neutral.setChecked(mode == MASK and etype == "MASK")
+        actions[neutral] = (MASK, "MASK")
 
         clear = menu.addAction("Tout libérer")
         clear.setCheckable(True)

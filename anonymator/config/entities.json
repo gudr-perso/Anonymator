@@ -14,6 +14,7 @@
     {"code": "URL",     "label": "URL",           "method": "deterministic","active": false, "tag": "[URL]",      "sensitivity": "Basse"},
     {"code": "LOGIN",    "label": "Identifiant",  "method": "contextual",   "active": true,  "tag": "[LOGIN]",   "sensitivity": "Haute"},
     {"code": "PASSWORD", "label": "Mot de passe", "method": "contextual",   "active": true,  "tag": "[SECRET]",  "sensitivity": "Haute"},
-    {"code": "REGLE_INTERNE", "label": "Règle interne", "method": "rule", "active": true, "tag": "[REGLE-INTERNE]", "sensitivity": "Moyenne"}
+    {"code": "REGLE_INTERNE", "label": "Règle interne", "method": "rule", "active": true, "tag": "[REGLE-INTERNE]", "sensitivity": "Moyenne"},
+    {"code": "MASK", "label": "Masquer (neutre)", "method": "manual", "active": false, "tag": "[MASQUÉ]", "sensitivity": "Basse"}
   ]
 }

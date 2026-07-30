@@ -63,9 +63,16 @@ class Referential:
     def active_codes(self) -> list[str]:
         """Codes des types actifs, dans l'ordre du référentiel.
 
-        Sert au forçage manuel d'une colonne : proposer un type inactif
-        offrirait un masquage qui ne se produirait jamais."""
+        Sert à la détection automatique, qui respecte l'état du référentiel."""
         return [c for c in self._by_code if self.is_active(c)]
+
+    def forceable_codes(self) -> list[str]:
+        """Codes proposables au forçage manuel d'une colonne, dans l'ordre du
+        référentiel. Un forçage étant une décision explicite de l'utilisateur,
+        les types inactifs (POSTAL_CODE, BIC, URL) y figurent — à la différence
+        de la détection automatique. Le pseudo-type neutre `MASK` en est exclu :
+        l'UI le présente à part, pour masquer une colonne sans type sémantique."""
+        return [c for c in self._by_code if c != "MASK"]
 
     def ner_stoplist(self) -> set[str]:
         return {normalize(t) for t in self._stoplist}

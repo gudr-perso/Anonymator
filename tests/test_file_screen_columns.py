@@ -42,9 +42,19 @@ def test_header_menu_offers_three_states(qtbot, tmp_path):
     assert any(l.startswith("Auto") for l in labels)
     assert "Tout anonymiser" in [a.text() for a in menu.actions() if a.menu()]
     assert "Tout libérer" in labels
-    # le sous-menu ne propose que des types actifs
+
+
+def test_mask_submenu_offers_inactive_types_and_neutral(qtbot, tmp_path):
+    """Un forçage étant une décision explicite, « tout anonymiser » propose
+    aussi les types inactifs (POSTAL_CODE) et une entrée neutre [MASQUÉ] pour
+    les colonnes sans type — sinon on ne peut masquer ni le code postal ni la
+    catégorie."""
+    s = _reviewed(qtbot, tmp_path)
+    _menu, actions = s._build_column_menu(2)
     types = {etype for (_mode, etype) in actions.values() if etype}
-    assert "PERSON" in types and "POSTAL_CODE" not in types
+    assert "PERSON" in types            # actif
+    assert "POSTAL_CODE" in types       # inactif, désormais forçable
+    assert "MASK" in types              # masquage neutre
 
 
 def test_header_menu_puts_the_deduced_type_first(qtbot, tmp_path):
@@ -63,6 +73,39 @@ def test_forcing_a_column_masks_every_cell(qtbot, tmp_path):
     assert lines[0].endswith(";note")              # titres intacts
     assert lines[1].endswith(";[ORG]")
     assert lines[2].endswith(";[ORG]")
+
+
+def test_forcing_an_inactive_type_actually_masks(qtbot, tmp_path):
+    """Bout en bout : forcer « code postal » (POSTAL_CODE inactif) écrit [CP]
+    dans le fichier — le forçage passe outre l'état du référentiel."""
+    src = tmp_path / "cp.csv"
+    src.write_bytes("code_postal;note\n37000;RAS\n44000;RAS\n".encode("cp1252"))
+    s = _screen(tmp_path); qtbot.addWidget(s)
+    s.load_path(str(src)); s.header_switch.setChecked(True)
+    s.analyze()
+    qtbot.waitUntil(lambda: s.session is not None, timeout=5000)
+    s.apply_column_override(0, MASK, "POSTAL_CODE")
+    res = s.run(when=datetime(2026, 1, 2, 3, 4, 5))
+    out = res.output_path.read_bytes().decode("cp1252")
+    assert out == "code_postal;note\n[CP];RAS\n[CP];RAS\n"
+
+
+def test_neutral_mask_hides_a_nomenclature_column(qtbot, tmp_path):
+    """Forcer « secteur » en masquage neutre le vide en [MASQUÉ] sans
+    l'étiqueter d'un type sémantique."""
+    s = _reviewed(qtbot, tmp_path)
+    s.apply_column_override(1, MASK, "MASK")
+    res = s.run(when=datetime(2026, 1, 2, 3, 4, 5))
+    # ce CSV ASCII est détecté UTF-8 : le tag neutre accentué est écrit en
+    # UTF-8, on le relit donc en UTF-8 (et non cp1252 comme les tags ASCII)
+    out = res.output_path.read_bytes().decode("utf-8")
+    lines = out.splitlines()
+    # tag neutre lu du référentiel : évite un littéral accentué dans la source
+    neutral = Referential.load_default().tag_for("MASK")
+    assert lines[0] == "contact_nom;secteur;note"          # titres intacts
+    # col0 auto-masquée en [PERSONNE], col1 forcée en neutre, col2 libre
+    assert lines[1] == f"[PERSONNE];{neutral};RAS"
+    assert lines[2] == f"[PERSONNE];{neutral};a rappeler"
 
 
 def test_freeing_a_column_keeps_it_in_clear(qtbot, tmp_path):

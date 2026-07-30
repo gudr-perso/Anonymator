@@ -7,7 +7,8 @@ from anonymator.referential import Referential
 from anonymator.user_rules import detect_forced, apply_allow
 
 
-def detect_column(value: str, etype: str, ref: Referential) -> list[Entity]:
+def detect_column(value: str, etype: str, ref: Referential,
+                  force: bool = False) -> list[Entity]:
     """Détection d'une cellule appartenant à une colonne typée.
 
     Le type vient de la colonne (en-tête ou contenu homogène), pas du contenu
@@ -15,8 +16,14 @@ def detect_column(value: str, etype: str, ref: Referential) -> list[Entity]:
     traitement identique sur toute la colonne, là où le NER, appelé sur une
     valeur isolée et sans contexte, reconnaît « Nantes » mais pas
     « La Rochelle ». Les règles utilisateur « conserver » restent prioritaires.
+
+    `force=True` court-circuite le garde `is_active` : c'est le chemin d'un
+    forçage manuel de colonne, décision explicite de l'utilisateur devant son
+    fichier, qui doit primer sur le défaut du référentiel (ex. masquer une
+    colonne de codes postaux, type inactif par défaut). La détection
+    automatique, elle, appelle sans `force` et respecte l'état du référentiel.
     """
-    if not ref.is_active(etype):
+    if not force and not ref.is_active(etype):
         return []
     stripped = value.strip()
     if not stripped:

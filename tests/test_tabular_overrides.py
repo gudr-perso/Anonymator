@@ -118,18 +118,42 @@ def test_mask_requires_a_type():
         g.set_column_override(2, MASK)
 
 
-def test_inactive_deduced_type_is_not_proposed():
-    """POSTAL_CODE est inactif : le proposer fabriquerait un forçage muet."""
+def test_inactive_deduced_type_is_still_proposed():
+    """POSTAL_CODE est inactif, mais un forçage manuel passe outre le garde
+    is_active (cf. detect_column force=True) : on le propose donc quand même,
+    déduit du plan, pour le pré-cocher dans « tout anonymiser »."""
     rows = [["37000"], ["44000"]]
     plans = {0: ColumnPlan(TYPED, "POSTAL_CODE", "en-tête « code postal »")}
     g = _Grid(rows, {}, Referential.load_default(), {0}, plans)
-    assert g.default_type_for(0) is None
+    assert g.default_type_for(0) == "POSTAL_CODE"
 
 
-def test_active_deduced_type_is_proposed():
+def test_deduced_type_reflects_the_plan():
     g = _grid()
     assert g.default_type_for(0) == "PERSON"
     assert g.default_type_for(2) is None            # colonne de texte libre
+
+
+def test_mask_forces_an_inactive_type():
+    """Forcer « code postal » (POSTAL_CODE inactif) masque bel et bien la
+    colonne : la décision de l'utilisateur prime sur l'état du référentiel."""
+    rows = [["37000"], ["44000"], [""]]
+    plans = {0: ColumnPlan(TYPED, "POSTAL_CODE", "en-tête « code postal »")}
+    g = _Grid(rows, {}, Referential.load_default(), set(), plans)
+    g.set_column_override(0, MASK, "POSTAL_CODE")
+    assert g.count_retained("POSTAL_CODE") == 2     # la cellule vide est ignorée
+    assert set(g.retained_by_cell()) == {(0, 0), (1, 0)}
+
+
+def test_neutral_mask_hides_a_typeless_column():
+    """Une nomenclature (« catégorie ») n'a aucun type d'entité : le masquage
+    neutre [MASQUÉ] la vide sans la mal-étiqueter, même hors périmètre auto."""
+    g = _grid()                                     # colonne 1 = nomenclature SKIP
+    assert g.column_override(1) == (AUTO, None)
+    assert g.count_retained("MASK") == 0
+    g.set_column_override(1, MASK, "MASK")
+    assert g.count_retained("MASK") == 3            # Industrie / BTP / Textile
+    assert g.column_override(1) == (MASK, "MASK")
 
 
 def test_overrides_are_exportable_and_replayable():
