@@ -35,6 +35,13 @@ foreach ($b in $targets) {
         # Le .spec le place dans _internal\ ; on le copie a cote de l'exe avant de zipper.
         $lic = Join-Path $distDir '_internal\LICENSE'
         if (Test-Path $lic) { Copy-Item $lic (Join-Path $distDir 'LICENSE') -Force }
+        # Jeu d'exemples (donnees fictives) visible a la racine, a cote de l'exe :
+        # l'utilisateur peut essayer l'app tout de suite. L'app ne les lit pas au
+        # runtime, inutile donc de les enfouir dans _internal via le .spec.
+        $examples = Join-Path $root 'exemples'
+        if (Test-Path $examples) {
+            Copy-Item $examples (Join-Path $distDir 'exemples') -Recurse -Force
+        }
         $zipPath = Join-Path $root "dist\$zip"
         if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
         Compress-Archive -Path $distDir -DestinationPath $zipPath
