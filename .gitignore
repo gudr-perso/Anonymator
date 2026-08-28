@@ -34,6 +34,8 @@ exports/
 *_ano_*.docx
 *_ano_*.pptx
 *_ano_*.pdf
+_dif_Cuma/
+_dif_Cap/
 
 # Artefacts de packaging (trop volumineux / non versionnables)
 *.zip
