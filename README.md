@@ -4,15 +4,28 @@ Application locale Windows d'anonymisation de texte et de fichiers comptables.
 
 Détecte et remplace les données personnelles (noms, emails, IBAN, numéros de téléphone…) par des étiquettes de catégorie (`[PERSONNE]`, `[EMAIL]`…). **Aucune donnée ne quitte votre machine.**
 
+> **Nom du produit.** *Anonymator* est le nom du **projet**. L'application est diffusée en
+> plusieurs **éditions**, chacune avec son propre nom de produit, son thème de couleurs, son
+> archive et son exécutable — pour un fonctionnement strictement identique. Ce document parle
+> donc du projet et de « l'application ».
+
 ---
 
 ## Installation
 
-1. Télécharger et dézipper `Anonymator-vX.X.zip`.
-2. Lancer `anonymator.exe` dans le dossier dézippé.
-3. Au **premier lancement**, l'application télécharge le modèle de détection GLiNER (~2,2 Go).
-   Une connexion Internet est nécessaire pour cette étape initiale uniquement.
-   Les lancements suivants fonctionnent hors-ligne.
+1. Télécharger et dézipper l'archive `.zip` de votre édition.
+2. Lancer le fichier `.exe` situé **à la racine** du dossier dézippé — c'est le seul, et il
+   porte le nom de votre édition.
+3. Au **premier lancement**, l'application propose de télécharger le modèle de détection
+   GLiNER (~2,2 Go). Une connexion Internet est nécessaire pour cette seule étape ; les
+   lancements suivants fonctionnent hors-ligne.
+   Sans le modèle, l'application démarre quand même en **mode dégradé** : les détections par
+   règles (e-mail, téléphone, IBAN, SIREN/SIRET, NIR, mots de passe…) restent opérationnelles,
+   seuls les noms, adresses et organisations sont hors de portée. Le téléchargement peut être
+   relancé plus tard depuis l'accueil ou les Paramètres, sans redémarrer.
+
+Le dossier dézippé contient aussi `exemples/` (jeu de fichiers de démonstration à données
+fictives), `LICENSE` et `_internal/` (composants techniques — ne rien y modifier).
 
 ---
 
@@ -30,15 +43,20 @@ Détecte et remplace les données personnelles (noms, emails, IBAN, numéros de 
 ### Mode Fichier
 
 1. Cliquer **Fichier** sur l'écran d'accueil.
-2. Cliquer **Ouvrir…** → sélectionner un `.txt`, `.csv` ou `.xlsx`.
+2. Cliquer **Ouvrir…** → sélectionner un `.txt`, `.csv`, `.xlsx`, `.docx` ou `.pptx`.
 3. Aperçu du fichier dans le tableau.
 4. Cliquer **Anonymiser et enregistrer** → le fichier anonymisé est sauvegardé dans le dossier de sortie.
 5. L'original n'est **jamais modifié**.
 
 ### Paramètres
 
-- **Thème** : France Cuma Numérique (vert) ou CAP Consulting (bleu).
-- **Dossier de sortie** : dossier cible pour les fichiers anonymisés.
+- **Thème** : verrouillé aux couleurs de votre édition (le sélecteur n'apparaît que sur la
+  build de développement).
+- **Dossier de sortie** : dossier cible pour les fichiers anonymisés. Laissé vide, le fichier
+  est écrit à côté de son original.
+- **Types d'entités à détecter** : activation catégorie par catégorie (BIC, code postal et URL
+  sont inactifs par défaut).
+- **Modèle de détection intelligente** : état d'installation, téléchargement et réparation.
 
 ---
 
@@ -48,7 +66,8 @@ Détecte et remplace les données personnelles (noms, emails, IBAN, numéros de 
 |--------|---------|
 | `.txt` | ✅ Texte intégral |
 | `.csv` | ✅ Par colonnes (séparateur auto-détecté, encodage préservé) |
-| `.xlsx` | ✅ Édition en place (styles, formules et onglets conservés) |
+| `.xlsx` | ✅ Édition en place (styles, formules et onglets conservés), revue feuille par feuille |
+| `.docx` / `.pptx` | ✅ Contenu Word/PowerPoint, mise en forme conservée, purge des métadonnées d'identité |
 | `.pdf` | ✅ PDF natifs : caviardage (destruction réelle) ou extraction .txt. Scannés (image seule) non supportés. |
 
 ---
@@ -70,7 +89,7 @@ Détecte et remplace les données personnelles (noms, emails, IBAN, numéros de 
 | Échec du téléchargement : `CERTIFICATE_VERIFY_FAILED` | Antivirus inspectant le HTTPS (Norton, Kaspersky…). L'app valide via le magasin de certificats Windows depuis la v0.4.3 ; sinon, ajouter une exception pour l'exécutable |
 | Fichier CSV mal parsé | Vérifier encodage (Latin-1/UTF-8) et séparateur |
 | `.pdf` scanné (image seule) | OCR non supporté en v1 — message clair, aucun plantage |
-| Nom manqué lors de la détection | Ajouter manuellement via la sélection de texte (mode Texte) |
+| Nom manqué lors de la détection | Vérifier que le modèle GLiNER est installé ; sur un tableau, forcer la colonne via un clic sur son en-tête ; sinon créer une règle « Toujours masquer » |
 
 ---
 
