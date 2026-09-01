@@ -4,11 +4,22 @@
 from PyInstaller.utils.hooks import collect_data_files
 
 import os
-from anonymator.brand import build_target
+import sys
+from anonymator import __version__
+from anonymator.brand import BRANDS, DEV_BRAND, build_target
 
 # Marque de build (packaging, PAS runtime) : cap | cuma | dev (défaut).
 _BUILD_BRAND = os.environ.get('ANONYMATOR_BUILD_BRAND', 'dev')
 _ENTRY, _EXE_NAME, _ICON = build_target(_BUILD_BRAND)
+_BRAND = BRANDS.get(_BUILD_BRAND, DEV_BRAND)
+
+_IS_MAC = sys.platform == 'darwin'
+# macOS n'accepte pas les .ico comme icône de bundle : il lui faut un .icns,
+# généré au build par scripts/make_icns.sh (non versionné, cf. .gitignore).
+# Le .ico reste embarqué dans les datas : Qt s'en sert pour l'icône de fenêtre
+# au runtime, sur les trois OS.
+if _IS_MAC:
+    _ICON = _ICON.replace('.ico', '.icns')
 
 # Gabarits par défaut (default.docx / default.pptx) chargés en package data
 # par python-docx / python-pptx — indispensables dans l'exe figé.
@@ -108,9 +119,14 @@ exe = EXE(
     bootloader_ignore_signals=False,
     strip=False,
     upx=False,
-    console=False,    # pas de fenetre console sur Windows
+    console=False,    # pas de fenetre console sur Windows / macOS
     disable_windowed_traceback=False,
     argv_emulation=False,
+    # None = architecture de la machine de build. PyInstaller ne cross-compile
+    # pas : le .app macOS doit etre construit sur macOS (cf. le workflow
+    # .github/workflows/build-macos.yml). 'universal2' est hors d'atteinte,
+    # PyTorch ne publiant plus de wheels macOS x86_64 depuis la 2.3 —
+    # la cible macOS est donc arm64 (Apple Silicon) uniquement.
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
@@ -127,3 +143,26 @@ coll = COLLECT(
     upx_exclude=[],
     name=_EXE_NAME,
 )
+
+# Sur macOS, COLLECT ne produit qu'un binaire Unix nu, non lançable depuis le
+# Finder : c'est BUNDLE qui fabrique le .app double-cliquable.
+if _IS_MAC:
+    app = BUNDLE(
+        coll,
+        name=f'{_EXE_NAME}.app',
+        icon=f'anonymator/ui/assets/{_ICON}',
+        bundle_identifier=f'io.github.gudr-perso.{_EXE_NAME}',
+        version=__version__,
+        info_plist={
+            'CFBundleName': _BRAND.product_name,
+            'CFBundleDisplayName': _BRAND.product_name,
+            'CFBundleShortVersionString': __version__,
+            'CFBundleVersion': __version__,
+            # Sans ce drapeau, macOS affiche l'app en 72 dpi flou sur Retina.
+            'NSHighResolutionCapable': True,
+            # Big Sur = premiere version Apple Silicon.
+            'LSMinimumSystemVersion': '11.0',
+            'LSApplicationCategoryType': 'public.app-category.productivity',
+            'NSHumanReadableCopyright': 'AGPL-3.0-or-later',
+        },
+    )

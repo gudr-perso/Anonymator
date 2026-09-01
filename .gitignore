@@ -39,3 +39,6 @@ _dif_Cap/
 
 # Artefacts de packaging (trop volumineux / non versionnables)
 *.zip
+
+# .icns genere au build par scripts/make_icns.sh (macOS)
+anonymator/ui/assets/*.icns

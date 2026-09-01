@@ -1,0 +1,6 @@
+# Les scripts shell et le workflow CI s'executent sur macOS/Linux : ils doivent
+# rester en LF quel que soit le core.autocrlf du poste de developpement
+# (Windows, ici autocrlf=true). Un CRLF sur la shebang casse le script avec un
+# « bash: $'\r': command not found » sur le runner.
+*.sh text eol=lf
+*.yml text eol=lf

@@ -57,3 +57,75 @@ Après une release de test `vX.Y.Z` :
 4. Vérifier que le `LICENSE` AGPL existe bien dans le dossier distribué :
    `dist/anonymator/_internal/LICENSE` (embarqué par le `.spec`) et, après copie,
    `dist/anonymator/LICENSE` (visible à côté de l'exe).
+
+## Build macOS (Apple Silicon)
+
+### Contraintes
+
+- **PyInstaller ne cross-compile pas** : le `.app` doit être construit *sur* macOS.
+  Le workflow `.github/workflows/build-macos.yml` s'en charge sur un runner
+  `macos-14` (arm64), ce qui évite d'avoir à posséder un Mac.
+- **arm64 uniquement** : PyTorch ne publie plus de wheels macOS x86_64 depuis la
+  2.3. Supporter les Macs Intel impliquerait de figer `torch<=2.2` et un build
+  séparé — hors périmètre. Cible = macOS 11+ sur puce Apple (M1 et plus).
+- **`universal2` est hors d'atteinte** pour la même raison.
+
+### Procédure
+
+Lancer le workflow `build-macos` (onglet Actions → *Run workflow*, choix de la
+marque), ou pousser un tag `vX.Y.Z` — le workflow construit alors `all`
+(cap + cuma). Les archives sont publiées en artefacts de run.
+
+Sur un Mac local, l'équivalent de `scripts/build.ps1` est :
+
+```bash
+./scripts/build.sh cap    # ou cuma | dev | all
+```
+
+Il régénère l'icône `.icns` (`scripts/make_icns.sh`, non versionnée), lance
+PyInstaller, puis assemble `dist/<Produit>-vX.Y.Z-macOS-arm64.zip` contenant le
+`.app`, le `LICENSE` et les `exemples/`.
+
+Deux différences de fond avec Windows :
+
+- le `.spec` ajoute un bloc `BUNDLE` sur macOS — sans lui, PyInstaller ne produit
+  qu'un binaire Unix nu, non lançable depuis le Finder ;
+- l'archivage utilise `ditto` et non `zip` : le `.app` contient des liens
+  symboliques (frameworks Qt) et une signature que `zip` détruit. Pour la même
+  raison, `LICENSE` et `exemples/` sont placés **à côté** du bundle et jamais
+  à l'intérieur — toute modification postérieure au build invaliderait sa
+  signature.
+
+### Gatekeeper
+
+Le `.app` est signé *ad hoc* par PyInstaller (obligatoire sur arm64 pour qu'il
+s'exécute), mais **ni signé Developer ID, ni notarisé** : pas de compte Apple
+Developer pour l'instant. La diffusion visée est restreinte (quelques postes
+identifiés), ce qui rend l'abonnement à 99 $/an difficile à justifier.
+
+Conséquence : **dès que le `.app` est transféré** — pCloud, mail, clé USB,
+artefact GitHub — macOS pose un drapeau de quarantaine et bloque l'ouverture
+avec un message trompeur (« l'app est endommagée »). C'est le parcours normal,
+pas un cas limite.
+
+La procédure de déblocage voyage donc **avec l'application** : `scripts/build.sh`
+écrit un `LISEZ-MOI.txt` à la racine de l'archive, à côté du `.app` et du
+`LICENSE`. Il est rédigé pour une utilisatrice non développeuse et contient la
+commande exacte, nom d'application substitué :
+
+```bash
+xattr -dr com.apple.quarantine /Applications/CAPnonyme.app
+```
+
+Cette notice est générée, pas recopiée : le nom de produit vient de
+`product_name()` et la taille du modèle de `MODEL_DOWNLOAD_SIZE`
+(`anonymator/core/model_status.py`), pour qu'elle ne puisse pas diverger du code.
+
+**Seuil de bascule** : si la diffusion s'élargit au-delà de quelques personnes,
+ou si demander un passage par le Terminal devient intenable, il faudra un compte
+Apple Developer, un certificat *Developer ID Application*, `codesign` avec
+hardened runtime et une notarisation (`notarytool submit` + `stapler staple`) —
+automatisables dans le même workflow, certificat stocké en secret de dépôt.
+
+La conformité AGPL est inchangée : même tag, même source, `LICENSE` présent à la
+racine de l'archive.
