@@ -406,3 +406,28 @@ def test_pending_choices_do_not_leak_to_another_file(qtbot, tmp_path):
     s.analyze()
     qtbot.waitUntil(lambda: s.session is not None, timeout=5000)
     assert s.session.is_value_enabled("PERSON", "Paul Durand") is True
+
+
+def test_header_switch_relaunches_the_promised_analysis(qtbot, tmp_path):
+    """Le dialogue annonce que l'analyse va être relancée, et l'utilisateur
+    accepte : elle doit l'être. Sans cela la revue disparaissait sans être
+    refaite, et « Anonymiser & enregistrer » repartait en détection
+    automatique — une colonne forcée à la main n'était pas masquée du tout."""
+    s = _reviewed_screen(qtbot, tmp_path)
+    with patch("anonymator.ui.file_screen.QMessageBox.question",
+               return_value=QMessageBox.Yes):
+        s.header_switch.setChecked(False)
+    qtbot.waitUntil(lambda: s.session is not None, timeout=5000)
+    assert s.doc.has_header is False
+
+
+def test_unreadable_csv_is_reported_not_raised(qtbot, tmp_path):
+    """Un fichier illisible se dit sur l'écran Fichier, pas via le filet de
+    sécurité « Erreur inattendue » de __main__."""
+    src = tmp_path / "absent.csv"          # jamais créé → OSError à la lecture
+    s = _screen(); qtbot.addWidget(s)
+    with patch("anonymator.ui.file_screen.QMessageBox.warning") as warn:
+        s.load_path(str(src))
+    assert warn.called
+    assert s.path is None and s.doc is None
+    assert not s.btn_review.isEnabled()

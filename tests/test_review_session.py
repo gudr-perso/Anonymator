@@ -67,3 +67,15 @@ def test_unconfirmed_excludes_confirmed_and_disabled_type():
     s = ReviewSession(text, ents)
     s.set_type_enabled("NIR", False)                # type désactivé → pas surligné
     assert s.unconfirmed() == []
+
+
+def test_add_manual_keeps_previous_choices():
+    """Ajouter une sélection manuelle ne doit pas rejouer les valeurs par
+    défaut : recalculer `_enabled` depuis `confirmed` remettait à zéro chaque
+    case cochée ou décochée par l'utilisateur."""
+    s = _session()
+    s.set_entity_enabled(0, False)                # l'utilisateur libère la 1re
+    kept = s.entities()[0]
+    s.add_manual("ORG", 15, 19)                  # « mail », hors des spans connus
+    assert len(s.entities()) == 4                # la sélection a bien été ajoutée
+    assert kept not in s.retained()

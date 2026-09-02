@@ -16,6 +16,11 @@ from anonymator.ui.download_worker import DownloadWorker
 _TYPES = ["PERSON", "ADDRESS", "ORG", "EMAIL", "PHONE", "IBAN", "BIC",
           "SIREN", "SIRET", "NIR", "POSTAL_CODE", "URL", "LOGIN", "PASSWORD"]
 
+# Fermeture pendant un téléchargement : délai laissé à l'annulation coopérative,
+# puis au thread tué de force. Bornés, pour que la fenêtre se ferme dans tous les cas.
+_CANCEL_TIMEOUT_MS = 3000
+_TERMINATE_TIMEOUT_MS = 1000
+
 
 class SettingsScreen(QWidget):
     model_ready = Signal()
@@ -150,11 +155,23 @@ class SettingsScreen(QWidget):
         self.model_dl_status.setText(f"Erreur : {msg}")
 
     def stop_download(self):
-        """Arrête proprement le worker de téléchargement s'il tourne encore.
+        """Arrête le worker de téléchargement s'il tourne encore.
         Appelable depuis MainWindow (ce widget est un enfant du QStackedWidget,
-        donc son closeEvent ne se déclenche pas à la fermeture de la fenêtre)."""
-        if self._dl_worker is not None and self._dl_worker.isRunning():
-            self._dl_worker.quit(); self._dl_worker.wait()
+        donc son closeEvent ne se déclenche pas à la fermeture de la fenêtre).
+
+        `quit()` ne fait que demander la sortie d'une boucle d'événements : le
+        worker est bloqué dans `snapshot_download` et ne la voit jamais passer,
+        si bien que le `wait()` qui suivait gelait la fenêtre jusqu'à la fin des
+        ~2,2 Go. On demande donc une annulation coopérative, levée au prochain
+        incrément d'octets, avec `terminate()` en dernier recours si la requête
+        réseau reste bloquée sans rien recevoir."""
+        worker = self._dl_worker
+        if worker is None or not worker.isRunning():
+            return
+        worker.cancel()
+        if not worker.wait(_CANCEL_TIMEOUT_MS):
+            worker.terminate()
+            worker.wait(_TERMINATE_TIMEOUT_MS)
 
     def closeEvent(self, event):
         self.stop_download()

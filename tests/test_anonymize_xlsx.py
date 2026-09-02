@@ -173,3 +173,21 @@ def test_all_text_sheet_is_typed_by_its_headers(tmp_path):
     assert ws["A2"].value == "[PERSONNE]"
     assert ws["B2"].value == "[ADRESSE]"
     assert ws["C2"].value == "Industrie"            # nomenclature intacte
+
+
+def test_direct_path_purges_document_properties(tmp_path):
+    """Le classeur était le seul format à ressortir avec le nom de son auteur
+    et son titre — docx/pptx et PDF les purgeaient déjà."""
+    import zipfile
+    src = tmp_path / "meta.xlsx"
+    wb = openpyxl.Workbook()
+    wb.active["A1"] = "Claire Martin"
+    wb.properties.creator = "Jean Dupont"
+    wb.properties.title = "Paie 2026"
+    wb.save(src)
+    res = _anonymize(src, tmp_path, NullNer())
+    with zipfile.ZipFile(res.output_path) as z:
+        core = z.read("docProps/core.xml").decode("utf-8")
+    assert "Jean Dupont" not in core and "Paie 2026" not in core
+    assert {r["original"] for r in res.report.to_rows() if r["type"] == "META"} == {
+        "Jean Dupont", "Paie 2026"}

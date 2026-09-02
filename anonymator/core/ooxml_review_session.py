@@ -19,6 +19,9 @@ class OoxmlReviewSession(ReviewSessionBase):
         self._scanned = scanned
         self._save_fn = save_fn
         self._post_fn = post_fn
+        # Texte d'origine de chaque run, relevé avant tout masquage : c'est ce
+        # qui rend `apply_and_save` rejouable (cf. _restore_units).
+        self._baseline = [[(r.text or "") for r in u.runs] for u in units]
         self._index(scanned.values())
 
     # --- lecture ---
@@ -37,7 +40,23 @@ class OoxmlReviewSession(ReviewSessionBase):
         return self._pending(self._scanned.get(i, []))
 
     # --- production ---
+    def _restore_units(self) -> None:
+        """Rend aux runs leur texte d'origine.
+
+        `apply_units` masque les runs en place, et le document reste ouvert
+        entre deux enregistrements : sans cette remise à zéro, un second
+        « Anonymiser & enregistrer » — après un décochage, par exemple —
+        réappliquait les offsets d'origine sur un texte déjà masqué et
+        produisait un document silencieusement corrompu. Seuls les runs
+        réellement modifiés sont réécrits, pour ne pas remanier le XML des
+        autres."""
+        for unit, texts in zip(self._units, self._baseline):
+            for run, text in zip(unit.runs, texts):
+                if (run.text or "") != text:
+                    run.text = text
+
     def apply_and_save(self, out_path):
+        self._restore_units()
         retained = {i: self._retained(i) for i in self._scanned}
         retained = {i: v for i, v in retained.items() if v}
         report = scan.apply_units(self._units, retained, self.ref)

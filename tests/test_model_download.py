@@ -42,3 +42,34 @@ def test_download_model_survives_none_stderr(monkeypatch):
     received = []
     model_download.download_model(on_progress=lambda r, t: received.append((r, t)))
     assert received[-1] == (10, 10)
+
+
+def test_tqdm_class_raises_when_cancelled():
+    """Point d'annulation : `snapshot_download` ne sait pas s'interrompre, mais
+    il passe par tqdm à chaque incrément d'octets."""
+    import pytest
+    tqdm_class = model_download.make_tqdm_class(None, should_cancel=lambda: True)
+    bar = tqdm_class(total=100, unit="B")
+    with pytest.raises(model_download.DownloadCancelled):
+        bar.update(10)
+    bar.close()
+
+
+def test_download_model_passes_cancel_hook_to_tqdm(monkeypatch):
+    cancelled = {"value": False}
+
+    def fake_snapshot(model_name, tqdm_class=None, **kwargs):
+        bar = tqdm_class(total=100, unit="B")
+        bar.update(10)              # avant annulation : passe
+        cancelled["value"] = True
+        try:
+            bar.update(10)          # après : doit lever
+        finally:
+            bar.close()
+
+    monkeypatch.setattr(model_download, "snapshot_download", fake_snapshot)
+    monkeypatch.setattr(model_download, "repo_total_size", lambda model_name=None: 100)
+
+    import pytest
+    with pytest.raises(model_download.DownloadCancelled):
+        model_download.download_model(should_cancel=lambda: cancelled["value"])

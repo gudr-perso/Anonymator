@@ -56,7 +56,13 @@ class XlsxReviewSession(TabularReviewSession):
 
     # --- production ---
     def apply_and_save(self, out_path) -> AuditReport:
+        """Écrit le classeur masqué et rend le rapport.
+
+        Rejouable : `apply_workbook` rend d'abord aux cellules déjà masquées
+        leur valeur d'origine, de sorte qu'un second enregistrement (après un
+        décochage, par exemple) reparte du classeur intact."""
         report = xlsx_io.apply_workbook(self.result, self.retained_by_cell(),
                                         self.ref)
+        xlsx_io.purge_metadata(self.result.workbook, report)
         self.result.workbook.save(out_path)
         return report

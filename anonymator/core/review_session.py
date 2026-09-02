@@ -26,8 +26,15 @@ class ReviewSession:
     def add_manual(self, etype: str, start: int, end: int) -> None:
         value = self.text[start:end]
         new = Entity(etype, value, start, end, "manual", 1.0)
+        # Les arbitrages déjà pris survivent à l'ajout. Les recalculer depuis
+        # `confirmed` remettait à zéro toutes les cases de la revue : une entité
+        # décochée redevenait masquée, une « non confirmée » cochée à la main
+        # repassait en clair — sans que rien ne le signale.
+        previous = {(e.type, e.start, e.end): on
+                    for e, on in zip(self._entities, self._enabled)}
         self._entities = merge_entities(self._entities + [new])
-        self._enabled = [e.confirmed for e in self._entities]
+        self._enabled = [previous.get((e.type, e.start, e.end), e.confirmed)
+                         for e in self._entities]
 
     def retained(self) -> list[Entity]:
         out = []

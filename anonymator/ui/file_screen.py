@@ -1,3 +1,4 @@
+import csv
 from datetime import datetime
 from pathlib import Path
 from PySide6.QtWidgets import (QWidget, QFrame, QVBoxLayout, QHBoxLayout, QPushButton,
@@ -246,7 +247,16 @@ class FileScreen(QWidget):
         self.btn_review.setEnabled(
             suffix in (".csv", ".txt", ".xlsx", ".docx", ".pptx"))
         if suffix == ".csv":
-            self.doc = csv_io.read_csv(self.path)
+            # Lecture immédiate (l'aperçu en dépend) : un fichier illisible ou
+            # verrouillé doit se dire ici, en clair. Sans ce garde, l'exception
+            # remontait au filet de sécurité de __main__ et s'affichait en
+            # « Erreur inattendue », sans rapport avec ce que l'utilisateur venait
+            # de faire.
+            try:
+                self.doc = csv_io.read_csv(self.path)
+            except (OSError, UnicodeDecodeError, csv.Error) as exc:
+                self._reject_file("Fichier illisible", str(exc))
+                return
             self.header_switch.blockSignals(True)     # reflet, pas une action
             self.header_switch.setChecked(self.doc.has_header)
             self.header_switch.blockSignals(False)
@@ -261,6 +271,17 @@ class FileScreen(QWidget):
             self.table.setColumnCount(0)
         self.perimetre_card.setVisible(False)
         self._set_meta()
+
+    def _reject_file(self, title: str, detail: str) -> None:
+        """Abandonne le fichier en cours et le dit. L'écran revient à son état
+        « aucun fichier » : rien à analyser, rien à anonymiser."""
+        self.path = None
+        self.doc = None
+        self.btn_review.setEnabled(False)
+        self.header_switch.hide()
+        self.table.clear(); self.table.setRowCount(0); self.table.setColumnCount(0)
+        self._set_meta()
+        QMessageBox.warning(self, title, detail)
 
     def _capture_choices(self) -> dict | None:
         """Arbitrages manuels de la revue en cours. Types et valeurs sont
@@ -307,7 +328,8 @@ class FileScreen(QWidget):
             return
         if self.doc is None:
             return
-        if self.session is not None:
+        had_session = self.session is not None
+        if had_session:
             if not self._confirm_reanalysis():
                 self.header_switch.blockSignals(True)
                 self.header_switch.setChecked(not checked)   # retour à l'état
@@ -321,6 +343,12 @@ class FileScreen(QWidget):
         self.page = 0
         self._fill_preview(self.doc.rows[:50])
         self._set_meta()
+        if had_session:
+            # La relance a été annoncée à l'utilisateur, et acceptée : elle doit
+            # avoir lieu. Sans elle, la revue disparaissait sans être refaite, et
+            # « Anonymiser & enregistrer » repartait en détection automatique —
+            # une colonne forcée à la main n'était alors pas masquée du tout.
+            self.analyze()
 
     def _confirm_reanalysis(self) -> bool:
         answer = QMessageBox.question(

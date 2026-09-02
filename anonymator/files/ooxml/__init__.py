@@ -3,8 +3,9 @@
 COVERAGE = {
     "traite": [
         "Corps du document et paragraphes",
-        "Tableaux (y compris imbriqués)",
-        "En-têtes et pieds de page",
+        "Liens hypertexte et contrôles de contenu (formulaires, modèles)",
+        "Tableaux (y compris imbriqués et cellules fusionnées)",
+        "En-têtes et pieds de page, y compris 1re page et pages paires",
         "Zones de texte",
         "Commentaires et notes de bas de page / de fin (Word)",
         "Slides, groupes de formes et notes du présentateur (PowerPoint)",

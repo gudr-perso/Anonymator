@@ -38,12 +38,37 @@ class XmlRun:
             extra.text = ""
 
 
+def paragraph_runs(p_element, t_tag: str = f"{{{_W}}}t") -> list[XmlRun]:
+    """Les <w:r> du paragraphe, dans l'ordre du document.
+
+    Ne pas se contenter des enfants directs : le texte d'un lien hypertexte est
+    enveloppé dans <w:hyperlink>, celui d'une insertion suivie dans <w:ins>.
+    Word crée un <w:hyperlink> dès qu'une adresse e-mail est saisie — ce texte,
+    invisible pour `findall`, ressortait donc en clair du document anonymisé.
+
+    On s'arrête aux zones de texte (<w:txbxContent>) : elles ont leur propre
+    passe, et les compter ici décalerait les offsets du paragraphe porteur."""
+    runs: list[XmlRun] = []
+    r_tag, txbx_tag = f"{{{_W}}}r", f"{{{_W}}}txbxContent"
+
+    def walk(element) -> None:
+        for child in element:
+            if child.tag == txbx_tag:
+                continue
+            if child.tag == r_tag:
+                runs.append(XmlRun(child, t_tag))
+            else:
+                walk(child)
+
+    walk(p_element)
+    return runs
+
+
 def _word_units_from_container(container, location: str) -> list[TextUnit]:
-    """Un TextUnit par <w:p> descendant, runs = <w:r> enfants directs du <w:p>."""
-    t_tag = f"{{{_W}}}t"
+    """Un TextUnit par <w:p> descendant."""
     units = []
     for p in container.iter(f"{{{_W}}}p"):
-        runs = [XmlRun(r, t_tag) for r in p.findall(f"{{{_W}}}r")]
+        runs = paragraph_runs(p)
         if runs:
             units.append(TextUnit(runs, location))
     return units

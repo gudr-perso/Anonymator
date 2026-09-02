@@ -18,28 +18,75 @@ class CsvDocument:
     line_terminator: str
 
 
+def _field_counts(sample: str, delimiter: str) -> list[int]:
+    """Nombre de champs par ligne non vide, tel que le lira `csv.reader`.
+
+    On délègue le découpage au parseur qui lira le fichier pour de bon, au lieu
+    de compter les séparateurs dans la ligne brute : un champ entre guillemets
+    a le droit de contenir le séparateur (« "Dupont, Jean" » dans un CSV à
+    virgules), et le compter faisait échouer le test de consistance, d'où un
+    repli sur « ; » et un fichier relu — puis réécrit — en une seule colonne.
+    """
+    try:
+        rows = csv.reader(io.StringIO(sample, newline=""), delimiter=delimiter)
+        return [len(row) for row in rows if row]
+    except csv.Error:
+        return []
+
+
+def _consistent(counts: list[int]) -> int:
+    """Nombre de champs si toutes les lignes s'accordent, 0 sinon."""
+    if not counts or len(set(counts)) != 1:
+        return 0
+    return counts[0]
+
+
+def _majority(counts: list[int]) -> tuple[int, int]:
+    """(lignes d'accord, champs) de la découpe la plus fréquente.
+
+    Dernier recours quand aucun candidat n'est parfaitement consistant : un
+    échantillon tronqué au milieu d'un champ entre guillemets laisse un
+    guillemet ouvert, et la ou les lignes suivantes fusionnent. Mieux vaut le
+    séparateur sur lequel le gros du fichier s'accorde que le défaut « ; »,
+    qui rend le fichier en une colonne."""
+    if not counts:
+        return (0, 0)
+    fields = max(set(counts), key=counts.count)
+    return (counts.count(fields), fields)
+
+
 def sniff_delimiter(sample: str) -> str:
-    """Choisit le séparateur consistant (même nombre >0 sur chaque ligne non vide).
+    """Choisit le séparateur qui découpe l'échantillon en lignes régulières.
     Priorité aux séparateurs structurels (;, |, tab) ; la virgule (souvent une
     virgule décimale en français) n'est retenue que si aucun structurel ne convient.
     Défaut ";"."""
     # Un échantillon tronqué (text[:4096]) coupe la dernière ligne en plein milieu :
-    # son décompte de séparateurs fausse le test de consistance. On l'écarte.
+    # son décompte de champs fausse le test de consistance. On l'écarte.
     if "\n" in sample and not sample.endswith("\n"):
         sample = sample[:sample.rfind("\n")]
-    lines = [l for l in sample.splitlines() if l]
-    if not lines:
+    if not sample.strip():
         return ";"
 
+    counts = {d: _field_counts(sample, d) for d in _PRIMARY + _FALLBACK}
+
     def best_consistent(candidates):
-        best_delim, best_count = None, 0
+        best_delim, best_fields = None, 1
         for delim in candidates:
-            counts = [line.count(delim) for line in lines]
-            if all(c == counts[0] for c in counts) and counts[0] > best_count:
-                best_delim, best_count = delim, counts[0]
+            fields = _consistent(counts[delim])
+            if fields > best_fields:
+                best_delim, best_fields = delim, fields
         return best_delim
 
-    return best_consistent(_PRIMARY) or best_consistent(_FALLBACK) or ";"
+    def best_majority(candidates):
+        best_delim, best_score = None, (0, 1)
+        for delim in candidates:
+            score = _majority(counts[delim])
+            if score[1] > 1 and score > best_score:
+                best_delim, best_score = delim, score
+        return best_delim
+
+    return (best_consistent(_PRIMARY) or best_consistent(_FALLBACK)
+            or best_majority(_PRIMARY) or best_majority(_FALLBACK) or ";")
 
 
 def read_csv(path: Path) -> CsvDocument:

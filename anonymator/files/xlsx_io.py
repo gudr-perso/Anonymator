@@ -17,6 +17,21 @@ from anonymator.files.columns import (
     SKIP, TYPED, ColumnPlan, classify_columns, looks_like_header_row)
 
 
+# Propriétés de `docProps/core.xml` portant une identité ou un contenu, et
+# libellé d'audit associé. Les horodatages (created/modified) restent : ils ne
+# désignent personne, et les retirer casserait des outils qui s'y fient.
+_CORE_PROPS = [
+    ("creator", "Auteur"),
+    ("lastModifiedBy", "Dernier modifié par"),
+    ("title", "Titre"),
+    ("subject", "Sujet"),
+    ("keywords", "Mots-clés"),
+    ("description", "Commentaires"),
+    ("category", "Catégorie"),
+    ("identifier", "Identifiant"),
+]
+
+
 def _is_formula(cell) -> bool:
     return cell.data_type == "f" or (isinstance(cell.value, str)
                                      and cell.value.startswith("="))
@@ -76,6 +91,9 @@ class XlsxScanResult:
     plans: dict[str, dict[int, ColumnPlan]]
     has_header: dict[str, bool]
     scanned: dict[tuple[str, int, int], list[Entity]] = field(default_factory=dict)
+    # Valeurs d'origine des cellules déjà masquées, pour pouvoir les rendre
+    # avant un nouveau passage (cf. apply_workbook).
+    originals: dict[tuple[str, int, int], object] = field(default_factory=dict)
 
 
 def scan_workbook(path: Path, ner: NerDetector, ref: Referential,
@@ -128,18 +146,35 @@ def scan_workbook(path: Path, ner: NerDetector, ref: Referential,
     return XlsxScanResult(wb, sheets, matrices, plans, headers, scanned)
 
 
+def restore_cells(result: XlsxScanResult) -> None:
+    """Rend leur valeur d'origine aux cellules déjà masquées.
+
+    Le classeur openpyxl est modifié en place et reste ouvert entre deux
+    enregistrements : sans cette remise à zéro, un second passage réappliquait
+    les offsets d'origine sur un texte déjà masqué — « [PERSONNE] » devenait
+    « [PERSONNE]NNE] », silencieusement."""
+    for (title, r, c), value in result.originals.items():
+        result.workbook[title].cell(row=r + 1, column=c + 1).value = value
+    result.originals.clear()
+
+
 def apply_workbook(result: XlsxScanResult,
                    retained: dict[tuple[str, int, int], list[Entity]],
                    ref: Referential,
                    report: AuditReport | None = None) -> AuditReport:
     """Écrit les entités retenues dans les cellules du classeur.
 
+    Rejouable : les cellules masquées lors d'un passage précédent sont d'abord
+    rendues à leur valeur d'origine.
+
     Une cellule de formule n'est jamais réécrite : sa source n'est pas une
     donnée, et l'écraser détruirait le calcul."""
     report = report if report is not None else AuditReport()
-    for (title, r, c), ents in retained.items():
+    restore_cells(result)
+    for key, ents in retained.items():
         if not ents:
             continue
+        title, r, c = key
         cell = result.workbook[title].cell(row=r + 1, column=c + 1)
         if _is_formula(cell):
             continue
@@ -147,7 +182,27 @@ def apply_workbook(result: XlsxScanResult,
         location = f"{title}!{cell.coordinate}"
         for e in ents:
             report.add(e.type, e.value, ref.tag_for(e.type), location)
+        result.originals[key] = cell.value
         cell.value = apply_masking(value, ents, ref)
+    return report
+
+
+def purge_metadata(workbook, report: AuditReport) -> AuditReport:
+    """Vide les propriétés de document du classeur (auteur, titre, sujet…).
+
+    openpyxl réécrit `docProps/core.xml` depuis `workbook.properties` : sans
+    cette purge, le classeur anonymisé sortait avec le nom de son auteur et son
+    titre d'origine — « Paie 2026 » en dit parfois plus que son contenu. Les
+    autres formats les purgeaient déjà (docx/pptx via `ooxml.metadata`, PDF via
+    `pdf.redact`) ; le classeur était le seul trou.
+
+    Rejouable : après un premier passage il ne reste rien à signaler."""
+    props = workbook.properties
+    for attr, label in _CORE_PROPS:
+        value = getattr(props, attr, None)
+        if value is not None and str(value).strip():
+            report.add("META", str(value), "", f"Métadonnées / {label}")
+            setattr(props, attr, None)
     return report
 
 
@@ -163,6 +218,7 @@ def anonymize_workbook(path: Path, ner: NerDetector, ref: Referential,
     retained = {k: [e for e in v if e.confirmed] for k, v in result.scanned.items()}
     retained = {k: v for k, v in retained.items() if v}
     report = apply_workbook(result, retained, ref)
+    purge_metadata(result.workbook, report)
     out = anonymized_path(path, output_dir, when)
     result.workbook.save(out)
     return out, report
