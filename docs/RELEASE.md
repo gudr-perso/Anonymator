@@ -129,3 +129,148 @@ automatisables dans le même workflow, certificat stocké en secret de dépôt.
 
 La conformité AGPL est inchangée : même tag, même source, `LICENSE` présent à la
 racine de l'archive.
+
+---
+
+# Historique des versions et composants embarqués
+
+`requirements.txt` n'exprime que des minima (`>=`) : deux builds d'un même tag ne
+sont pas garantis identiques. Cette section est donc le **seul enregistrement de
+ce qui a réellement été livré** — état du modèle et des composants tiers au
+moment du gel, version par version.
+
+Régénérer l'inventaire de l'environnement courant :
+`.venv/Scripts/python -m pip list --format=freeze`
+
+## v0.6.0 — 2026-09-02
+
+Release de **correction**, issue d'une revue de code systématique du paquet
+`anonymator`. Le moteur de détection est inchangé ; ce qui change, c'est ce qui
+lui est effectivement soumis, et ce qui est réellement écrit dans le fichier de
+sortie. La version mineure est justifiée par l'élargissement du périmètre docx.
+
+Absorbe la `v0.5.2` (build macOS), bumpée mais **jamais taggée ni diffusée**.
+
+### Fuites de données corrigées
+
+- **Liens hypertexte Word** — le texte d'un `<w:hyperlink>` n'était jamais
+  analysé (`Paragraph.runs` n'expose que les runs enfants directs). Word créant
+  un lien dès qu'une adresse e-mail est saisie, ces adresses ressortaient en
+  clair du document « anonymisé », sans apparaître au rapport d'audit.
+- **Contrôles de contenu Word** — les paragraphes d'un `<w:sdt>` (champs de
+  formulaire, modèles) échappaient à `container.paragraphs` : jamais analysés.
+- **Métadonnées du classeur** — le `.xlsx` de sortie conservait auteur, titre et
+  sujet d'origine. C'était le seul format sans purge (docx/pptx et PDF
+  l'avaient déjà). Un titre comme « Paie 2026 » en dit parfois plus que le
+  contenu.
+- **En-têtes de 1re page et de pages paires** — seul le jeu normal était traité.
+
+### Corruptions de fichier de sortie corrigées
+
+- **Second enregistrement** — les sessions classeur et document masquent un
+  objet ouvert *en place* : réenregistrer après avoir décoché une valeur
+  réappliquait les offsets d'origine sur un texte déjà masqué
+  (« [PERSONNE] » → « [PERSONNE]NNE] »), silencieusement. Les deux sessions
+  rendent désormais leur état d'origine avant chaque passage.
+- **Cellules fusionnées (Word)** — `row.cells` rend le même objet pour chaque
+  colonne d'une fusion : la cellule était masquée deux fois, avec le même effet.
+  Le parcours docx se fait maintenant sur l'arbre XML, ce qui règle du même coup
+  les liens hypertexte et les contrôles de contenu.
+- **CSV à virgules** — le séparateur était deviné en comptant les caractères de
+  la ligne brute, guillemets compris. Un fichier `nom,adresse,ville` contenant
+  `"Dupont, Jean"` était relu en **une seule colonne**, puis réécrit avec des
+  guillemets doublés. La détection s'appuie désormais sur `csv.reader`, donc sur
+  le parseur qui lira le fichier pour de bon.
+
+### Robustesse
+
+- **Fermeture pendant le téléchargement du modèle** — `quit()` + `wait()` sur un
+  thread bloqué dans `snapshot_download` gelait la fenêtre jusqu'au bout des
+  ~2,2 Go. Annulation coopérative, vue au paquet suivant.
+- **Encodage** — `detect_encoding` pouvait renvoyer `cp1252` sur des octets que
+  cp1252 ne décode pas (0x81, 0x8D, 0x8F, 0x90, 0x9D) ; repli sur `latin-1`, et
+  un CSV illisible se dit sur l'écran Fichier au lieu de remonter en « Erreur
+  inattendue ».
+- **Bascule « Première ligne = en-têtes » (CSV)** — le dialogue annonçait une
+  relance d'analyse qui n'avait pas lieu. La revue disparaissait sans être
+  refaite et l'enregistrement repartait en détection automatique : une colonne
+  forcée à la main n'était alors pas masquée du tout.
+- **Sélection manuelle (écran Texte)** — `add_manual` remettait à zéro toutes
+  les cases de la revue.
+
+**Tests** : 637 verts (615 en v0.5.1), dont 15 qui échouent sur le code d'avant.
+
+### Repris de la v0.5.2, jamais diffusée
+
+- **Build macOS (Apple Silicon)** — bundle `.app`, `scripts/build.sh`,
+  `scripts/make_icns.sh` et workflow CI sur runner `macos-14` arm64
+  (cf. « Build macOS » plus haut). Jamais exécuté à ce jour : PoC à lancer.
+- **Environnement de build rafraîchi** — `.venv` reconstruit, exécution sous
+  **Python 3.14.6**.
+- **Correspondance source/binaire rétablie** — les archives v0.5.1 diffusées
+  avaient été construites hors du commit taggé. Les archives v0.6.0 doivent être
+  buildées depuis le tag `v0.6.0` (AGPL art. 6, cf. « Principes »).
+
+### Modèle de détection — inchangé
+
+| | |
+|---|---|
+| Modèle | `urchade/gliner_multi-v2.1` |
+| Licence | Apache-2.0 |
+| Poids | 2 311 737 240 octets (~2,2 Go) |
+| Distribution | téléchargé au premier lancement, **jamais embarqué** dans l'archive |
+
+Le modèle est le même depuis la première version dotée de GLiNER : ni le dépôt,
+ni le poids relevé (`MODEL_DOWNLOAD_SIZE_BYTES`, `anonymator/core/model_status.py`)
+n'ont bougé.
+
+⚠️ En revanche **sa pile d'exécution évolue** (`gliner`, `transformers`, `torch`,
+`tokenizers`). À poids de modèle constants, une détection peut donc différer
+d'une version à l'autre. Le test d'intégration sur modèle réel
+(`pytest -m integration`) n'ayant jamais été lancé, cette non-régression
+**n'est pas vérifiée**.
+
+### Composants embarqués
+
+Relevé de l'environnement de build, 2026-09-01.
+
+| Composant | Version | Rôle |
+|---|---|---|
+| Python | 3.14.6 | interpréteur gelé |
+| gliner | 0.2.28 | chargement et inférence du modèle NER |
+| torch | 2.13.0 | runtime du modèle |
+| transformers | 5.13.1 | backbone et tokenisation |
+| tokenizers | 0.22.2 | tokenisation (binding Rust) |
+| huggingface_hub | 1.25.1 | téléchargement du modèle au 1er lancement |
+| onnxruntime | 1.28.0 | dépendance gliner |
+| numpy | 2.5.1 | calcul |
+| PySide6 / shiboken6 | 6.11.1 | interface Qt |
+| pymupdf | 1.28.0 | lecture et rédaction PDF |
+| openpyxl | 3.1.5 | xlsx |
+| python-docx | 1.2.0 | docx |
+| python-pptx | 1.0.2 | pptx |
+| xlsxwriter | 3.2.9 | écriture xlsx |
+| truststore | 0.10.4 | certificats du magasin système |
+| PyInstaller | 6.21.0 (hooks-contrib 2026.6) | gel de l'exécutable |
+
+**Tests** : 637 verts, 1 d'intégration désélectionné, sur cette pile.
+
+### Écart de pile mesuré avec la v0.5.1 diffusée
+
+Versions relues directement dans `CAPnonyme-v0.5.1.zip` (archive du 2026-07-30,
+celle qui a été diffusée) : `torch 2.13.0`, `transformers 5.13.1`,
+`numpy 2.5.1`, `tokenizers 0.22.2`, `huggingface_hub 1.25.1` — **identiques à
+la v0.6.0**.
+
+Seuls ces composants sont lisibles dans l'archive gelée : PyInstaller ne conserve
+les `dist-info` que pour les paquets dont un hook réclame les métadonnées.
+`gliner`, `PySide6` et `pymupdf` n'y figurent pas et leur version en v0.5.1 n'a
+pas pu être établie.
+
+**Piste ouverte** : figer les versions (`requirements.lock`) pour rendre les
+builds d'un même tag reproductibles. En l'état, ils ne le sont pas.
+
+## Versions antérieures
+
+Pas d'inventaire des composants avant la v0.6.0 : l'historique fonctionnel est
+porté par les tags `v0.2.0` → `v0.5.1` et le journal git.

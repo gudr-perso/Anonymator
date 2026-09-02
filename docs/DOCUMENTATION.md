@@ -51,7 +51,7 @@ coffre de correspondance, ni dé-anonymisation.
 | Bureautique Office | **python-docx**, **python-pptx** | Traitement `.docx` et `.pptx` (OOXML) |
 | Certificats | **truststore** | Validation TLS via le magasin Windows (antivirus inspectant le HTTPS) |
 | Packaging | **PyInstaller** (`anonymator.spec`) | Génération de l'exécutable Windows autonome |
-| Tests | **pytest**, **pytest-qt** | 99 fichiers de test — **615 tests verts**, 1 d'intégration désélectionné |
+| Tests | **pytest**, **pytest-qt** | 101 fichiers de test — **637 tests verts**, 1 d'intégration désélectionné |
 
 L'application est distribuée sous forme d'un **exécutable Windows autonome**,
 produit par PyInstaller à partir du fichier de spécification `anonymator.spec`.
@@ -379,7 +379,7 @@ purge **systématique** des métadonnées Office.
 ### 1.14 Développement, tests et build
 
 ```
-.venv/Scripts/python -m pytest -q        # 615 passed, 1 deselected
+.venv/Scripts/python -m pytest -q        # 637 passed, 1 deselected
 .venv/Scripts/python -m anonymator       # lancement en mode dev (sélecteur de thème actif)
 scripts/build.ps1 cap|cuma|dev|all       # build PyInstaller + zip par édition (~4 min/édition)
 ```

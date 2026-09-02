@@ -1,7 +1,7 @@
 # Anonymator — État du projet & comment continuer
 
 > Point de reprise. Lis ce fichier en premier quand tu rouvres le projet (y compris depuis un autre PC).
-> Dernière mise à jour : 2026-08-28.
+> Dernière mise à jour : 2026-09-02.
 
 ---
 
@@ -18,7 +18,7 @@ Développement piloté par specs + plans, en TDD, exécution par sous-agents ave
 | **Plan 3 — application UI PySide6** | ✅ **Fait, sur `main`** |
 | **Plan 4 — packaging PyInstaller + README + 1er téléchargement modèle** | ✅ **Fait, sur `main`** |
 | **Expérience GLiNER « zéro friction » (non bloquant + mode dégradé)** | ✅ **Fait, sur `main`** |
-| **Conformité AGPL + versionnage taggé** (déclenché par PyMuPDF) | ✅ **Fait** — `LICENSE` AGPL-3.0, tags `v0.2.0` → `v0.5.1` posés |
+| **Conformité AGPL + versionnage taggé** (déclenché par PyMuPDF) | ✅ **Fait** — `LICENSE` AGPL-3.0, tags `v0.2.0` → `v0.5.1` posés (`v0.6.0` bumpée, tag à poser ; `v0.5.2` jamais taggée, absorbée par la `v0.6.0`) |
 | **Support PDF** (rédaction juridique réelle + extraction texte) | ✅ **Fait — `v0.2.0`** (PyMuPDF, revue visuelle, propagation, ordre de lecture) |
 | **Règles métier utilisateur** (allow/force par motif, `[REGLE-INTERNE]`) | ✅ **Fait** — écran « Gestion des règles » dédié |
 | **Éclatement des Paramètres** (Paramètres / Gestion des règles / À propos) | ✅ **Fait** |
@@ -32,16 +32,28 @@ Développement piloté par specs + plans, en TDD, exécution par sous-agents ave
 | Test d'intégration GLiNER (modèle réel) | ⬜ **Jamais lancé** (voir `docs/installation-gliner.md`) |
 | Installeur Windows (setup.exe + raccourcis + code signing) | ⬜ **Pas commencé** — « Plan 5 » (brainstorming dédié à faire) |
 
-**Tests : 615 verts + 1 d'intégration désélectionné** (`.venv/Scripts/python -m pytest -q` → `615 passed, 1 deselected`, ~18 s).
+**Tests : 637 verts + 1 d'intégration désélectionné** (`.venv/Scripts/python -m pytest -q` → `637 passed, 1 deselected`, ~20 s).
 Le test d'intégration ne nécessite `torch` que si on lance `-m integration`.
 
-**Version courante : `0.5.1`** (`anonymator/__init__.py` = source de vérité, dupliquée dans `pyproject.toml`).
+**Version courante : `0.6.0`** (`anonymator/__init__.py` = source de vérité, dupliquée dans `pyproject.toml`).
+Corrections issues d'une revue de code systématique : trois fuites de données
+(liens hypertexte et contrôles de contenu Word, métadonnées du classeur), deux
+corruptions de fichier de sortie (second enregistrement, cellules fusionnées) et
+un CSV à virgules relu de travers. Détail dans `docs/RELEASE.md`.
+La `v0.5.2` (build macOS) n'a jamais été taggée : son contenu part avec celle-ci.
+L'inventaire des composants embarqués et l'état du modèle sont figés dans
+`docs/RELEASE.md` § « Historique des versions et composants embarqués ».
 
 ## Ce qui est diffusable aujourd'hui
 
 - `dist/CAPnonyme-v0.5.1.zip` et `dist/CumAnonyme-v0.5.1.zip` (~289 Mo chacun, **non versionnés**),
   construits le 2026-07-30 à partir de `v0.5.1`. Chaque archive contient l'exe, `_internal/`,
   `LICENSE` à la racine et le dossier `exemples/`.
+- ⚠️ **Rien n'est diffusable en `0.6.0` tant que le tag n'est pas posé et les archives
+  rebuildées depuis ce tag.** Les binaires v0.5.1 en circulation ont été gelés hors du
+  commit taggé : c'est la raison du premier bump.
+- ⚠️ Les archives v0.5.1 encore en circulation portent les défauts corrigés en
+  `v0.6.0` — dont trois fuites de données. Leur remplacement n'est pas cosmétique.
 - **Lien de téléchargement public** (partage pCloud, pointé par la landing page) :
   <https://e.pcloud.link/publink/show?code=kZGb777ZMvQqHnFYHu5GQNY9hwOaXuABmzA7>
 - **Documentation utilisateur** (neutre par édition, publiée) :
@@ -116,7 +128,7 @@ anonymator/
                       pdf_screen + pdf_canvas (aperçu image + overlays + zoom),
                       workers QThread (text_analyze, file_scan/anonymize, xlsx_scan, ooxml_scan, pdf_scan, download),
                       model_loader, preferences, colors, entity_meta, icons, theme, components/
-tests/                un fichier de test par module (TDD) — 99 fichiers, 615 tests verts
+tests/                un fichier de test par module (TDD) — 101 fichiers, 637 tests verts
 exemples/             jeu de démonstration à données fictives (clients_demo.csv/.xlsx, compte_rendu_reunion_demo.pdf),
                       copié à la racine du dossier distribué par build.ps1 ; couvert par test_demo_dataset.py
 html/index.html       landing page Cum'Anonyme (autonome, CSS inline, logos base64)
@@ -172,7 +184,7 @@ docs/                 ETAT-PROJET.md (ce fichier), DOCUMENTATION.md (v2.0, les 3
 - **pCloud + grosses dépendances** : `torch` (via gliner) et `PySide6` pèsent des centaines de Mo. Avant de les installer, **exclure `.venv/` de la synchro pCloud** (ou créer le venv hors du dossier pCloud). Détails : `docs/installation-gliner.md`. Après un build complet le dossier contient ~3,9 Go non versionnés (`.venv` 1,6 Go, `dist` 2,0 Go, `build` 344 Mo).
 - **`.git` synchronisé par pCloud** : branche/historique/fichiers peuvent changer en cours de session → vérifier l'état (`git status`, `git log`) avant de committer. **Le `.git` peut aussi disparaître purement et simplement** (constaté le 2026-07-29) : le dossier reste complet mais n'est plus un dépôt. Remède : `git clone` du remote ailleurs, puis recopier son `.git/` dans le dossier de travail — `git status` révèle alors ce qui n'avait pas été poussé.
 - **Fins de ligne** : `core.autocrlf=true` ici, mais certains blobs du dépôt ont été poussés en CRLF depuis une autre machine → ces fichiers apparaissent modifiés en permanence alors que `git diff` est vide. Ne pas les committer (commit de blancs) ; nettoyer un jour d'un coup avec `git add --renormalize .`.
-- **Lancer les tests** : `.venv/Scripts/python -m pytest -q` (→ `615 passed, 1 deselected`). Plateforme offscreen gérée automatiquement via `tests/conftest.py`.
+- **Lancer les tests** : `.venv/Scripts/python -m pytest -q` (→ `637 passed, 1 deselected`). Plateforme offscreen gérée automatiquement via `tests/conftest.py`.
 - **Lancer l'appli** : `.venv/Scripts/python -m anonymator` (mode dev, sélecteur de thème actif).
 - **Builder les exes** : `scripts/build.ps1 cap|cuma|dev|all` (spec paramétré par `ANONYMATOR_BUILD_BRAND`, zippe par marque, copie le `LICENSE` **et le dossier `exemples/`** à la racine du dossier distribué). Compter ~4 min par marque. **Ne pas rediriger la sortie avec `2>&1`** : PyInstaller écrit ses `INFO` sur stderr, PowerShell les transforme en erreurs et le `$ErrorActionPreference = 'Stop'` du script avorte le build dès la première ligne.
 
@@ -188,5 +200,5 @@ docs/                 ETAT-PROJET.md (ce fichier), DOCUMENTATION.md (v2.0, les 3
 
 1. `git clone` (ou ouvrir le dossier déjà synchronisé) puis lire ce fichier.
 2. Recréer le venv et installer : `.venv/Scripts/python -m pip install -r requirements.txt` (penser à l'exclusion pCloud avant si gros téléchargements).
-3. `.venv/Scripts/python -m pytest -q` → doit afficher `615 passed, 1 deselected`.
+3. `.venv/Scripts/python -m pytest -q` → doit afficher `637 passed, 1 deselected`.
 4. Lancer `.venv/Scripts/python -m anonymator` pour l'UI, ou un `dist/…/*.exe` si un build PyInstaller est disponible.
