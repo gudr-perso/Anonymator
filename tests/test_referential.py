@@ -15,13 +15,19 @@ def test_active_deterministic_types_excludes_inactive():
     types = ref.active_deterministic_types()
     assert "EMAIL" in types and "URL" not in types
 
-def test_bic_and_postal_code_are_opt_in_by_default():
-    # bruyants sur les fichiers comptables → désactivés par défaut, activables à la demande
+def test_bic_is_opt_in_but_postal_code_is_not():
+    """BIC reste bruyant sur un fichier comptable, donc opt-in.
+
+    Le code postal, lui, est actif : c'est un quasi-identifiant. Un fichier dont
+    les noms sont remplacés par [PERSONNE] mais qui garde code postal, date de
+    naissance et sexe reste ré-identifiable par recoupement — considérant 26 du
+    RGPD. Le laisser inactif faisait diffuser comme anonyme un fichier qui ne
+    l'était pas."""
     ref = Referential.load_default()
     assert ref.is_active("BIC") is False
-    assert ref.is_active("POSTAL_CODE") is False
+    assert ref.is_active("POSTAL_CODE") is True
     types = ref.active_deterministic_types()
-    assert "BIC" not in types and "POSTAL_CODE" not in types
+    assert "BIC" not in types and "POSTAL_CODE" in types
 
 
 def test_login_and_password_active_by_default():
@@ -29,11 +35,17 @@ def test_login_and_password_active_by_default():
     assert ref.is_active("LOGIN") is True
     assert ref.is_active("PASSWORD") is True
 
-def test_bic_cp_url_inactive_by_default():
+def test_bic_and_url_inactive_by_default():
     ref = Referential.load_default()
     assert ref.is_active("BIC") is False
-    assert ref.is_active("POSTAL_CODE") is False
     assert ref.is_active("URL") is False
+
+
+def test_quasi_identifiers_active_by_default():
+    """Code postal et date de naissance sortent de la détection automatique."""
+    ref = Referential.load_default()
+    assert ref.is_active("POSTAL_CODE") is True
+    assert ref.is_active("BIRTHDATE") is True
 
 
 def test_override_enables_inactive_type():
@@ -54,7 +66,7 @@ def test_default_stoplist_loaded():
 def test_sensitivity_for():
     ref = Referential.load_default()
     assert ref.sensitivity_for("PERSON") == "Haute"
-    assert ref.sensitivity_for("POSTAL_CODE") == "Basse"
+    assert ref.sensitivity_for("POSTAL_CODE") == "Moyenne"
     assert ref.sensitivity_for("INCONNU") == "Basse"
 
 
@@ -89,7 +101,8 @@ def test_active_codes_lists_only_active_types():
     ref = Referential.load_default()
     codes = ref.active_codes()
     assert "PERSON" in codes and "PHONE" in codes
-    assert "POSTAL_CODE" not in codes and "BIC" not in codes and "URL" not in codes
+    assert "POSTAL_CODE" in codes
+    assert "BIC" not in codes and "URL" not in codes
 
 
 def test_mask_pseudo_type_is_defined_and_inactive():

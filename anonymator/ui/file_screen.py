@@ -151,7 +151,9 @@ class FileScreen(QWidget):
         ent_card.body.addWidget(self.side)
         self.side.hide(); hint.hide(); self._hint = hint
 
-        # Bloc distinct sous les entités : périmètre du traitement (docx/pptx).
+        # Bloc distinct sous les entités : périmètre du traitement. Affiché
+        # pour les trois formats OOXML — le classeur en était privé, donc rien
+        # n'y signalait ce qui échappait au traitement.
         self.perimetre_card = Card("eye", "Périmètre du traitement")
         self.perimetre = PerimetreCard()
         self.perimetre_card.body.addWidget(self.perimetre)
@@ -588,7 +590,8 @@ class FileScreen(QWidget):
         self.page = 0
         self._build_side()
         self.side.show(); self.pager_widget.show()
-        self.perimetre_card.hide()
+        self.perimetre.set_format("xlsx")
+        self.perimetre_card.show()
         self._render_page()
 
     def _on_sheet_changed(self, title: str):
@@ -610,7 +613,8 @@ class FileScreen(QWidget):
                 out, self._detector_for_apply(), self.ref, rep)
         else:
             save_fn = lambda out: res.doc.save(str(out))
-            post_fn = lambda out, rep: xml_parts.postprocess_metadata(out, rep)
+            post_fn = lambda out, rep: xml_parts.postprocess_pptx(
+                out, self._detector_for_apply(), self.ref, rep)
         self.session = OoxmlReviewSession(
             res.units, res.scanned, self.ref, save_fn, post_fn)
         self._set_busy(False)
@@ -618,6 +622,7 @@ class FileScreen(QWidget):
         self.occ_badge.setText(f"{_fmt_int(self.session.total_occurrences())} occ.")
         self.occ_badge.show(); self._hint.show()
         self._build_side()
+        self.perimetre.set_format(res.fmt)
         self.side.show(); self.perimetre_card.show()
         self.pager_widget.hide()
         self._render_units_page()

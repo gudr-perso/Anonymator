@@ -86,15 +86,30 @@ def anonymize_pdf_text_from_session(path: Path, session, output_dir: Path,
 
 
 def anonymize_pdf_redact(path: Path, rects_by_page: dict[int, list[Rect]],
-                         output_dir: Path, when: datetime) -> Path:
-    """Mode rédaction : caviarde les rectangles retenus par page, purge les
-    métadonnées, sauvegarde. L'original n'est jamais modifié."""
+                         output_dir: Path, when: datetime,
+                         ner: NerDetector | None = None,
+                         ref: Referential | None = None,
+                         report: AuditReport | None = None) -> Path:
+    """Mode rédaction : caviarde les rectangles retenus par page, nettoie ce qui
+    vit hors du flux de page, purge les métadonnées, sauvegarde. L'original
+    n'est jamais modifié.
+
+    `ner`/`ref` fournis, les annotations et les titres de signets passent par la
+    détection ; les pièces jointes sont retirées dans tous les cas. Ces trois
+    porteurs n'apparaissent jamais dans l'aperçu de revue, l'extraction ne
+    lisant que les mots de la page : sans cette passe, ils sortaient intacts
+    d'un document présenté comme caviardé."""
+    report = report if report is not None else AuditReport()
     doc = extract.open_document(path)
     try:
         for i, page in enumerate(doc):
             rects = rects_by_page.get(i, [])
             if rects:
                 redact.redact_page(page, rects)
+        if ner is not None and ref is not None:
+            redact.scrub_annotations(doc, ner, ref, report)
+            redact.scrub_toc(doc, ner, ref, report)
+        redact.drop_embedded_files(doc, report)
         redact.purge_metadata(doc)
         out = anonymized_path(path, output_dir, when)
         redact.save_redacted(doc, out)

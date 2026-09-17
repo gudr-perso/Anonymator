@@ -15,4 +15,6 @@ def test_medium_when_moyenne_only():
 
 def test_low_when_empty_or_basse():
     assert risk_level([], REF) == "Faible"
-    assert risk_level([_e("POSTAL_CODE")], REF) == "Faible"
+    # Le code postal est passé en sensibilité « Moyenne » : seul un quasi-
+    # identifiant, il suffit à ré-identifier une fois croisé.
+    assert risk_level([_e("URL")], REF) == "Faible"

@@ -37,14 +37,14 @@ def test_toggle_entity_type_updates_overrides(qtbot):
 def test_one_entity_card_per_type(qtbot):
     s = _settings()
     qtbot.addWidget(s)
-    assert len(s._type_toggles) == len(_TYPES) == 14
+    assert len(s._type_toggles) == len(_TYPES) == 15
 
 
 def test_count_badge_shows_active_count(qtbot):
     s = _settings()
     qtbot.addWidget(s)
     n_active = sum(1 for code in _TYPES if s.ref.is_active(code))
-    assert s.count_badge.text() == f"{n_active} / 14 actifs"
+    assert s.count_badge.text() == f"{n_active} / 15 actifs"
 
 
 def test_toggling_a_type_via_toggle_widget_updates_prefs_and_apply(qtbot):
@@ -62,7 +62,7 @@ def test_toggling_a_type_refreshes_counter(qtbot):
     qtbot.addWidget(s)
     s._type_toggles["PERSON"].setChecked(True)
     n_active = sum(1 for code in _TYPES if s.ref.is_active(code) or code == "PERSON")
-    assert s.count_badge.text() == f"{n_active} / 14 actifs"
+    assert s.count_badge.text() == f"{n_active} / 15 actifs"
 
 
 def _settings(prefs=None):

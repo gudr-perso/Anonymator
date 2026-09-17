@@ -33,6 +33,20 @@ def detect_column(value: str, etype: str, ref: Referential,
     return apply_allow([entity], ref.user_rules)
 
 
+def detect_rules_only(text: str, ref: Referential) -> list[Entity]:
+    """Détection sans modèle : règles déterministes, secrets, règles utilisateur.
+
+    Sert aux colonnes que la classification met hors périmètre. Le motif de
+    cette mise à l'écart — une poignée de modalités répétées, des valeurs
+    purement numériques — vise les faux positifs du modèle sur une cellule
+    isolée, pas les motifs sûrs : une adresse e-mail reste une adresse e-mail
+    dans une colonne « médecin » à cinq praticiens. Ne pas y détecter du tout
+    faisait sortir la colonne entière en clair avec, à l'écran, « aucune
+    détection »."""
+    from anonymator.ner import NullNer
+    return detect(text, NullNer(), ref)
+
+
 def detect(text: str, ner: NerDetector, ref: Referential) -> list[Entity]:
     rules = ref.user_rules
     deterministic = [e for e in detect_deterministic(text) if ref.is_active(e.type)]

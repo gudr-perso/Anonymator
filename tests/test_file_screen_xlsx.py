@@ -118,9 +118,17 @@ def test_unchecking_a_value_updates_the_grid(qtbot, tmp_path):
     assert _is_highlighted(s.table.item(0, 1)) is False
 
 
-def test_perimeter_card_stays_hidden_for_xlsx(qtbot, tmp_path):
+def test_perimeter_card_is_shown_for_xlsx(qtbot, tmp_path):
+    """Le classeur était le seul format sans encart de périmètre : rien n'y
+    signalait ce qui échappait au traitement. Il en a désormais un, propre au
+    tableur — commentaires de cellule et en-têtes de feuille n'ont pas
+    d'équivalent dans un document."""
     s = _reviewed(qtbot, tmp_path)
-    assert s.perimetre_card.isHidden()
+    assert not s.perimetre_card.isHidden()
+    assert s.perimetre.fmt == "xlsx"
+    text = s.perimetre.rendered_text()
+    assert "Commentaires de cellule" in text
+    assert "OCR" in text
 
 
 # ---- interrupteur « première ligne = en-têtes », par feuille ----

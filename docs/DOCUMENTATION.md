@@ -197,7 +197,20 @@ incohérents (un nom sur deux masqué, une ville oui et l'autre non).
 |---|---|---|
 | `TYPED` | type connu par l'en-tête, ou contenu homogène | la cellule entière est l'entité, le NER n'est pas appelé |
 | `TEXT` | colonne libre | règles + NER |
-| `SKIP` | mesures numériques, nomenclatures | hors périmètre |
+| `SKIP` | mesures numériques, nomenclatures | règles seules, sans le NER |
+
+`SKIP` ne veut pas dire « colonne non lue ». Le plan décide de la *manière* de
+lire, jamais du silence : il écarte le modèle, jamais les règles. Le motif de
+l'écartement le justifie — on ne veut pas masquer « Textile » parce que le
+modèle y voit une organisation — mais il ne dit rien des motifs sûrs, et la
+structure qui le déclenche (quelques intervenants répétés sur beaucoup de
+lignes : médecin, conseiller, chauffeur) est exactement celle d'une colonne de
+personnes. Une adresse e-mail y reste une adresse e-mail.
+
+La **ligne de titres** est analysée elle aussi, sauf pour les intitulés que le
+lexique reconnaît comme des noms de colonnes (`columns.is_column_name`) : tout
+export en tableau croisé met les personnes en en-tête, et masquer « montant »
+casserait le fichier sans rien protéger.
 
 Garde-fous : **plein-cadre** (une colonne numérique n'est typée que si l'entité
 couvre toute la cellule — `15866,00` n'est pas un code postal), garde

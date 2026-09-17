@@ -14,7 +14,8 @@ from anonymator.core.model_status import (is_model_available, installed_size,
 from anonymator.ui.download_worker import DownloadWorker
 
 _TYPES = ["PERSON", "ADDRESS", "ORG", "EMAIL", "PHONE", "IBAN", "BIC",
-          "SIREN", "SIRET", "NIR", "POSTAL_CODE", "URL", "LOGIN", "PASSWORD"]
+          "SIREN", "SIRET", "NIR", "POSTAL_CODE", "BIRTHDATE", "URL",
+          "LOGIN", "PASSWORD"]
 
 # Fermeture pendant un téléchargement : délai laissé à l'annulation coopérative,
 # puis au thread tué de force. Bornés, pour que la fenêtre se ferme dans tous les cas.

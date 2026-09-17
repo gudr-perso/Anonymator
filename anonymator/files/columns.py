@@ -12,8 +12,10 @@ ni en-tête pour se situer. On décide donc une fois par colonne :
 import re
 import unicodedata
 from dataclasses import dataclass
+from functools import partial
 
 from anonymator.deterministic import detect_deterministic
+from anonymator.pipeline import detect, detect_column, detect_rules_only
 
 SKIP = "skip"
 TEXT = "text"
@@ -229,3 +231,42 @@ def default_maskable_columns(rows: list[list[str]], has_header: bool) -> set[int
     """Colonnes retenues dans le périmètre d'analyse par défaut."""
     return {col for col, plan in classify_columns(rows, has_header).items()
             if plan.policy != SKIP}
+
+
+def column_detector(plan: ColumnPlan, ner, ref):
+    """Fonction de détection à appliquer aux cellules d'une colonne.
+
+    `SKIP` ne veut plus dire « colonne non lue ». Il ne décide plus que de la
+    *manière* de lire : le plan écarte le modèle, jamais les règles.
+
+    La raison tient au motif même de l'écartement. `_is_nomenclature` et
+    « valeurs numériques » visent les faux positifs d'un modèle appelé sur une
+    cellule isolée — il ne faut pas masquer « Textile » parce que le modèle y
+    voit une organisation. Ce motif ne dit rien des motifs sûrs. Or la
+    structure qui déclenche la règle — quelques intervenants répétés sur
+    beaucoup de lignes : médecin, conseiller, chauffeur, signataire — est
+    exactement celle d'une colonne de personnes. Ne rien y détecter faisait
+    sortir la colonne entière en clair, et l'application annonçait « aucune
+    détection » : un feu vert explicite sur un fichier non traité."""
+    if plan.policy == TYPED and plan.etype:
+        return partial(detect_column, etype=plan.etype, ref=ref)
+    if plan.policy == SKIP:
+        return lambda v: detect_rules_only(v, ref)
+    return lambda v: detect(v, ner, ref)
+
+
+def header_cells_to_scan(rows: list[list[str]], has_header: bool) -> list[int]:
+    """Index des colonnes dont l'intitulé doit être analysé.
+
+    La ligne de titres était exclue de la détection (`start = 1 if has_header`),
+    alors que tout export en tableau croisé — heures par salarié, ventes par
+    commercial, notes par élève — met les personnes en intitulés de colonne.
+
+    On n'analyse pas pour autant toute la ligne : un intitulé reconnu par notre
+    propre lexique (`is_column_name`) est un nom de colonne, pas une identité,
+    et le masquer casserait le fichier sans rien protéger. Le tri s'appuie donc
+    sur les dictionnaires qui pilotent déjà le typage, pas sur une devinette."""
+    if not has_header or not rows:
+        return []
+    return [col for col, value in enumerate(rows[0])
+            if (value or "").strip() and not is_column_name(value)]

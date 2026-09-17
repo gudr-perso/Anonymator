@@ -30,6 +30,24 @@ def _iter_shapes(shapes, prefix: str):
                         cell.text_frame, f"{prefix} / Tableau L{ri}C{ci}")
 
 
+def _iter_templates(prs):
+    """Unités des masques et de leurs dispositions.
+
+    Un modèle d'entreprise porte régulièrement dans son masque un pied de page
+    nominatif ou une adresse de contact, saisis une fois et hérités par toutes
+    les diapositives. Ils s'affichent sur chaque diapositive sans jamais
+    apparaître dans `prs.slides` : sans cette passe, ils ne sont ni proposés à
+    la revue ni masqués."""
+    for mi, master in enumerate(prs.slide_masters, 1):
+        label = "Masque" if len(prs.slide_masters) == 1 else f"Masque {mi}"
+        yield from _iter_shapes(master.shapes, label)
+        for li, layout in enumerate(master.slide_layouts, 1):
+            yield from _iter_shapes(layout.shapes, f"{label} / Disposition {li}")
+    notes_master = getattr(prs, "notes_master", None)
+    if notes_master is not None:
+        yield from _iter_shapes(notes_master.shapes, "Masque des notes")
+
+
 def iter_main_units(prs):
     for si, slide in enumerate(prs.slides, 1):
         yield from _iter_shapes(slide.shapes, f"Slide {si}")
@@ -37,6 +55,7 @@ def iter_main_units(prs):
             tf = slide.notes_slide.notes_text_frame
             if tf is not None:
                 yield from _iter_frame(tf, f"Slide {si} / Notes")
+    yield from _iter_templates(prs)
 
 
 def anonymize_document(path: Path, ner, ref, output_dir: Path,
@@ -47,5 +66,5 @@ def anonymize_document(path: Path, ner, ref, output_dir: Path,
     report = scan.apply_units(units, retained, ref)
     out = anonymized_path(path, output_dir, when)
     prs.save(str(out))
-    xml_parts.postprocess_metadata(out, report)
+    xml_parts.postprocess_pptx(out, ner, ref, report)
     return out, report

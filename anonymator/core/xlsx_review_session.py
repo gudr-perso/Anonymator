@@ -1,7 +1,6 @@
 from anonymator.model import Entity
 from anonymator.report.audit import AuditReport
 from anonymator.files import xlsx_io
-from anonymator.files.columns import SKIP
 from anonymator.core.tabular_review_session import TabularReviewSession
 
 
@@ -18,7 +17,11 @@ class XlsxReviewSession(TabularReviewSession):
         plans = {(sheet, col): plan
                  for sheet, sheet_plans in result.plans.items()
                  for col, plan in sheet_plans.items()}
-        maskable = {k for k, p in plans.items() if p.policy != SKIP}
+        # Toutes les colonnes sont masquables, `SKIP` compris. Le plan ne décide
+        # plus du silence d'une colonne mais de la manière de la lire : une
+        # colonne écartée est analysée sans le modèle, donc ce qu'on y trouve
+        # est un motif sûr (adresse, téléphone, IBAN), qui doit être masqué.
+        maskable = set(plans)
         super().__init__(result.scanned, ref, maskable, plans)
 
     # --- clés ---
@@ -63,6 +66,8 @@ class XlsxReviewSession(TabularReviewSession):
         décochage, par exemple) reparte du classeur intact."""
         report = xlsx_io.apply_workbook(self.result, self.retained_by_cell(),
                                         self.ref)
+        xlsx_io.postprocess_workbook(self.result.workbook, self.result.ner,
+                                     self.ref, report)
         xlsx_io.purge_metadata(self.result.workbook, report)
         self.result.workbook.save(out_path)
         return report

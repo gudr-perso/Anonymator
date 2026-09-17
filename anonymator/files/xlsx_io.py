@@ -1,6 +1,5 @@
 from dataclasses import dataclass, field
 from datetime import datetime
-from functools import partial
 from pathlib import Path
 
 import openpyxl
@@ -8,13 +7,16 @@ import openpyxl
 from anonymator.model import Entity
 from anonymator.ner import NerDetector
 from anonymator.referential import Referential
-from anonymator.pipeline import detect, detect_column
+from anonymator.pipeline import detect
 from anonymator.anonymize import apply_masking
 from anonymator.dedup import detect_unique
 from anonymator.report.audit import AuditReport
 from anonymator.output_naming import anonymized_path
+from anonymator.files import xlsx_parts
+from anonymator.files.ooxml import scan as unit_scan
 from anonymator.files.columns import (
-    SKIP, TYPED, ColumnPlan, classify_columns, looks_like_header_row)
+    ColumnPlan, classify_columns, column_detector, header_cells_to_scan,
+    looks_like_header_row)
 
 
 # Propriétés de `docProps/core.xml` portant une identité ou un contenu, et
@@ -94,6 +96,9 @@ class XlsxScanResult:
     # Valeurs d'origine des cellules déjà masquées, pour pouvoir les rendre
     # avant un nouveau passage (cf. apply_workbook).
     originals: dict[tuple[str, int, int], object] = field(default_factory=dict)
+    # Détecteur ayant servi au scan, conservé pour la passe hors grille
+    # (commentaires, en-têtes, formules) exécutée à l'enregistrement.
+    ner: object = None
 
 
 def scan_workbook(path: Path, ner: NerDetector, ref: Referential,
@@ -130,12 +135,7 @@ def scan_workbook(path: Path, ner: NerDetector, ref: Referential,
         plans[title] = sheet_plans
         start = 1 if has_header else 0
         for col, plan in sheet_plans.items():
-            if plan.policy == SKIP:
-                continue
-            if plan.policy == TYPED and plan.etype:
-                detector = partial(detect_column, etype=plan.etype, ref=ref)
-            else:
-                detector = lambda v: detect(v, ner, ref)  # noqa: E731
+            detector = column_detector(plan, ner, ref)
             rows = [r for r in range(start, len(matrix))
                     if col < len(matrix[r]) and matrix[r][col]]
             cache = detect_unique([matrix[r][col] for r in rows], detector)
@@ -143,7 +143,12 @@ def scan_workbook(path: Path, ner: NerDetector, ref: Referential,
                 ents = cache.get(matrix[r][col], [])
                 if ents:
                     scanned[(title, r, col)] = ents
-    return XlsxScanResult(wb, sheets, matrices, plans, headers, scanned)
+        # Ligne de titres : détecteur complet, pas celui de la colonne.
+        for col in header_cells_to_scan(matrix, has_header):
+            ents = detect(matrix[0][col], ner, ref)
+            if ents:
+                scanned[(title, 0, col)] = ents
+    return XlsxScanResult(wb, sheets, matrices, plans, headers, scanned, ner=ner)
 
 
 def restore_cells(result: XlsxScanResult) -> None:
@@ -206,6 +211,34 @@ def purge_metadata(workbook, report: AuditReport) -> AuditReport:
     return report
 
 
+def postprocess_workbook(workbook, ner, ref: Referential,
+                         report: AuditReport) -> AuditReport:
+    """Traite ce que la grille ne montre pas, juste avant l'enregistrement.
+
+    Commentaires de cellule et leur auteur, en-têtes et pieds de page, noms
+    définis, littéraux de formule : autant de porteurs de texte que
+    `scan_workbook` ne voit pas, puisqu'il ne lit que `cell.value`. Ils suivent
+    ici le chemin des commentaires d'un .docx — détection, puis masquage des
+    seules entités confirmées, sans passer par la revue, une donnée invisible à
+    l'écran ne pouvant pas être arbitrée à l'écran.
+
+    Les caches de tableau croisé sont retirés : ils contiennent une copie non
+    masquée des lignes source.
+
+    Rejouable : un second enregistrement retrouve un texte déjà masqué, sur
+    lequel plus rien ne se détecte."""
+    units = xlsx_parts.hidden_text_units(workbook)
+    if units:
+        retained = unit_scan.confirmed_only(unit_scan.scan_units(units, ner, ref))
+        if retained:
+            unit_scan.apply_units(units, retained, ref, report)
+    removed = xlsx_parts.drop_pivot_caches(workbook)
+    for _ in range(removed):
+        report.add("META", "tableau croisé dynamique", "",
+                   "Cache de tableau croisé retiré")
+    return report
+
+
 def anonymize_workbook(path: Path, ner: NerDetector, ref: Referential,
                        output_dir: Path, when: datetime) -> tuple[Path, AuditReport]:
     """Chemin direct, sans revue : scan puis application immédiate.
@@ -218,6 +251,7 @@ def anonymize_workbook(path: Path, ner: NerDetector, ref: Referential,
     retained = {k: [e for e in v if e.confirmed] for k, v in result.scanned.items()}
     retained = {k: v for k, v in retained.items() if v}
     report = apply_workbook(result, retained, ref)
+    postprocess_workbook(result.workbook, ner, ref, report)
     purge_metadata(result.workbook, report)
     out = anonymized_path(path, output_dir, when)
     result.workbook.save(out)

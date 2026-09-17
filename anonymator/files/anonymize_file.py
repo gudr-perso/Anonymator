@@ -1,11 +1,10 @@
 from dataclasses import dataclass
 from datetime import datetime
-from functools import partial
 from pathlib import Path
 from anonymator.ner import NerDetector
 from anonymator.referential import Referential
 from anonymator.model import Entity
-from anonymator.pipeline import detect, detect_column
+from anonymator.pipeline import detect
 from anonymator.anonymize import apply_masking
 from anonymator.dedup import detect_unique
 from anonymator.report.audit import AuditReport
@@ -14,7 +13,8 @@ from anonymator.files import csv_io
 from anonymator.files import txt_io
 from anonymator.files import xlsx_io
 from anonymator.files.columns import (
-    SKIP, TEXT, TYPED, ColumnPlan, classify_columns)
+    SKIP, TEXT, ColumnPlan, classify_columns, column_detector,
+    header_cells_to_scan)
 
 
 @dataclass
@@ -67,7 +67,13 @@ def csv_column_plans(doc, include: set[int] | None = None,
     """Plan de traitement des colonnes, choix explicites de l'appelant appliqués.
 
     `include` force l'analyse d'une colonne écartée par défaut ; `exclude` la
-    retire. Ne sont retournées que les colonnes réellement analysées."""
+    retire — c'est le seul motif de sortir une colonne du périmètre.
+
+    Les colonnes classées `SKIP` sont désormais retournées, avec leur plan :
+    elles ne sont plus muettes, elles sont lues sans le modèle (cf.
+    `columns.column_detector`). Les écarter ici revenait à ne jamais regarder
+    une colonne de médecins ou de conseillers, puis à annoncer « aucune
+    détection » sur le fichier."""
     plans = classify_columns(doc.rows, doc.has_header)
     if include is not None:
         plans = {c: plans.get(c, ColumnPlan(TEXT, reason="inclusion explicite"))
@@ -77,7 +83,7 @@ def csv_column_plans(doc, include: set[int] | None = None,
                  for c, p in plans.items()}
     if exclude:
         plans = {c: p for c, p in plans.items() if c not in exclude}
-    return {c: p for c, p in plans.items() if p.policy != SKIP}
+    return plans
 
 
 def _as_plans(cols) -> dict[int, ColumnPlan]:
@@ -101,12 +107,7 @@ def scan_csv(doc, ner: NerDetector, ref: Referential,
     rows_range = range(data_start, len(doc.rows))
     result: dict[tuple[int, int], list[Entity]] = {}
     for c, plan in plans.items():
-        if plan.policy == SKIP:
-            continue
-        if plan.policy == TYPED and plan.etype:
-            detector = partial(detect_column, etype=plan.etype, ref=ref)
-        else:
-            detector = lambda v: detect(v, ner, ref)  # noqa: E731
+        detector = column_detector(plan, ner, ref)
         values = [doc.rows[r][c] for r in rows_range if c < len(doc.rows[r])]
         cache = detect_unique(values, detector)
         for r in rows_range:
@@ -115,6 +116,15 @@ def scan_csv(doc, ner: NerDetector, ref: Referential,
             ents = cache.get(doc.rows[r][c], [])
             if ents:
                 result[(r, c)] = ents
+    # Ligne de titres : analysée en propre, avec le détecteur complet et non
+    # celui de la colonne — un intitulé n'a pas le type de sa colonne, et
+    # `detect_column` masquerait « email » en entier.
+    for c in header_cells_to_scan(doc.rows, doc.has_header):
+        if c not in plans:
+            continue
+        ents = detect(doc.rows[0][c], ner, ref)
+        if ents:
+            result[(0, c)] = ents
     return result
 
 

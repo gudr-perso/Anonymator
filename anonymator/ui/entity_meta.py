@@ -22,6 +22,7 @@ ENTITY_META = {
     "SIRET":       EntityMeta("SIRET", "Établissements (SIREN + NIC)", "building"),
     "NIR":         EntityMeta("NIR", "Numéro de sécurité sociale", "id-card"),
     "POSTAL_CODE": EntityMeta("POSTAL_CODE", "Codes postaux", "map-pin"),
+    "BIRTHDATE":   EntityMeta("BIRTHDATE", "Dates de naissance", "id-card"),
     "URL":         EntityMeta("URL", "Adresses web", "globe"),
     "LOGIN":       EntityMeta("LOGIN", "Identifiants de connexion", "user"),
     "PASSWORD":    EntityMeta("PASSWORD", "Mots de passe", "lock"),

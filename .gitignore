@@ -42,3 +42,6 @@ _dif_Cap/
 
 # .icns genere au build par scripts/make_icns.sh (macOS)
 anonymator/ui/assets/*.icns
+
+# Sorties d'audit de securite (rapport, temoins de test) : local uniquement
+.audit/

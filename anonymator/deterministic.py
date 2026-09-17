@@ -34,8 +34,31 @@ _PATTERNS = [
 ]
 
 
+# Motifs à contexte obligatoire : la valeur seule est trop banale pour être
+# masquée, c'est son voisinage qui en fait une donnée personnelle.
+#
+# Une date en est l'exemple : masquer toutes les dates rendrait illisible
+# n'importe quelle facture ou compte rendu, alors qu'une date de naissance est
+# un quasi-identifiant de premier ordre — avec le code postal et le sexe, elle
+# suffit à ré-identifier une part importante de la population dans un fichier
+# dont les noms ont pourtant été remplacés. On ne la retient donc que là où le
+# texte dit ce qu'elle est. Le second chemin est l'en-tête de colonne
+# (« date de naissance »), traité par files/columns.py.
+_CONTEXTUAL_PATTERNS = [
+    (re.compile(r"(?<!\w)(?:n[ée]e?\s+le|date\s+de\s+naissance|naissance)"
+                r"\s*:?\s*"
+                r"(\d{1,2}[/.\-]\d{1,2}[/.\-]\d{4}|\d{4}-\d{2}-\d{2})",
+                re.IGNORECASE),
+     "BIRTHDATE"),
+]
+
+
 def detect_deterministic(text: str) -> list[Entity]:
     found: list[Entity] = []
+    for pattern, etype in _CONTEXTUAL_PATTERNS:
+        for m in pattern.finditer(text):
+            found.append(Entity(etype, m.group(1), m.start(1), m.end(1),
+                                "deterministic", 1.0))
     for pattern, etype, validator in _PATTERNS:
         for m in pattern.finditer(text):
             value = m.group(0)

@@ -1,4 +1,4 @@
-from lxml import etree
+from anonymator.files.ooxml import xmlsafe
 
 _DC = "http://purl.org/dc/elements/1.1/"
 _CP = "http://schemas.openxmlformats.org/package/2006/metadata/core-properties"
@@ -21,15 +21,14 @@ _APP_FIELDS = [
 
 
 def _purge(xml_bytes: bytes, fields) -> tuple[bytes, list[tuple[str, str]]]:
-    root = etree.fromstring(xml_bytes)
+    root = xmlsafe.parse(xml_bytes)
     purged: list[tuple[str, str]] = []
     for ns, tag, label in fields:
         el = root.find(f"{{{ns}}}{tag}")
         if el is not None and (el.text or "").strip():
             purged.append((label, el.text))
             el.text = ""
-    out = etree.tostring(root, xml_declaration=True, encoding="UTF-8",
-                         standalone=True)
+    out = xmlsafe.serialize(root)
     return out, purged
 
 

@@ -356,8 +356,14 @@ class PdfScreen(QWidget):
         out_dir = Path(self.prefs.output_dir) if self.prefs.output_dir else self.path.parent
         when = when or datetime.now()
         rects = self.session.retained_rects_by_page()
-        out = pdf_io.anonymize_pdf_redact(self.path, rects, out_dir, when)
-        return FileResult(out, self.session.report())
+        report = self.session.report()
+        # Annotations, signets et pièces jointes n'étant pas dans le flux de
+        # page, ils ne passent pas par la revue : la passe de nettoyage les
+        # traite à l'enregistrement et complète le même rapport.
+        ner = NullNer() if self._degraded else self.loader.get()
+        out = pdf_io.anonymize_pdf_redact(self.path, rects, out_dir, when,
+                                          ner=ner, ref=self.ref, report=report)
+        return FileResult(out, report)
 
     def run_text(self, when: datetime | None = None) -> FileResult | None:
         if not self.path:
