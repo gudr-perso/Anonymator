@@ -195,3 +195,20 @@ def test_fenetre_principale_sauvegarde_le_choix(qtbot, tmp_path, monkeypatch):
     win.offer_registration()
     qtbot.waitUntil(lambda: path.exists())
     assert Preferences.load(path).registration == "never"
+
+
+@pytest.mark.parametrize("theme", ["cap", "cuma"])
+def test_aucun_paragraphe_n_est_coupe(qtbot, theme):
+    """Le thème (polices) est appliqué par la fenêtre parente à l'affichage :
+    chaque paragraphe doit alors avoir la hauteur de toutes ses lignes."""
+    from PySide6.QtWidgets import QLabel, QMainWindow
+    from anonymator.ui.theme import build_qss, set_active_theme
+    lock_brand(theme)
+    set_active_theme(theme)
+    parent = QMainWindow(); parent.setStyleSheet(build_qss(theme))
+    qtbot.addWidget(parent); parent.show()
+    dlg = reg.RegistrationDialog(parent)
+    dlg.show(); qtbot.waitExposed(dlg)
+    for l in dlg.findChildren(QLabel):
+        if l.wordWrap():
+            assert l.height() >= l.heightForWidth(l.width()), l.text()[:30]

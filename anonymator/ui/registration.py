@@ -13,7 +13,8 @@ Objectif : savoir qui utilise l'application, sans jamais la bloquer.
 """
 from PySide6.QtCore import Qt, QUrl
 from PySide6.QtGui import QDesktopServices
-from PySide6.QtWidgets import QDialog, QHBoxLayout, QLabel, QPushButton, QVBoxLayout
+from PySide6.QtWidgets import (QDialog, QHBoxLayout, QLabel, QLayout, QPushButton,
+                               QVBoxLayout)
 
 from anonymator.brand import active_brand
 
@@ -22,6 +23,22 @@ REGISTER, LATER, NEVER = "register", "later", "never"
 # Lancements auxquels l'invitation est proposée tant que rien n'est décidé :
 # le premier, puis une relance. Ensuite on n'insiste plus.
 ASK_AT_LAUNCHES = (1, 5)
+
+
+class _Paragraph(QLabel):
+    """Paragraphe à largeur fixe dont la hauteur suit la police effective.
+
+    Quand le titre est plus large que le paragraphe (« Bienvenue dans
+    Cum'Anonyme »), la mise en page demande la hauteur pour la largeur
+    *disponible* et non pour la largeur réelle : un paragraphe de 3 lignes
+    recevait la hauteur de 2 et le texte était coupé en haut et en bas."""
+    def __init__(self, text: str, width: int):
+        super().__init__(text)
+        self.setWordWrap(True)
+        self.setFixedWidth(width)
+
+    def heightForWidth(self, width: int) -> int:
+        return super().heightForWidth(min(width, self.maximumWidth()))
 
 
 class RegistrationDialog(QDialog):
@@ -33,17 +50,17 @@ class RegistrationDialog(QDialog):
 
         root = QVBoxLayout(self)
         root.setContentsMargins(24, 20, 24, 20); root.setSpacing(12)
+        root.setSizeConstraint(QLayout.SetFixedSize)   # la fenêtre suit son contenu
         title = QLabel(f"Bienvenue dans {name}"); title.setObjectName("title")
         root.addWidget(title)
         for text in (
             f"{name} est gratuit et le restera. Pour savoir qui l'utilise et "
             "l'adapter à vos besoins, nous vous invitons à vous enregistrer "
-            "(1 minute).",
+            "(1 minute).",
             "Le formulaire s'ouvre dans votre navigateur. L'application, elle, "
             "n'envoie rien : vos documents restent sur votre poste.",
         ):
-            l = QLabel(text); l.setWordWrap(True); l.setFixedWidth(440)
-            root.addWidget(l)
+            root.addWidget(_Paragraph(text, 440))
 
         row = QHBoxLayout(); row.addStretch()
         self.never_btn = QPushButton("Ne plus demander"); self.never_btn.setObjectName("ghost")
