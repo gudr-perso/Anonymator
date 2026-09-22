@@ -37,13 +37,13 @@ jobs:
     runs-on: macos-14        # arm64 (Apple Silicon)
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # Aligne sur l'environnement de developpement Windows (.venv en 3.14) :
       # un interpreteur different entre dev et CI est une source classique de
       # divergence. Si une wheel macOS arm64 manque pour cp314 (PySide6 est le
       # candidat le plus probable), se rabattre sur '3.12'.
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.14'
           cache: pip
@@ -95,7 +95,7 @@ jobs:
 
       - name: Publier les archives
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: anonymator-macos-arm64
           path: dist/*.zip
