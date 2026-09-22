@@ -9,6 +9,9 @@ class Preferences:
     output_dir: str | None = None
     entity_overrides: dict[str, bool] = field(default_factory=dict)
     ner_stoplist: list[str] | None = None
+    # Invitation à s'enregistrer : "pending" | "done" | "never"
+    registration: str = "pending"
+    launch_count: int = 0
 
     def save(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -23,4 +26,6 @@ class Preferences:
         return cls(theme=data.get("theme", "cuma"),
                    output_dir=data.get("output_dir"),
                    entity_overrides=data.get("entity_overrides", {}),
-                   ner_stoplist=data.get("ner_stoplist"))
+                   ner_stoplist=data.get("ner_stoplist"),
+                   registration=data.get("registration", "pending"),
+                   launch_count=data.get("launch_count", 0))

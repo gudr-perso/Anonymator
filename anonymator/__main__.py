@@ -127,6 +127,7 @@ def main() -> int:
     win = build_window()
     win.resize(900, 700)
     win.show()
+    win.offer_registration()
     return app.exec()
 
 

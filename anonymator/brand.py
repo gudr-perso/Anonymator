@@ -1,7 +1,8 @@
 """Marque de distribution — surcouche du thème.
 
 Une « marque » fige, pour un exécutable diffusé, le thème imposé, le nom de
-produit affiché et le nom du fichier exe. Le mode dev (défaut) n'est pas
+produit affiché, le nom du fichier exe et le formulaire de contact /
+enregistrement (sans formulaire : ni invitation au lancement, ni bouton contact). Le mode dev (défaut) n'est pas
 verrouillé : le thème vient des préférences et le sélecteur de thème reste
 visible dans les réglages.
 """
@@ -16,14 +17,21 @@ class Brand:
     exe_name: str           # nom du fichier exe / dossier dist
     icon: str               # fichier .ico dans anonymator/ui/assets
     locked: bool
+    form_url: str | None = None   # formulaire contact / enregistrement (navigateur)
 
+
+CAP_FORM_URL = "https://sumptuous-asphalt-a42.notion.site/5bbd0619270982e5b64981d87f8acd4e"
+CUMA_FORM_URL = "https://sumptuous-asphalt-a42.notion.site/3e3d061927098020898eed61b184b30a"
 
 BRANDS = {
-    "cuma": Brand("cuma", "cuma", "Cum'Anonyme", "cumanonyme", "anonymator.ico", True),
-    "cap":  Brand("cap",  "cap",  "CAP'nonyme",  "capnonyme",  "anonymator.ico", True),
+    "cuma": Brand("cuma", "cuma", "Cum'Anonyme", "cumanonyme", "anonymator.ico", True,
+                  CUMA_FORM_URL),
+    "cap":  Brand("cap",  "cap",  "CAP'nonyme",  "capnonyme",  "anonymator.ico", True,
+                  CAP_FORM_URL),
 }
 
-DEV_BRAND = Brand("dev", None, "Anonymator", "anonymator", "anonymator.ico", False)
+DEV_BRAND = Brand("dev", None, "Anonymator", "anonymator", "anonymator.ico", False,
+                  CAP_FORM_URL)
 
 _active = DEV_BRAND
 

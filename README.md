@@ -76,6 +76,10 @@ fictives), `LICENSE` et `_internal/` (composants techniques — ne rien y modifi
 
 - Traitement **100 % local** : aucun appel réseau en usage normal.
 - Le téléchargement initial du modèle GLiNER est le seul accès réseau (une seule fois).
+- Au premier lancement, l'application **propose** de s'enregistrer (facultatif, jamais bloquant ;
+  une relance au 5ᵉ lancement au plus). « M'enregistrer » ouvre un formulaire dans votre
+  navigateur : l'application elle-même n'envoie rien. Le choix est mémorisé dans
+  `%USERPROFILE%\.anonymator\preferences.json`.
 - Le modèle est mis en cache dans `%USERPROFILE%\.cache\huggingface`.
 - Le rapport d'audit (optionnel) contient les valeurs remplacées — à stocker et partager avec précaution.
 

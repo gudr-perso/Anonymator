@@ -17,6 +17,7 @@ from anonymator.ui.settings_screen import SettingsScreen
 from anonymator.ui.rules_screen import RulesScreen
 from anonymator.ui.about_screen import AboutScreen
 from anonymator.core.model_status import is_model_available
+from anonymator.ui import registration
 
 _ASSETS = Path(__file__).parent / "assets"
 
@@ -111,6 +112,14 @@ class MainWindow(QMainWindow):
     def _retheme(self):
         self._build_screens()
         self.show_home()
+
+    def offer_registration(self):
+        """Invitation à s'enregistrer, une fois la fenêtre affichée."""
+        QTimer.singleShot(0, self._prompt_registration)
+
+    def _prompt_registration(self):
+        registration.maybe_prompt(self, self.prefs,
+                                  save=lambda: self.prefs.save(self.prefs_path))
 
     def _request_model(self):
         self.show_settings()

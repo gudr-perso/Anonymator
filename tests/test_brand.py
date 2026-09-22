@@ -53,3 +53,10 @@ def test_build_target_unknown_falls_back_to_dev():
         "anonymator/__main__.py", "anonymator", "anonymator.ico")
     assert build_target("nimportequoi") == (
         "anonymator/__main__.py", "anonymator", "anonymator.ico")
+
+
+def test_chaque_edition_a_son_propre_formulaire():
+    """CAP et CUMA ne partagent pas leur formulaire d'enregistrement."""
+    cap, cuma = BRANDS["cap"].form_url, BRANDS["cuma"].form_url
+    assert cap and cuma and cap != cuma
+    assert all(u.startswith("https://") and "?" not in u for u in (cap, cuma))

@@ -53,9 +53,23 @@ def test_main_installs_trust_store_before_the_window(monkeypatch):
     assert ordre.index("tls") < ordre.index("fenetre")
 
 
+def test_main_propose_l_enregistrement_apres_affichage(monkeypatch):
+    import anonymator.__main__ as entry
+    ordre = []
+    win = _FakeWin(ordre)
+    for nom in ("install_os_trust_store", "ensure_std_streams", "install_excepthook"):
+        monkeypatch.setattr(entry, nom, lambda: None)
+    monkeypatch.setattr(entry, "build_window", lambda: win)
+    monkeypatch.setattr(entry, "QApplication", lambda argv: _FakeApp())
+    entry.main()
+    assert ordre == ["show", "registration"]
+
+
 class _FakeWin:
+    def __init__(self, ordre=None): self.ordre = ordre if ordre is not None else []
     def resize(self, *a): pass
-    def show(self): pass
+    def show(self): self.ordre.append("show")
+    def offer_registration(self): self.ordre.append("registration")
 
 
 class _FakeApp:
