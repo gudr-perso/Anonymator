@@ -142,6 +142,21 @@ moment du gel, version par version.
 Régénérer l'inventaire de l'environnement courant :
 `.venv/Scripts/python -m pip list --format=freeze`
 
+## v0.8.1 — 2026-09-22
+
+Correctif d'affichage, **remplace la v0.8.0** (dont les archives n'ont pas été
+diffusées).
+
+- **Invitation à s'enregistrer, édition CUMA** : le premier paragraphe était
+  coupé en haut et en bas. Le titre « Bienvenue dans Cum'Anonyme », plus large
+  que les paragraphes, élargissait le dialogue ; la hauteur du paragraphe était
+  alors calculée pour cette largeur (2 lignes) au lieu de sa largeur réelle
+  (3 lignes). Test ajouté pour les deux éditions.
+- Espace insécable dans « (1 minute) ».
+
+**Tests** : 715 verts, 1 d'intégration désélectionné. Composants embarqués
+identiques à la v0.8.0 (même environnement de build).
+
 ## v0.8.0 — 2026-09-22
 
 Release **fonctionnelle** : invitation à s'enregistrer. Le traitement des
