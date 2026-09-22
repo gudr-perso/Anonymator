@@ -142,6 +142,61 @@ moment du gel, version par version.
 Régénérer l'inventaire de l'environnement courant :
 `.venv/Scripts/python -m pip list --format=freeze`
 
+## v0.8.0 — 2026-09-22
+
+Release **fonctionnelle** : invitation à s'enregistrer. Le traitement des
+fichiers est strictement inchangé — mêmes entrées, mêmes sorties qu'en v0.7.0.
+
+### Invitation à s'enregistrer
+
+- Au **premier lancement**, un dialogue propose de s'enregistrer : « M'enregistrer »,
+  « Plus tard », « Ne plus demander ». Jamais bloquant ; une seule relance, au
+  5ᵉ lancement, puis plus rien. Les installations existantes le verront au
+  premier lancement de la v0.8.0.
+- « M'enregistrer » ouvre le **formulaire Notion de l'édition** dans le
+  navigateur par défaut. **L'application n'effectue aucun appel réseau** : la
+  promesse « aucune donnée ne quitte votre machine » reste vraie telle quelle
+  (garde-fou : `tests/test_registration.py` vérifie qu'aucune bibliothèque
+  réseau n'est importée).
+- **Un formulaire par édition** (`Brand.form_url`) : CAP'nonyme et Cum'Anonyme
+  ne partagent pas leur formulaire. Une édition sans formulaire n'affiche ni
+  l'invitation ni le bouton « Nous contacter ».
+- Choix mémorisé dans `preferences.json` (`registration`, `launch_count`).
+
+Pourquoi une invitation et pas un enregistrement obligatoire : sous AGPL-3.0,
+toute restriction supplémentaire peut être retirée par n'importe quel
+destinataire (art. 7 et 10). Un blocage ne gênerait que les utilisateurs de
+bonne foi.
+
+**Tests** : 713 verts, 1 d'intégration désélectionné.
+
+### Composants embarqués
+
+Relevé de l'environnement de build, 2026-09-22 (PC de build différent de celui
+de la v0.6.0 ; pas de relevé pour la v0.7.0).
+
+| Composant | Version | Écart vs v0.6.0 |
+|---|---|---|
+| Python | 3.14.3 | 3.14.6 |
+| gliner | 0.2.28 | = |
+| torch | 2.13.0 | = |
+| transformers | 5.13.1 | = |
+| tokenizers | 0.22.2 | = |
+| huggingface_hub | 1.29.0 | 1.25.1 |
+| onnxruntime | 1.29.0 | 1.28.0 |
+| numpy | 2.5.2 | 2.5.1 |
+| PySide6 / shiboken6 | 6.11.2 | 6.11.1 |
+| pymupdf | 1.28.2 | 1.28.0 |
+| openpyxl | 3.1.5 | = |
+| python-docx | 1.2.0 | = |
+| python-pptx | 1.0.2 | = |
+| xlsxwriter | 3.2.9 | = |
+| truststore | 0.10.4 | = |
+| PyInstaller | 6.22.2 (hooks-contrib 2026.7) | 6.21.0 (2026.6) |
+
+Modèle inchangé : `urchade/gliner_multi-v2.1`, Apache-2.0, téléchargé au
+premier lancement.
+
 ## v0.6.0 — 2026-09-02
 
 Release de **correction**, issue d'une revue de code systématique du paquet
