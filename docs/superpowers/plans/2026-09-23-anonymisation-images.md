@@ -1953,6 +1953,13 @@ git commit -m "feat(ui): worker d'analyse d'image"
 
 ## Task 16 : Écran Image
 
+> **Indicateur de progression : décidé, à faire.** Le test du 2026-09-23 a mesuré
+> **4,4 s** sur une image nette de 900 px de large, chargement des modèles compris —
+> et une photo au téléphone est plusieurs fois plus grande. Au-delà d'une seconde
+> sans retour visuel, l'utilisateur croit l'application figée. L'analyse doit donc
+> tourner dans un **vrai QThread** (pas un `run()` appelé directement, qui gèlerait
+> la fenêtre) et l'écran afficher un état d'attente explicite pendant ce temps.
+
 **Files:**
 - Create: `anonymator/ui/image_screen.py`
 - Test: `tests/test_image_screen.py`
