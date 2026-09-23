@@ -22,9 +22,19 @@ git status
 ./.venv/Scripts/python -m pytest -q
 ```
 
-Attendu : branche `feat/anonymisation-images`, `721 passed, 1 deselected`.
+Attendu : branche `feat/anonymisation-images`, suite **entièrement verte**.
 
-Ce nombre est le filet du plan : **il ne doit jamais baisser**. Les tâches 2 à 5 sont des refactors à comportement constant — elles ajoutent 0 test et gardent les 721.
+> ⚠️ **Ne pas se fier aux nombres absolus de ce plan.** Ils ont été écrits sur une
+> base à 721 tests, mais `main` a reçu deux commits depuis (`a35de21`, `1c24d7f`,
+> +11 tests), et la branche `feat/exemples-documents` en ajoute d'autres. Au
+> 2026-09-23, après fusion de `main`, la branche est à **742**.
+>
+> **Ce qui reste vrai, c'est le delta de chaque tâche** (« +4 tests », « +5 tests »)
+> et la règle absolue : **le compte ne baisse jamais**. Relever son propre point de
+> départ par un `pytest -q` avant de commencer, puis raisonner en écarts.
+>
+> Les tâches 2 à 5 (phase 1) sont **faites** : ce sont des refactors à comportement
+> constant, +10 tests au total.
 
 ## Carte des fichiers
 
