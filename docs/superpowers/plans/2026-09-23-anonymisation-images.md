@@ -460,7 +460,7 @@ def test_session_accepte_une_page_unique():
         WordBox("Jean", (0.0, 0.0, 10.0, 5.0), 0, 4),
         WordBox("Dupont", (11.0, 0.0, 25.0, 5.0), 5, 11),
     ], [Entity("PERSON", "Jean Dupont", 0, 11, "ner")])
-    s = SpatialReviewSession([page], Referential())
+    s = SpatialReviewSession([page], Referential.load_default())
     assert s.types() == ["PERSON"]
     assert len(s.retained_rects_by_page()[0]) == 2
 
@@ -1312,7 +1312,7 @@ def _ocr():
 
 
 def test_scan_image_rend_une_page_unique_avec_ses_entites(tmp_path):
-    pages = image_io.scan_image(_image(tmp_path), _ocr(), FakeNer({}), Referential())
+    pages = image_io.scan_image(_image(tmp_path), _ocr(), FakeNer({}), Referential.load_default())
     assert len(pages) == 1
     page = pages[0]
     assert page.page_index == 0
@@ -1322,7 +1322,7 @@ def test_scan_image_rend_une_page_unique_avec_ses_entites(tmp_path):
 
 def test_les_rectangles_de_l_entite_pointent_sur_la_bonne_boite(tmp_path):
     from anonymator.files.textlayer import PageText, rects_for_entity
-    page = image_io.scan_image(_image(tmp_path), _ocr(), FakeNer({}), Referential())[0]
+    page = image_io.scan_image(_image(tmp_path), _ocr(), FakeNer({}), Referential.load_default())[0]
     pt = PageText(0, page.text, page.words)
     assert rects_for_entity(pt, page.entities[0]) == [(55.0, 0.0, 180.0, 20.0)]
 
@@ -1871,7 +1871,7 @@ def _image(tmp_path):
 
 def test_le_worker_emet_les_pages_analysees(tmp_path, qtbot):
     ocr = FakeOcr([OcrBox("jean@exemple.fr", (0.0, 0.0, 120.0, 20.0), 0.9)])
-    w = ImageScanWorker(_image(tmp_path), ocr, FakeNer({}), Referential())
+    w = ImageScanWorker(_image(tmp_path), ocr, FakeNer({}), Referential.load_default())
     with qtbot.waitSignal(w.scanned, timeout=5000) as blocker:
         w.run()
     pages = blocker.args[0]
@@ -1882,7 +1882,7 @@ def test_le_worker_emet_les_pages_analysees(tmp_path, qtbot):
 def test_le_worker_emet_une_erreur_metier_lisible(tmp_path, qtbot):
     p = tmp_path / "photo.heic"
     p.write_bytes(b"pas une image")
-    w = ImageScanWorker(p, FakeOcr([]), FakeNer({}), Referential())
+    w = ImageScanWorker(p, FakeOcr([]), FakeNer({}), Referential.load_default())
     with qtbot.waitSignal(w.failed, timeout=5000) as blocker:
         w.run()
     assert "Format non supporté" in blocker.args[0]
@@ -1993,7 +1993,7 @@ class _Loader:
 
 
 def _ecran(qtbot):
-    screen = ImageScreen(Referential(), _Loader(), prefs=None, on_back=lambda: None)
+    screen = ImageScreen(Referential.load_default(), _Loader(), prefs=None, on_back=lambda: None)
     qtbot.addWidget(screen)
     return screen
 
