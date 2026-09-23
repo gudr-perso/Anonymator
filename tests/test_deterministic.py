@@ -14,6 +14,23 @@ def test_detects_phone_fr():
     assert ("PHONE", "06 12 34 56 78") in types_at("Tel 06 12 34 56 78")
 
 
+def test_phone_accepte_les_separateurs_usuels():
+    for numero in ("02 40 73 18 45", "06.74.22.19.08", "07-58-12-44-90",
+                   "+33 6 74 22 19 08", "0033674221908"):
+        assert ("PHONE", numero) in types_at(f"Tel {numero}"), numero
+
+
+def test_phone_ne_traverse_ni_tabulation_ni_retour_a_la_ligne():
+    """Un FEC lu en .txt aligne des colonnes de chiffres séparées par des
+    tabulations : sans garde-fou, la fin d'une référence et le début de la
+    date voisine se recollent en faux numéro (« 01<TAB>20250106 »)."""
+    fec = ("PieceRef\tPieceDate\tEcritureLib\n"
+           "FA20250001\t20250106\tFacture FA20250001\n"
+           "FA20250002\t20250220\tFacture FA20250002\n")
+    phones = [e.value for e in detect_deterministic(fec) if e.type == "PHONE"]
+    assert phones == []
+
+
 def test_detects_iban_only_if_valid_checksum():
     good = "FR7630006000011234567890189"
     bad = "FR7630006000011234567890188"
