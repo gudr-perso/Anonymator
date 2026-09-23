@@ -129,8 +129,12 @@ anonymator/
                       workers QThread (text_analyze, file_scan/anonymize, xlsx_scan, ooxml_scan, pdf_scan, download),
                       model_loader, preferences, colors, entity_meta, icons, theme, components/
 tests/                un fichier de test par module (TDD) — 101 fichiers, 637 tests verts
-exemples/             jeu de démonstration à données fictives (clients_demo.csv/.xlsx, compte_rendu_reunion_demo.pdf),
-                      copié à la racine du dossier distribué par build.ps1 ; couvert par test_demo_dataset.py
+exemples/             jeu de démonstration à données fictives : clients_demo.csv/.xlsx,
+                      compte_rendu_reunion_demo.pdf, Contrat_prestation_Ateliers_Tanguy_EURL.docx
+                      (en-tête, pied de page, liens, métadonnées), Bulletin_de_paie_2025-06_LACROIX_Damien.pdf,
+                      404833048FEC20251231.txt (FEC 372 lignes, nom normalisé art. A. 47 A-1 du LPF) ;
+                      copié à la racine du dossier distribué par build.ps1 ;
+                      couvert par test_demo_dataset.py et test_demo_documents.py
 html/index.html       landing page Cum'Anonyme (autonome, CSS inline, logos base64)
 scripts/              build.ps1 (build + zip par marque), make_ico.py
 docs/                 ETAT-PROJET.md (ce fichier), DOCUMENTATION.md (v2.0, les 3 parties), RELEASE.md,

@@ -27,6 +27,12 @@ def test_example_dataset_is_present_in_repo():
     assert (exdir / "clients_demo.csv").exists()
     assert (exdir / "clients_demo.xlsx").exists()
     assert (exdir / "compte_rendu_reunion_demo.pdf").exists()
+    assert (exdir / "Contrat_prestation_Ateliers_Tanguy_EURL.docx").exists()
+    assert (exdir / "Bulletin_de_paie_2025-06_LACROIX_Damien.pdf").exists()
+    # Nom normalisé <Siren>FEC<AAAAMMJJ de clôture>.txt (art. A. 47 A-1 du LPF)
+    assert (exdir / "404833048FEC20251231.txt").exists()
+    # Fiche de lecture du jeu : ce que contient chaque fichier, quoi vérifier.
+    assert (exdir / "README.md").exists()
 
 
 def test_build_script_ships_examples_next_to_exe():
