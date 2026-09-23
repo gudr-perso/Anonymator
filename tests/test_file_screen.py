@@ -180,6 +180,28 @@ def test_txt_routes_to_text_review(qtbot, tmp_path):
     assert called.get("text") == "Bonjour Claire"
 
 
+def test_tabular_txt_opens_as_a_grid(qtbot, tmp_path):
+    """Un FEC (.txt à tabulations) s'ouvre en grille, colonne par colonne, et
+    l'analyse passe par le plan de colonnes, pas par la revue texte."""
+    called = {}
+    s = FileScreen(Referential.load_default(),
+                   ModelLoader(FakeNer({"Claire Martin": "PERSON"})),
+                   Preferences(), on_back=lambda: None,
+                   on_text_review=lambda text: called.setdefault("text", text))
+    qtbot.addWidget(s)
+    src = tmp_path / "404833048FEC20251231.txt"
+    src.write_bytes("JournalCode\tCompAuxLib\tDebit\r\n"
+                    "VE\tClaire Martin\t10,00\r\n"
+                    "VE\tClaire Martin\t0,00\r\n".encode("cp1252"))
+    s.load_path(str(src))
+    assert s.table.columnCount() == 3
+    assert s.table.horizontalHeaderItem(1).text() == "CompAuxLib"
+    s.analyze()
+    assert "text" not in called
+    qtbot.waitUntil(lambda: s.session is not None, timeout=5000)
+    assert s.session.count_retained("PERSON") == 2
+
+
 def test_busy_overlay_toggles(qtbot):
     s = _screen(); qtbot.addWidget(s); s.show()
     assert s._overlay.isVisible() is False

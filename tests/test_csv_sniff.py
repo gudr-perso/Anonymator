@@ -42,3 +42,24 @@ def test_majority_wins_when_a_line_is_irregular():
     plus toutes, mais « ; » reste le bon séparateur pour l'essentiel du fichier."""
     sample = 'a;b;c\nd;e;f\n"g;h\ni;j;k\n'
     assert sniff_delimiter(sample) == ";"
+
+
+def test_fec_tab_text_is_tabular():
+    from anonymator.files.csv_io import looks_tabular
+    sample = ("JournalCode\tJournalLib\tEcritureNum\tCompteLib\r\n"
+              "VE\tJournal des ventes\tVE00001\tClient STUDIO\r\n"
+              "VE\tJournal des ventes\tVE00001\tPrestations\r\n")
+    assert looks_tabular(sample)
+
+
+def test_prose_is_not_tabular():
+    from anonymator.files.csv_io import looks_tabular
+    sample = ("Bonjour Claire, voici le compte rendu ; merci de relire.\n"
+              "La réunion a eu lieu mardi, avec Paul et Jeanne.\n"
+              "Prochaine étape : valider le budget.\n")
+    assert not looks_tabular(sample)
+
+
+def test_single_line_is_not_tabular():
+    from anonymator.files.csv_io import looks_tabular
+    assert not looks_tabular("a;b;c;d\n")

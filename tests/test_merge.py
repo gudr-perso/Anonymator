@@ -30,3 +30,10 @@ def test_forced_rule_wins_over_ner_overlap():
     kept = merge_entities([ner, forced])
     assert len(kept) == 1
     assert kept[0].source == "rule"
+
+def test_confirmed_beats_unconfirmed_on_same_span():
+    # « FR47404833048 » : la regex IBAN le lit comme un IBAN invalide (non
+    # confirmé), la regex TVA comme une TVA validée. La validée doit gagner.
+    iban = Entity("IBAN", "FR47404833048", 0, 13, "deterministic", 1.0, False)
+    vat = Entity("VAT", "FR47404833048", 0, 13, "deterministic", 1.0, True)
+    assert merge_entities([iban, vat]) == [vat]

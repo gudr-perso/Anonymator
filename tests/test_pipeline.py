@@ -10,7 +10,7 @@ def test_pipeline_combines_deterministic_and_ner():
     assert {"PERSON", "EMAIL"} <= types
 
 def test_pipeline_drops_inactive_types():
-    ref = Referential.load_default()           # URL inactif par défaut
+    ref = Referential.load_default(overrides={"URL": False})
     ner = FakeNer({})
     out = detect("voir https://x.fr", ner, ref)
     assert all(e.type != "URL" for e in out)

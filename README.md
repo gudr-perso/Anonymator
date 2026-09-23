@@ -54,8 +54,8 @@ fictives), `LICENSE` et `_internal/` (composants techniques — ne rien y modifi
   build de développement).
 - **Dossier de sortie** : dossier cible pour les fichiers anonymisés. Laissé vide, le fichier
   est écrit à côté de son original.
-- **Types d'entités à détecter** : activation catégorie par catégorie (BIC, code postal et URL
-  sont inactifs par défaut).
+- **Types d'entités à détecter** : activation catégorie par catégorie (le BIC est inactif par
+  défaut).
 - **Modèle de détection intelligente** : état d'installation, téléchargement et réparation.
 
 ---
@@ -64,7 +64,7 @@ fictives), `LICENSE` et `_internal/` (composants techniques — ne rien y modifi
 
 | Format | Support |
 |--------|---------|
-| `.txt` | ✅ Texte intégral |
+| `.txt` | ✅ Texte intégral ; un `.txt` délimité (FEC, export comptable à tabulations, `\|` ou `;`) est traité par colonnes, comme un `.csv` |
 | `.csv` | ✅ Par colonnes (séparateur auto-détecté, encodage préservé) |
 | `.xlsx` | ✅ Édition en place (styles, formules et onglets conservés), revue feuille par feuille |
 | `.docx` / `.pptx` | ✅ Contenu Word/PowerPoint, mise en forme conservée, purge des métadonnées d'identité |

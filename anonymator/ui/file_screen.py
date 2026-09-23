@@ -9,7 +9,8 @@ from PySide6.QtGui import QColor, QCursor
 from PySide6.QtCore import Qt
 from anonymator.ui.components.grid import paint_grid
 from anonymator.ui.theme import color
-from anonymator.files.anonymize_file import (anonymize_file, UnsupportedFormat, FileResult)
+from anonymator.files.anonymize_file import (anonymize_file, UnsupportedFormat, FileResult,
+                                             is_tabular)
 from anonymator.files import csv_io
 from anonymator.output_naming import anonymized_path
 from anonymator.files.anonymize_file import csv_column_plans
@@ -248,7 +249,14 @@ class FileScreen(QWidget):
         suffix = self.path.suffix.lower()
         self.btn_review.setEnabled(
             suffix in (".csv", ".txt", ".xlsx", ".docx", ".pptx"))
-        if suffix == ".csv":
+        try:
+            tabular = is_tabular(self.path)
+        except (OSError, UnicodeDecodeError) as exc:
+            self._reject_file("Fichier illisible", str(exc))
+            return
+        if tabular:
+            # Un .txt délimité (FEC) suit le chemin du .csv : grille, plan de
+            # colonnes, revue par colonne — pas la revue texte libre.
             # Lecture immédiate (l'aperçu en dépend) : un fichier illisible ou
             # verrouillé doit se dire ici, en clair. Sans ce garde, l'exception
             # remontait au filet de sécurité de __main__ et s'affichait en
@@ -478,7 +486,8 @@ class FileScreen(QWidget):
     def analyze(self):
         if self._worker and self._worker.isRunning():
             return
-        if self.path and self.path.suffix.lower() == ".txt":
+        if (self.path and self.path.suffix.lower() == ".txt"
+                and self.doc is None):
             from anonymator.files import txt_io
             text, _enc = txt_io.read_text(self.path)
             if self.on_text_review:

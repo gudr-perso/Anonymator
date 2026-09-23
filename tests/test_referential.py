@@ -4,7 +4,7 @@ def test_loads_default_referential():
     ref = Referential.load_default()
     assert ref.tag_for("EMAIL") == "[EMAIL]"
     assert ref.is_active("EMAIL") is True
-    assert ref.is_active("URL") is False
+    assert ref.is_active("BIC") is False
 
 def test_active_ner_labels_maps_codes_to_french_labels():
     ref = Referential.load_default()
@@ -13,7 +13,7 @@ def test_active_ner_labels_maps_codes_to_french_labels():
 def test_active_deterministic_types_excludes_inactive():
     ref = Referential.load_default()
     types = ref.active_deterministic_types()
-    assert "EMAIL" in types and "URL" not in types
+    assert "EMAIL" in types and "BIC" not in types
 
 def test_bic_is_opt_in_but_postal_code_is_not():
     """BIC reste bruyant sur un fichier comptable, donc opt-in.
@@ -35,10 +35,14 @@ def test_login_and_password_active_by_default():
     assert ref.is_active("LOGIN") is True
     assert ref.is_active("PASSWORD") is True
 
-def test_bic_and_url_inactive_by_default():
+def test_bic_inactive_but_url_and_vat_active_by_default():
+    """Une URL nomme souvent l'organisation (« www.ateliers-tanguy.net ») et
+    une cible de lien la répète hors de la vue : laissée inactive, elle
+    ressortait en clair d'un document par ailleurs anonymisé."""
     ref = Referential.load_default()
     assert ref.is_active("BIC") is False
-    assert ref.is_active("URL") is False
+    assert ref.is_active("URL") is True
+    assert ref.is_active("VAT") is True
 
 
 def test_quasi_identifiers_active_by_default():
@@ -102,7 +106,7 @@ def test_active_codes_lists_only_active_types():
     codes = ref.active_codes()
     assert "PERSON" in codes and "PHONE" in codes
     assert "POSTAL_CODE" in codes
-    assert "BIC" not in codes and "URL" not in codes
+    assert "BIC" not in codes and "URL" in codes
 
 
 def test_mask_pseudo_type_is_defined_and_inactive():

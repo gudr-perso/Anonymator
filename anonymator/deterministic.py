@@ -1,14 +1,21 @@
 import re
 from anonymator.model import Entity
-from anonymator.validators import luhn_is_valid, iban_is_valid, nir_is_valid, bic_is_plausible, postal_code_fr_is_plausible
+from anonymator.validators import (luhn_is_valid, iban_is_valid, nir_is_valid,
+                                   bic_is_plausible, postal_code_fr_is_plausible,
+                                   vat_fr_is_plausible)
 
 # (pattern, type, validateur optionnel sur la valeur normalisée)
-_UNCONFIRMABLE = {"IBAN", "NIR"}   # format plausible conservé même si validation KO
+_UNCONFIRMABLE = {"IBAN", "NIR", "VAT"}   # format plausible conservé même si validation KO
 
 _PATTERNS = [
     (re.compile(r"\b[\w.+-]+@[\w-]+\.[\w.-]+\b"), "EMAIL", None),
     (re.compile(r"(?:(?:\+33|0033)\s?|0)[1-9](?:[\s.\-]?\d{2}){4}"),
      "PHONE", None),
+    # TVA intracommunautaire FR : clé + SIREN, espaces tolérés. La regex IBAN
+    # lit aussi « FR47404833048 », comme un IBAN invalide : la fusion garde la
+    # TVA, validée, plutôt que l'IBAN seulement plausible.
+    (re.compile(r"\bFR\s?\d{2}\s?\d{3}\s?\d{3}\s?\d{3}\b"),
+     "VAT", lambda v: vat_fr_is_plausible(v)),
     (re.compile(r"\b[A-Z]{2}\d{2}(?:\s?[A-Z0-9]{2,4}){2,8}\b"),
      "IBAN", lambda v: iban_is_valid(v)),
     (re.compile(r"\b[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}(?:[A-Z0-9]{3})?\b"),
@@ -30,7 +37,11 @@ _PATTERNS = [
      "ADDRESS", None),
     (re.compile(r"\b\d{5}\b"), "POSTAL_CODE",
      lambda v: postal_code_fr_is_plausible(v)),
-    (re.compile(r"https?://[^\s]+"), "URL", None),
+    # Avec ou sans schéma : « www.exemple.fr » est la forme usuelle d'un pied
+    # de page, et le domaine nomme souvent l'organisation. La ponctuation qui
+    # clôt la phrase (point final, parenthèse, virgule) n'en fait pas partie.
+    (re.compile(r"(?:https?://|\bwww\.)[^\s<>\"]*[^\s<>\".,;:!?)\]'’]"),
+     "URL", None),
 ]
 
 
@@ -49,14 +60,22 @@ _CONTEXTUAL_PATTERNS = [
                 r"\s*:?\s*"
                 r"(\d{1,2}[/.\-]\d{1,2}[/.\-]\d{4}|\d{4}-\d{2}-\d{2})",
                 re.IGNORECASE),
-     "BIRTHDATE"),
+     "BIRTHDATE", None),
+    # SIREN écrit par groupes de trois (« RCS Nantes 404 833 048 ») : sous cette
+    # forme, seul le voisinage le distingue d'un montant.
+    (re.compile(r"(?<!\w)(?:SIREN|R\.?C\.?S\.?(?:\s+[A-ZÀ-Ý][\w'’-]*){1,3})"
+                r"\s*(?:n°|:)?\s*"
+                r"(\d{3}[ \u00a0]\d{3}[ \u00a0]\d{3})(?!\d)"),
+     "SIREN", luhn_is_valid),
 ]
 
 
 def detect_deterministic(text: str) -> list[Entity]:
     found: list[Entity] = []
-    for pattern, etype in _CONTEXTUAL_PATTERNS:
+    for pattern, etype, validator in _CONTEXTUAL_PATTERNS:
         for m in pattern.finditer(text):
+            if validator is not None and not validator(m.group(1)):
+                continue
             found.append(Entity(etype, m.group(1), m.start(1), m.end(1),
                                 "deterministic", 1.0))
     for pattern, etype, validator in _PATTERNS:

@@ -7,7 +7,11 @@ def _overlaps(a: Entity, b: Entity) -> bool:
 
 def _rank(e: Entity) -> tuple:
     # 1) déterministe ou règle utilisateur prioritaire  2) confiance  3) span long
-    return (e.source in ("deterministic", "rule"), e.confidence, e.length)
+    # 4) à span égal, validé plutôt que seulement plausible (« FR47404833048 »
+    # : TVA validée contre IBAN invalide). Pas avant la longueur : un IBAN non
+    # confirmé doit continuer de couvrir le faux téléphone lu en son milieu.
+    return (e.source in ("deterministic", "rule"), e.confidence, e.length,
+            e.confirmed)
 
 
 def merge_entities(entities: list[Entity]) -> list[Entity]:

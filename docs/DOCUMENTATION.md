@@ -159,12 +159,15 @@ positifs :
 | BIC / SWIFT | motif 8 ou 11 caractères | **code pays ISO 3166** |
 | SIREN | 9 chiffres | **clé de Luhn** |
 | SIRET | 14 chiffres | **clé de Luhn** |
+| SIREN au RCS | `RCS Ville 404 833 048`, `SIREN : …` (groupes de trois) | **clé de Luhn** |
+| N° de TVA intracommunautaire (FR) | `FR` + clé + SIREN, espaces tolérés | **clé TVA** ou **SIREN valide (Luhn)** |
 | N° de sécurité sociale (NIR) | motif INSEE | **clé de contrôle modulo 97** |
 | Code postal (FR) | 5 chiffres | département plausible (01–98) |
 | Adresse postale | numéro + type de voie + nom | — |
-| URL | `http(s)://…` | — |
+| URL | `http(s)://…` ou `www.…` (ponctuation finale exclue) | — |
 
-Lorsqu'une valeur a le **bon format mais une clé de contrôle invalide** (IBAN, NIR),
+Lorsqu'une valeur a le **bon format mais une clé de contrôle invalide** (IBAN, NIR,
+TVA dont ni la clé ni le SIREN ne sont valides),
 elle n'est pas rejetée : elle est signalée comme **« détectée mais non conforme »**
 et proposée à l'utilisateur, décochée par défaut, pour arbitrage manuel.
 
@@ -291,18 +294,21 @@ type porte une **méthode** de détection, une **étiquette** de remplacement, u
 | BIC | BIC / SWIFT | déterministe | `[BIC]` | Moyenne | **non** |
 | SIREN | SIREN | déterministe | `[SIREN]` | Moyenne | oui |
 | SIRET | SIRET | déterministe | `[SIRET]` | Moyenne | oui |
+| VAT | N° TVA intracom. | déterministe | `[TVA]` | Moyenne | oui |
 | NIR | N° sécu | déterministe | `[NIR]` | Haute | oui |
-| POSTAL_CODE | Code postal | déterministe | `[CP]` | Basse | **non** |
-| URL | URL | déterministe | `[URL]` | Basse | **non** |
+| POSTAL_CODE | Code postal | déterministe | `[CP]` | Moyenne | oui |
+| BIRTHDATE | Date de naissance | déterministe (contexte) | `[DATE-NAISSANCE]` | Haute | oui |
+| URL | URL | déterministe | `[URL]` | Basse | oui |
 | LOGIN | Identifiant | contextuel | `[LOGIN]` | Haute | oui |
 | PASSWORD | Mot de passe | contextuel | `[SECRET]` | Haute | oui |
 | REGLE_INTERNE | Règle interne | règle | `[REGLE-INTERNE]` | Moyenne | oui |
 | MASK | Masquer (neutre) | manuel | `[MASQUÉ]` | Basse | **non** |
 
 `MASK` est un **pseudo-type** : jamais produit par la détection automatique, il
-n'existe que pour le forçage manuel d'une colonne sans type sémantique. `BIC`,
-`POSTAL_CODE` et `URL` sont implémentés mais **inactifs par défaut** (bruyants sur
-des extractions comptables) ; ils s'activent dans les Paramètres.
+n'existe que pour le forçage manuel d'une colonne sans type sémantique. `BIC` est
+implémenté mais **inactif par défaut** (bruyant sur des extractions comptables) ;
+il s'active dans les Paramètres. `URL` est actif : un domaine nomme souvent
+l'organisation, et la cible d'un lien hypertexte la répète hors de la vue.
 
 La **sensibilité la plus élevée** parmi les entités retenues détermine un **niveau
 de risque global** (`core/risk.py`) affiché à l'utilisateur (Élevé / Moyen /
@@ -329,7 +335,7 @@ que la donnée source.
 
 | Format | Traitement |
 |--------|-----------|
-| `.txt` | Texte intégral |
+| `.txt` | Texte intégral ; un `.txt` délimité (FEC, tabulations, `\|` ou `;`) est traité **par colonnes**, comme un `.csv` |
 | `.csv` | Par colonnes (§1.7), séparateur auto-détecté, encodage préservé |
 | `.xlsx` | Édition en place — styles, formules et onglets conservés ; revue feuille par feuille |
 | `.docx` | Contenu OOXML (Word), remap des *runs*, **+ purge des métadonnées d'identité** |
@@ -583,8 +589,8 @@ refusé (« Expression régulière invalide ») et rien n'est enregistré.
   éditions diffusées) et **Dossier de sortie** (laissé vide : le fichier est écrit à
   côté de son original).
 - **Types d'entités à détecter** — une case par catégorie, avec un compteur des
-  types actifs. C'est ici que l'on active BIC, code postal et URL, inactifs par
-  défaut.
+  types actifs. C'est ici que l'on active le BIC, inactif par défaut, ou que
+  l'on désactive l'URL.
 - **Modèle de détection intelligente** — état d'installation (`✅ Installé` avec sa
   taille, ou `⬜ Non installé`), emplacement du cache, bouton de **téléchargement**
   ou de **réparation** avec barre de progression.
