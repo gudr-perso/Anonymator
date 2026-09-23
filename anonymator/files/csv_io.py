@@ -89,6 +89,23 @@ def sniff_delimiter(sample: str) -> str:
             or best_majority(_PRIMARY) or best_majority(_FALLBACK) or ";")
 
 
+def looks_tabular(sample: str, min_fields: int = 3) -> bool:
+    """Vrai si le texte est un tableau délimité (FEC, export comptable…) et non
+    de la prose.
+
+    Critère volontairement strict : un séparateur structurel (;, |, tab) qui
+    découpe TOUTES les lignes de l'échantillon en un même nombre de champs, au
+    moins `min_fields`, sur au moins deux lignes. Une lettre ou un compte rendu
+    ne tient pas ce rythme, même semé de points-virgules."""
+    if "\n" in sample and not sample.endswith("\n"):
+        sample = sample[:sample.rfind("\n")]
+    for delim in _PRIMARY:
+        counts = _field_counts(sample, delim)
+        if len(counts) >= 2 and _consistent(counts) >= min_fields:
+            return True
+    return False
+
+
 def read_csv(path: Path) -> CsvDocument:
     data = path.read_bytes()
     encoding = detect_encoding(data)

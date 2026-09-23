@@ -64,7 +64,7 @@ fictives), `LICENSE` et `_internal/` (composants techniques — ne rien y modifi
 
 | Format | Support |
 |--------|---------|
-| `.txt` | ✅ Texte intégral |
+| `.txt` | ✅ Texte intégral ; un `.txt` délimité (FEC, export comptable à tabulations, `\|` ou `;`) est traité par colonnes, comme un `.csv` |
 | `.csv` | ✅ Par colonnes (séparateur auto-détecté, encodage préservé) |
 | `.xlsx` | ✅ Édition en place (styles, formules et onglets conservés), revue feuille par feuille |
 | `.docx` / `.pptx` | ✅ Contenu Word/PowerPoint, mise en forme conservée, purge des métadonnées d'identité |

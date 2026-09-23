@@ -335,7 +335,7 @@ que la donnée source.
 
 | Format | Traitement |
 |--------|-----------|
-| `.txt` | Texte intégral |
+| `.txt` | Texte intégral ; un `.txt` délimité (FEC, tabulations, `\|` ou `;`) est traité **par colonnes**, comme un `.csv` |
 | `.csv` | Par colonnes (§1.7), séparateur auto-détecté, encodage préservé |
 | `.xlsx` | Édition en place — styles, formules et onglets conservés ; revue feuille par feuille |
 | `.docx` | Contenu OOXML (Word), remap des *runs*, **+ purge des métadonnées d'identité** |

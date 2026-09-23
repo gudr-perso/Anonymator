@@ -167,18 +167,34 @@ class UnsupportedFormat(Exception):
     pass
 
 
+def is_tabular(path: Path) -> bool:
+    """Le fichier relève-t-il du traitement par colonnes ?
+
+    Un .csv, toujours. Un .txt, quand son contenu est un tableau délimité : le
+    FEC (Fichier des Écritures Comptables) est un .txt à tabulations ou à
+    barres verticales, et le lire en texte libre soumet montants, comptes et
+    dates au modèle, sans plan de colonnes ni revue par colonne."""
+    suffix = path.suffix.lower()
+    if suffix == ".csv":
+        return True
+    if suffix != ".txt":
+        return False
+    text, _enc = txt_io.read_text(path)
+    return csv_io.looks_tabular(text[:4096])
+
+
 def anonymize_file(path: Path, ner: NerDetector, ref: Referential,
                    output_dir: Path, when: datetime,
                    include: set[int] | None = None,
                    exclude: set[int] | None = None,
                    has_header: bool | None = None) -> FileResult:
     suffix = path.suffix.lower()
-    if suffix == ".txt":
-        return anonymize_txt(path, ner, ref, output_dir, when)
-    if suffix == ".csv":
+    if is_tabular(path):
         return anonymize_csv(path, ner, ref, output_dir, when,
                              include=include, exclude=exclude,
                              has_header=has_header)
+    if suffix == ".txt":
+        return anonymize_txt(path, ner, ref, output_dir, when)
     if suffix == ".xlsx":
         if include is not None or exclude is not None:
             raise NotImplementedError(
