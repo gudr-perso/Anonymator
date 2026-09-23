@@ -69,15 +69,33 @@ Ce nombre est le filet du plan : **il ne doit jamais baisser**. Les tâches 2 à
 - Create: `scripts/ocr_bench.py`
 - Create: `scripts/bench_images/` (jeu d'images, **non versionné** — ajouter au `.gitignore`)
 
-- [ ] **Step 1 : Installer RapidOCR dans le venv**
+> **✅ Fait le 2026-09-23 — critère n°1 tranché, GO.** Les accents sont restitués :
+> 5 lignes sur 5 exactes au caractère près (`Éléonore Châteauneuf habite à Nîmes`,
+> `Gaëtan Dupré - facture de 1 250,50 €`, `François Maître, 12 rue de l'Église`),
+> scores 0,98 à 1,00. Le modèle `latin` de rechange n'est **pas** nécessaire.
+> Détail dans la spec, § « Résultat du test des accents ». **Les steps 1, 2 et 5
+> ci-dessous sont soldés ; restent les steps 3, 4 et 6** — la mesure du rappel sur
+> de vraies images, qui ne décide plus du moteur mais alimente la rédaction du
+> périmètre (tâche 10) et le besoin d'un indicateur de progression (tâche 16).
+
+- [ ] **Step 1 : Installer RapidOCR dans le venv** *(fait)*
 
 ```bash
 cd /c/_pCloud/Extensions/anonymise
-./.venv/Scripts/python -m pip install rapidocr opencv-python-headless
+./.venv/Scripts/python -m pip install rapidocr
+./.venv/Scripts/python -m pip uninstall -y opencv_python
+./.venv/Scripts/python -m pip install --force-reinstall --no-deps opencv-python-headless
 ./.venv/Scripts/python -c "from rapidocr import RapidOCR; print('import OK')"
 ```
 
-Attendu : `import OK`. On installe `opencv-python-headless` (et non `opencv-python`) dès maintenant : c'est la variante sans plugins Qt, imposée par la spec pour éviter le conflit avec PySide6.
+Attendu : `import OK`.
+
+⚠️ **Les trois commandes sont nécessaires, dans cet ordre.** `rapidocr` déclare
+`opencv_python` — la variante complète, qui embarque ses propres plugins Qt et entre
+en conflit avec PySide6 sous PyInstaller. Demander `opencv-python-headless` en même
+temps ne suffit pas : pip installe **les deux**. Et comme elles écrivent le même
+dossier `cv2`, désinstaller la complète efface aussi le headless — d'où la
+réinstallation forcée en troisième commande.
 
 - [ ] **Step 2 : Écrire le banc**
 
@@ -157,7 +175,7 @@ Critères d'acceptation, à évaluer dans cet ordre :
 
 | # | Critère | Seuil | Si échec |
 |---|---|---|---|
-| 1 | **Accents français** restitués sur la capture d'écran nette | `é è à ç` présents et corrects | **NO-GO sur la config par défaut.** Tester `RapidOCR(params={"Rec.lang_type": "latin"})` : s'il faut télécharger ce modèle, il devra être **vendorisé** dans le dépôt (et sa licence vérifiée) pour tenir la règle zéro réseau. Remonter la décision avant de continuer. |
+| 1 | ~~**Accents français** restitués~~ | ✅ **TRANCHÉ le 2026-09-23 : GO** — 5/5 lignes exactes | — |
 | 2 | Rappel sur capture d'écran | ≥ 95 % des mots lisibles | NO-GO moteur — reprendre le comparatif de la spec (OCR natif OS / EasyOCR) |
 | 3 | Rappel sur scan | ≥ 85 % | Acceptable, à refléter dans le périmètre |
 | 4 | Rappel sur photo | ≥ 50 % | En dessous, la spec tient quand même : le tracé manuel reste livrable. **Le noter dans le périmètre**, ne pas bloquer. |
@@ -1755,12 +1773,23 @@ Attendu : `FileNotFoundError` sur `Apache-2.0.txt`.
 Ajouter à `requirements.txt`, après la ligne `pymupdf>=1.24` :
 
 ```
-# OCR des images. opencv-python-headless (et NON opencv-python) : la variante
-# complete embarque ses propres plugins Qt, qui entrent en conflit avec PySide6
-# sous PyInstaller.
+# OCR des images.
+#
+# ATTENTION opencv : rapidocr declare `opencv_python`, la variante complete, qui
+# embarque ses propres plugins Qt et entre en conflit avec PySide6 sous
+# PyInstaller. Les deux variantes ecrivent le MEME dossier cv2 et ne peuvent pas
+# cohabiter. Un `pip install -r requirements.txt` installe donc la complete, puis
+# la headless par-dessus : l'ordre du fichier ne suffit pas a garantir le
+# resultat. Apres installation, verifier et corriger si besoin :
+#     pip uninstall -y opencv_python
+#     pip install --force-reinstall --no-deps opencv-python-headless
+#     pip list | grep -i opencv     # doit ne montrer QUE opencv-python-headless
 rapidocr>=3.9
 opencv-python-headless>=4.10
 ```
+
+> Vérifié le 2026-09-23 : RapidOCR fonctionne à l'identique avec le seul headless
+> (5/5 lignes exactes sur le test des accents) et les 721 tests restent verts.
 
 - [ ] **Step 4 : Récupérer le texte de la licence**
 

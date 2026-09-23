@@ -86,10 +86,43 @@ graphiques —, wheels pip pures sans binaire externe à embarquer.
 | Déjà présents | `Pillow` 12.3.0, `numpy` 2.5.2, `onnxruntime` 1.29.0 |
 | Coût estimé dans le zip | **+80 à 110 Mo** sur ~289 Mo actuels — **à mesurer au premier build** |
 
+### Résultat du test des accents — 2026-09-23, **GO**
+
+Le risque bloquant était la couverture des accents français : la wheel ne livre aucun
+dictionnaire de caractères et la configuration par défaut est `lang_type: "ch"`.
+
+Testé sur un rendu net (Arial 34 px, cinq lignes) avec les modèles embarqués :
+
+| Ligne attendue | Résultat |
+|---|---|
+| `Éléonore Châteauneuf habite à Nîmes` | **exact** |
+| `Gaëtan Dupré - facture de 1 250,50 €` | **exact** |
+| `François Maître, 12 rue de l'Église` | **exact** |
+| `contact : jean.dupre@exemple.fr` | **exact** |
+
+**5 lignes sur 5 identiques au caractère près**, scores de confiance 0,98 à 1,00,
+4,4 s pour la première passe (chargement des modèles compris). `É é è à â ç ê î ë`
+et `€` sont tous restitués.
+
+Conséquence : le modèle `latin` de rechange **n'est pas nécessaire**. La question de
+sa vendorisation dans le dépôt et de sa licence est close, et la règle « zéro réseau »
+tient avec les seuls modèles livrés dans la wheel.
+
 ### Deux pièges de packaging
 
-1. **`opencv-python` embarque ses propres plugins Qt** et entre en conflit avec PySide6
-   sous PyInstaller. Imposer **`opencv-python-headless`** dans `requirements.txt`.
+1. **Les deux variantes d'OpenCV ne peuvent pas cohabiter.** `rapidocr` déclare
+   `opencv_python` (variante complète, qui embarque ses propres plugins Qt et entre
+   en conflit avec PySide6 sous PyInstaller). Or les deux paquets installent le
+   **même dossier `cv2`** : désinstaller l'un supprime les fichiers de l'autre.
+   Recette vérifiée le 2026-09-23 — installer `rapidocr`, puis :
+
+   ```
+   pip uninstall -y opencv_python
+   pip install --force-reinstall --no-deps opencv-python-headless
+   ```
+
+   RapidOCR fonctionne alors à l'identique (5/5 lignes exactes) avec le seul headless,
+   et les 721 tests du projet restent verts.
 2. **`rapidocr/default_models.yaml` pointe vers ModelScope** (hébergeur externe) pour
    tout modèle alternatif. Les modèles par défaut sont locaux, mais un basculement
    déclencherait un appel réseau. Verrouiller la configuration sur les modèles
