@@ -110,3 +110,63 @@ def test_address_stops_at_comma():
     vals = {v for (t, v) in types_at("16 RUE JEROME BONAPARTE, 91300 MASSY")
             if t == "ADDRESS"}
     assert "16 RUE JEROME BONAPARTE" in vals
+
+
+# --- URL ------------------------------------------------------------------
+
+def test_detects_url_without_scheme():
+    """« www.… » sans http:// : c'est la forme usuelle dans un contrat ou un
+    pied de page, et le nom de domaine y dit souvent qui est l'organisation."""
+    assert ("URL", "www.ateliers-tanguy.net/confidentialite") in types_at(
+        "Politique : www.ateliers-tanguy.net/confidentialite")
+
+
+def test_url_excludes_trailing_punctuation():
+    assert ("URL", "https://exemple.fr/a") in types_at(
+        "Voir https://exemple.fr/a.")
+    assert ("URL", "www.exemple.fr") in types_at("(www.exemple.fr),")
+
+
+# --- TVA intracommunautaire -------------------------------------------------
+
+def test_detects_vat_fr_with_valid_key():
+    # SIREN 404833048 → clé (12 + 3 × (SIREN mod 97)) mod 97 = 83
+    ents = [e for e in detect_deterministic("TVA FR83404833048") if e.type == "VAT"]
+    assert ents and ents[0].value == "FR83404833048" and ents[0].confirmed
+
+
+def test_detects_vat_fr_with_spaces():
+    assert ("VAT", "FR 83 404 833 048") in types_at("TVA FR 83 404 833 048 fin")
+
+
+def test_vat_with_wrong_key_but_valid_siren_is_confirmed():
+    """Une clé fausse reste un n° de TVA : le format FR + clé + SIREN valide
+    est assez spécifique, et c'est l'identifiant de l'entreprise qui fuit."""
+    ents = [e for e in detect_deterministic("TVA FR47404833048") if e.type == "VAT"]
+    assert ents and ents[0].confirmed
+
+
+def test_vat_with_invalid_siren_and_key_is_unconfirmed():
+    ents = [e for e in detect_deterministic("TVA FR47404833049") if e.type == "VAT"]
+    assert ents and ents[0].confirmed is False
+
+
+# --- SIREN au RCS -----------------------------------------------------------
+
+def test_detects_spaced_siren_after_rcs():
+    assert ("SIREN", "404 833 048") in types_at(
+        "SARL – RCS Nantes 404 833 048 – TVA")
+
+
+def test_detects_spaced_siren_after_label():
+    assert ("SIREN", "404 833 048") in types_at("SIREN : 404 833 048")
+
+
+def test_spaced_amount_is_not_a_siren():
+    assert all(e.type != "SIREN"
+               for e in detect_deterministic("Total 404 833 048 €"))
+
+
+def test_rcs_siren_with_bad_luhn_is_rejected():
+    assert all(e.type != "SIREN"
+               for e in detect_deterministic("RCS Nantes 404 833 049"))

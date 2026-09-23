@@ -54,8 +54,8 @@ fictives), `LICENSE` et `_internal/` (composants techniques — ne rien y modifi
   build de développement).
 - **Dossier de sortie** : dossier cible pour les fichiers anonymisés. Laissé vide, le fichier
   est écrit à côté de son original.
-- **Types d'entités à détecter** : activation catégorie par catégorie (BIC, code postal et URL
-  sont inactifs par défaut).
+- **Types d'entités à détecter** : activation catégorie par catégorie (le BIC est inactif par
+  défaut).
 - **Modèle de détection intelligente** : état d'installation, téléchargement et réparation.
 
 ---

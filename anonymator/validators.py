@@ -68,3 +68,17 @@ def nir_is_valid(nir: str) -> bool:
     body, key = m.group(1), int(m.group(2))
     num = body.replace("2A", "19").replace("2B", "18")
     return (97 - (int(num) % 97)) == key
+
+
+def vat_fr_is_plausible(vat: str) -> bool:
+    """N° de TVA intracommunautaire français : FR + clé (2 chiffres) + SIREN.
+
+    Plausible si la clé est juste — clé = (12 + 3 × (SIREN mod 97)) mod 97 — ou
+    si le SIREN seul passe Luhn. Une clé mal recopiée ne rend pas le numéro
+    moins identifiant : le SIREN qu'il porte désigne toujours l'entreprise."""
+    s = re.sub(r"\s", "", vat).upper()
+    m = re.fullmatch(r"FR(\d{2})(\d{9})", s)
+    if not m:
+        return False
+    key, siren = int(m.group(1)), m.group(2)
+    return key == (12 + 3 * (int(siren) % 97)) % 97 or luhn_is_valid(siren)
