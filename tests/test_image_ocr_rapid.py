@@ -1,3 +1,6 @@
+import sys
+from pathlib import Path
+
 import pytest
 from PIL import Image
 
@@ -90,3 +93,36 @@ def test_les_modeles_sont_verrouilles_sur_les_fichiers_embarques(monkeypatch):
     for key in ("Det.model_path", "Rec.model_path", "Cls.model_path"):
         assert key in captured, f"{key} doit etre impose"
         assert str(captured[key]).endswith(".onnx")
+
+
+# --- resolution des modeles embarques --------------------------------------
+
+def test_les_trois_modeles_sont_presents_sur_cette_machine():
+    """Invariant d'empaquetage : si un modele manque, l'OCR ne peut pas
+    fonctionner et il vaut mieux le savoir ici qu'a la premiere analyse."""
+    chemins = ocr_mod._bundled_model_paths()
+    assert len(chemins) == 3
+    for chemin in chemins.values():
+        assert Path(chemin).exists(), chemin
+
+
+def test_un_modele_manquant_leve_une_erreur_explicite(monkeypatch, tmp_path):
+    """Un exe empaquete sans les modeles doit le dire, pas rendre une analyse
+    vide : le worker remonte ce message a l'utilisateur."""
+    monkeypatch.setattr(ocr_mod, "_models_dir", lambda: tmp_path)
+    with pytest.raises(FileNotFoundError) as exc:
+        ocr_mod._bundled_model_paths()
+    assert "PP-OCRv6_det_small.onnx" in str(exc.value)
+
+
+def test_repli_sur_meipass_quand_le_dossier_du_module_n_existe_pas(monkeypatch, tmp_path):
+    """Dans un exe gele, rapidocr.__file__ est un chemin virtuel."""
+    faux = tmp_path / "rapidocr" / "models"
+    faux.mkdir(parents=True)
+    monkeypatch.setattr(sys, "_MEIPASS", str(tmp_path), raising=False)
+
+    class _FauxModule:
+        __file__ = str(tmp_path / "inexistant" / "__init__.pyc")
+
+    monkeypatch.setitem(sys.modules, "rapidocr", _FauxModule())
+    assert ocr_mod._models_dir() == faux

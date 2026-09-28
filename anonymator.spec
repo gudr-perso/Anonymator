@@ -1,7 +1,7 @@
 # anonymator.spec
 # -*- mode: python ; coding: utf-8 -*-
 
-from PyInstaller.utils.hooks import collect_data_files
+from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 
 import os
 import sys
@@ -25,6 +25,17 @@ if _IS_MAC:
 # par python-docx / python-pptx — indispensables dans l'exe figé.
 ooxml_datas = collect_data_files('docx') + collect_data_files('pptx')
 
+# RapidOCR : les trois modèles ONNX (~32 Mo) et les fichiers de configuration
+# vivent en package data. Sans eux, l'exe démarre mais l'OCR échoue au premier
+# usage — et rien ne le signalerait au build.
+ocr_datas = collect_data_files('rapidocr')
+
+# rapidocr résout ses sous-modules par importlib (cf. _LAZY_IMPORTS dans son
+# __init__.py) : l'analyse statique de PyInstaller ne les voit pas. Les moteurs
+# optionnels non installés (tensorrt, openvino, paddle) produisent un simple
+# avertissement au build et sont ignorés.
+ocr_hiddenimports = collect_submodules('rapidocr')
+
 a = Analysis(
     [_ENTRY],
     pathex=[],
@@ -39,7 +50,7 @@ a = Analysis(
         ('anonymator/ui/assets/logo-app.png', 'anonymator/ui/assets'),
         ('anonymator/ui/assets/picto.png', 'anonymator/ui/assets'),
         ('anonymator/ui/assets/icons', 'anonymator/ui/assets/icons'),
-    ] + ooxml_datas,
+    ] + ooxml_datas + ocr_datas,
     hiddenimports=[
         # Importé paresseusement dans un try/except au démarrage : on le déclare
         # pour garantir sa présence dans l'exe gelé (validation TLS via le
@@ -89,6 +100,21 @@ a = Analysis(
         'anonymator.core.ooxml_review_session',
         'anonymator.ui.ooxml_scan_worker',
         'anonymator.ui.components.perimetre_card',
+        # Couche de texte positionné, mutualisée PDF + image
+        'anonymator.files.textlayer',
+        'anonymator.files.coverage',
+        'anonymator.core.spatial_review_session',
+        'anonymator.ui.spatial_canvas',
+        # Chaîne image
+        'anonymator.files.image',
+        'anonymator.files.image.ocr',
+        'anonymator.files.image.layout',
+        'anonymator.files.image.image_io',
+        'anonymator.files.image.redact',
+        'anonymator.ui.image_scan_worker',
+        'anonymator.ui.image_screen',
+        'cv2',
+        'onnxruntime',
         'gliner',
         'torch',
         'transformers',
@@ -98,7 +124,7 @@ a = Analysis(
         'PySide6.QtWidgets',
         'PySide6.QtGui',
         'PySide6.QtSvg',
-    ],
+    ] + ocr_hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

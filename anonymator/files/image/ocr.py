@@ -4,6 +4,7 @@
 Le protocole permet trois choses : tester toute la chaîne hors ligne avec
 FakeOcr, offrir un mode dégradé avec NullOcr (tracé manuel seul), et changer de
 moteur sans toucher au reste du code."""
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
@@ -57,21 +58,50 @@ def _load_rapidocr():
     return RapidOCR
 
 
+_MODEL_FILES = {
+    "Det.model_path": "PP-OCRv6_det_small.onnx",
+    "Rec.model_path": "PP-OCRv6_rec_small.onnx",
+    "Cls.model_path": "ch_ppocr_mobile_v2.0_cls_mobile.onnx",
+}
+
+
+def _models_dir() -> Path:
+    """Dossier des modèles livrés avec RapidOCR.
+
+    Dans un exe PyInstaller, `rapidocr.__file__` est un chemin **virtuel** sous
+    `sys._MEIPASS` : le module vit dans l'archive, pas sur disque. Son dossier
+    parent, lui, existe bien — c'est là que le `.spec` dépose les données. Le
+    repli explicite sur `_MEIPASS` couvre le cas où cette équivalence ne
+    tiendrait pas."""
+    import rapidocr
+
+    models = Path(rapidocr.__file__).parent / "models"
+    if models.is_dir():
+        return models
+    base = getattr(sys, "_MEIPASS", None)
+    return Path(base) / "rapidocr" / "models" if base else models
+
+
 def _bundled_model_paths() -> dict[str, str]:
     """Chemins des trois modèles livrés dans la wheel.
 
     On les impose explicitement : laissés à null, les paramètres Det/Rec/Cls
     font résoudre le modèle par default_models.yaml, qui pointe vers un
     hébergeur externe. L'application promet « aucun appel réseau en usage
-    normal » — ce verrou est ce qui tient la promesse."""
-    import rapidocr
+    normal » — ce verrou est ce qui tient la promesse.
 
-    models = Path(rapidocr.__file__).parent / "models"
-    return {
-        "Det.model_path": str(models / "PP-OCRv6_det_small.onnx"),
-        "Rec.model_path": str(models / "PP-OCRv6_rec_small.onnx"),
-        "Cls.model_path": str(models / "ch_ppocr_mobile_v2.0_cls_mobile.onnx"),
-    }
+    Une absence est signalée ici, fort et clair : l'appelant la remonte à
+    l'utilisateur. Un empaquetage sans les modèles ne doit pas se traduire par
+    une analyse qui ne rend rien."""
+    models = _models_dir()
+    manquants = [nom for nom in _MODEL_FILES.values()
+                 if not (models / nom).exists()]
+    if manquants:
+        raise FileNotFoundError(
+            "Modèles de reconnaissance de texte introuvables dans "
+            f"{models} : {', '.join(manquants)}. "
+            "L'application a probablement été empaquetée sans eux.")
+    return {cle: str(models / nom) for cle, nom in _MODEL_FILES.items()}
 
 
 # Côté le plus long au-delà duquel on réduit l'image avant l'OCR. RapidOCR

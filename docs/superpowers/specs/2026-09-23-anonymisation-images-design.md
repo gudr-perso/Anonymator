@@ -84,7 +84,31 @@ graphiques —, wheels pip pures sans binaire externe à embarquer.
 | Wheel `rapidocr` 3.9.2 | 27 Mo |
 | Dépendances ajoutées | 11 paquets : `omegaconf`, `antlr4-python3-runtime`, `opencv-python`, `pyclipper`, `shapely`, `six`, `colorlog`, `requests`, `charset-normalizer`, `urllib3` |
 | Déjà présents | `Pillow` 12.3.0, `numpy` 2.5.2, `onnxruntime` 1.29.0 |
-| Coût estimé dans le zip | **+80 à 110 Mo** sur ~289 Mo actuels — **à mesurer au premier build** |
+| Coût estimé dans le zip | **+80 à 110 Mo** — voir la mesure ci-dessous |
+
+### Mesure au build — 2026-09-28
+
+Build de la marque `dev` (elle ne produit pas d'archive, donc elle n'écrase pas
+les binaires `v0.8.1` diffusés : `build.ps1` supprime le zip existant avant de le
+recréer, et la version n'a pas changé).
+
+| | Taille du dossier distribué |
+|---|---|
+| `dist/capnonyme` (v0.8.1, référence) | 723,1 Mo |
+| `dist/anonymator` (avec l'OCR) | **871,8 Mo** |
+| **Croissance** | **+148,7 Mo non compressés** |
+
+Contenu vérifié dans le bundle : les trois modèles ONNX (30,4 Mo), `config.yaml`
+et `default_models.yaml`, et **une seule variante d'OpenCV** — la *headless*.
+
+L'exe se lance, sa fenêtre s'ouvre, aucun `anonymator-crash.log` : **le conflit de
+plugins Qt entre OpenCV et PySide6 ne se produit pas**. C'était le risque principal
+de l'empaquetage, et il ne se voit qu'ici — jamais en test.
+
+La croissance dépasse l'estimation initiale, faite sur le zip compressé. Les 289 Mo
+qui y servaient de base étaient eux aussi approximatifs : les archives réelles font
+275,7 Mo. La mesure compressée reste à faire au premier build de marque, qui
+accompagnera la prochaine release.
 
 ### Résultat du test des accents — 2026-09-23, **GO**
 
