@@ -67,7 +67,39 @@ _CONTEXTUAL_PATTERNS = [
                 r"\s*(?:n°|:)?\s*"
                 r"(\d{3}[ \u00a0]\d{3}[ \u00a0]\d{3})(?!\d)"),
      "SIREN", luhn_is_valid),
+    # SIRET écrit par groupes (« SIRET : 404 833 048 00022 ») : même raison que
+    # ci-dessus, hors contexte la suite de chiffres ne se distingue pas d'un
+    # montant et la masquer rendrait un FEC illisible. L'OCR et les documents
+    # bureautiques écrivent pourtant presque toujours les numéros espacés. La
+    # forme collée, elle, reste captée sans contexte par \b\d{14}\b.
+    (re.compile(r"(?<!\w)SIRET\s*(?:n°|:)?\s*"
+                r"(\d{3}[  ]\d{3}[  ]\d{3}[  ]\d{5})(?!\d)"),
+     "SIRET", luhn_is_valid),
 ]
+
+
+_WHITESPACE = re.compile(r"\s+")
+
+
+def _longest_valid_prefix(value: str, validator) -> str | None:
+    """Le plus long préfixe de `value` qui passe la validation, coupé à une
+    frontière de blanc — ou None si aucun ne passe.
+
+    Les motifs à clé de contrôle sont gloutons. Celui de l'IBAN est une suite
+    de groupes `[A-Z0-9]{2,4}` séparés par un blanc **optionnel** : deux
+    groupes consécutifs peuvent donc absorber un mot voisin, et « FR76 … 189
+    SIRET » est lu d'un bloc. La clé échoue alors, l'entité passe en « non
+    confirmée » et n'est pas masquée par défaut — alors qu'un IBAN parfaitement
+    valide se trouve là. Le saut de ligne n'y est pour rien : le même mot
+    accolé sur la même ligne produit le même effet.
+
+    Rendre None laisse l'appelant sur le comportement d'origine (valeur
+    entière, non confirmée) : cette passe ne masque jamais moins qu'avant."""
+    for m in reversed(list(_WHITESPACE.finditer(value))):
+        candidate = value[:m.start()]
+        if validator(candidate):
+            return candidate
+    return None
 
 
 def detect_deterministic(text: str) -> list[Entity]:
@@ -80,13 +112,18 @@ def detect_deterministic(text: str) -> list[Entity]:
                                 "deterministic", 1.0))
     for pattern, etype, validator in _PATTERNS:
         for m in pattern.finditer(text):
-            value = m.group(0)
+            value, start, end = m.group(0), m.start(), m.end()
             confirmed = True
             if validator is not None and not validator(value):
                 if etype in _UNCONFIRMABLE:
-                    confirmed = False          # format OK, clé/checksum KO → non confirmé
+                    # Avant de renoncer : le motif a-t-il absorbé un mot voisin ?
+                    shorter = _longest_valid_prefix(value, validator)
+                    if shorter is not None:
+                        value, end = shorter, start + len(shorter)
+                    else:
+                        confirmed = False      # format OK, clé/checksum KO
                 else:
                     continue                   # autres types : rejet pur
-            found.append(Entity(etype, value, m.start(), m.end(),
+            found.append(Entity(etype, value, start, end,
                                  "deterministic", 1.0, confirmed))
     return found

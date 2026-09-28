@@ -73,3 +73,38 @@ def test_postal_plausible():
     assert postal_code_fr_is_plausible("20000") is True   # Corse
     assert postal_code_fr_is_plausible("00123") is False   # dept 00
     assert postal_code_fr_is_plausible("1234") is False    # pas 5 chiffres
+
+
+# --- normalisation des blancs ---------------------------------------------
+# Un IBAN ou un NIR recopie depuis un Word, un PDF ou un OCR porte rarement des
+# espaces simples : insecables, tabulations, sauts de ligne. Declares invalides,
+# ils passaient en « non confirme », donc NON MASQUES par defaut. vat_fr_is_
+# plausible normalisait deja tous les blancs ; ces deux-la etaient les
+# exceptions.
+
+_IBAN = "FR76 3000 6000 0112 3456 7890 189"
+_NIR = "1 84 03 44 123 456 54"
+
+
+def test_iban_valide_avec_espaces_insecables():
+    assert iban_is_valid(_IBAN.replace(" ", "\u00a0")) is True
+
+
+def test_iban_valide_coupe_par_un_saut_de_ligne():
+    assert iban_is_valid(_IBAN.replace(" ", "\n", 1)) is True
+
+
+def test_iban_valide_avec_tabulation():
+    assert iban_is_valid(_IBAN.replace(" ", "\t")) is True
+
+
+def test_nir_valide_avec_espaces_insecables():
+    assert nir_is_valid(_NIR.replace(" ", "\u00a0")) is True
+
+
+def test_nir_valide_coupe_par_un_saut_de_ligne():
+    assert nir_is_valid(_NIR.replace(" ", "\n", 1)) is True
+
+
+def test_la_normalisation_ne_rend_pas_un_faux_iban_valide():
+    assert iban_is_valid("FR76 3000 6000 0112 3456 7890 188") is False
