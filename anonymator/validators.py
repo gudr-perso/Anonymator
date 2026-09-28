@@ -51,7 +51,11 @@ def luhn_is_valid(number: str) -> bool:
 
 
 def iban_is_valid(iban: str) -> bool:
-    s = iban.replace(" ", "").upper()
+    # Tous les blancs, pas seulement l'espace simple : un IBAN recopié depuis un
+    # Word, un PDF ou un OCR porte souvent des espaces insécables, des
+    # tabulations ou un saut de ligne. Déclaré invalide, il passait en « non
+    # confirmé » — donc non masqué par défaut.
+    s = re.sub(r"\s", "", iban).upper()
     if not re.fullmatch(r"[A-Z]{2}\d{2}[A-Z0-9]{10,30}", s):
         return False
     rearranged = s[4:] + s[:4]
@@ -60,7 +64,7 @@ def iban_is_valid(iban: str) -> bool:
 
 
 def nir_is_valid(nir: str) -> bool:
-    s = nir.replace(" ", "").upper()
+    s = re.sub(r"\s", "", nir).upper()   # cf. iban_is_valid : tous les blancs
     m = re.fullmatch(r"([12]\d{2}(?:0[1-9]|1[0-2]|[02-9]\d)"
                      r"(?:\d{2}|2[AB])\d{3}\d{3})(\d{2})", s)
     if not m:
