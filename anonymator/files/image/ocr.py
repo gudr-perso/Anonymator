@@ -5,6 +5,7 @@ Le protocole permet trois choses : tester toute la chaîne hors ligne avec
 FakeOcr, offrir un mode dégradé avec NullOcr (tracé manuel seul), et changer de
 moteur sans toucher au reste du code."""
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Protocol
 
 Rect = tuple[float, float, float, float]
@@ -45,3 +46,69 @@ class NullOcr:
     absente) — le tracé manuel de zones reste disponible."""
     def read(self, image) -> list[OcrBox]:
         return []
+
+
+# --- moteur réel ---
+
+def _load_rapidocr():
+    """Import paresseux : charger RapidOCR tire onnxruntime et 32 Mo de modèles.
+    Isolé dans une fonction pour être remplaçable en test."""
+    from rapidocr import RapidOCR
+    return RapidOCR
+
+
+def _bundled_model_paths() -> dict[str, str]:
+    """Chemins des trois modèles livrés dans la wheel.
+
+    On les impose explicitement : laissés à null, les paramètres Det/Rec/Cls
+    font résoudre le modèle par default_models.yaml, qui pointe vers un
+    hébergeur externe. L'application promet « aucun appel réseau en usage
+    normal » — ce verrou est ce qui tient la promesse."""
+    import rapidocr
+
+    models = Path(rapidocr.__file__).parent / "models"
+    return {
+        "Det.model_path": str(models / "PP-OCRv6_det_small.onnx"),
+        "Rec.model_path": str(models / "PP-OCRv6_rec_small.onnx"),
+        "Cls.model_path": str(models / "ch_ppocr_mobile_v2.0_cls_mobile.onnx"),
+    }
+
+
+# Côté le plus long au-delà duquel on réduit l'image avant l'OCR. RapidOCR
+# redimensionne déjà en interne (Global.max_side_len), mais sans contrat
+# documenté sur le remappage des boîtes : on maîtrise donc l'échelle nous-mêmes,
+# et on remet les coordonnées à l'échelle de l'image d'origine. Une erreur ici
+# ne se verrait pas à la détection — elle ferait caviarder à côté.
+MAX_SIDE = 2000
+
+
+class RapidOcrEngine:
+    """Adaptateur autour de RapidOCR (ONNX). Importé paresseusement."""
+
+    def __init__(self, text_score: float = 0.5):
+        params = _bundled_model_paths()
+        params["Global.text_score"] = text_score
+        self._engine = _load_rapidocr()(params=params)
+
+    def read(self, image) -> list[OcrBox]:
+        import numpy as np
+
+        img = image.convert("RGB")
+        scale = 1.0
+        longest = max(img.size)
+        if longest > MAX_SIDE:
+            scale = longest / MAX_SIDE
+            img = img.resize((max(1, round(img.width / scale)),
+                              max(1, round(img.height / scale))))
+        result = self._engine(np.array(img))
+        quads = result.boxes if result.boxes is not None else []
+        txts = result.txts or ()
+        scores = result.scores or ()
+        boxes = [OcrBox.from_quad(t, q, s)
+                 for q, t, s in zip(quads, txts, scores)]
+        if scale == 1.0:
+            return boxes
+        return [OcrBox(b.text,
+                       tuple(v * scale for v in b.rect),
+                       b.confidence)
+                for b in boxes]
