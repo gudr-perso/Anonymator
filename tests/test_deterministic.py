@@ -170,3 +170,88 @@ def test_spaced_amount_is_not_a_siren():
 def test_rcs_siren_with_bad_luhn_is_rejected():
     assert all(e.type != "SIREN"
                for e in detect_deterministic("RCS Nantes 404 833 049"))
+
+
+# --- motif glouton : absorption d'un token voisin --------------------------
+# Le motif IBAN est une suite de groupes [A-Z0-9]{2,4} separes par un blanc
+# OPTIONNEL : deux groupes consecutifs peuvent donc avaler un mot voisin
+# (« FR76 … 189 SIRET »). La cle de controle echoue alors, l'entite passe en
+# « non confirmee » et n'est PAS masquee par defaut : un IBAN valide ressort en
+# clair. On retente donc sur le plus long prefixe valide.
+
+_IBAN = "FR76 3000 6000 0112 3456 7890 189"
+
+
+def _ibans(texte):
+    return [e for e in detect_deterministic(texte) if e.type == "IBAN"]
+
+
+def test_iban_suivi_d_un_mot_majuscule_sur_la_meme_ligne_reste_masque():
+    (e,) = _ibans(f"{_IBAN} SIRET")
+    assert e.value == _IBAN
+    assert e.confirmed is True
+
+
+def test_iban_suivi_d_un_mot_majuscule_a_la_ligne_suivante_reste_masque():
+    (e,) = _ibans(f"{_IBAN}\nSIRET : 404 833 048 00022")
+    assert e.value == _IBAN
+    assert e.confirmed is True
+
+
+def test_iban_suivi_de_chiffres_reste_masque():
+    (e,) = _ibans(f"{_IBAN}\n1234 Total")
+    assert e.value == _IBAN
+    assert e.confirmed is True
+
+
+def test_les_offsets_suivent_la_valeur_raccourcie():
+    texte = f"Virement {_IBAN} SIRET"
+    (e,) = _ibans(texte)
+    assert texte[e.start:e.end] == e.value
+
+
+def test_un_iban_reellement_faux_reste_non_confirme():
+    faux = "FR76 3000 6000 0112 3456 7890 188"
+    (e,) = _ibans(f"{faux} SIRET")
+    assert e.confirmed is False
+
+
+def test_iban_suivi_d_un_mot_minuscule_inchange():
+    (e,) = _ibans(f"{_IBAN} merci de votre confiance")
+    assert e.value == _IBAN
+    assert e.confirmed is True
+
+
+# --- SIRET ecrit par groupes ------------------------------------------------
+# « 404 833 048 00022 » n'etait pas detecte, seule la forme collee l'etait. Or
+# l'OCR et les documents bureautiques ecrivent presque toujours les numeros
+# espaces. On suit la decision deja prise pour le SIREN groupe : contexte
+# obligatoire, car le nombre seul ne se distingue pas d'un montant.
+
+def _sirets(texte):
+    return [e for e in detect_deterministic(texte) if e.type == "SIRET"]
+
+
+def test_siret_groupe_avec_mention_siret():
+    (e,) = _sirets("SIRET : 404 833 048 00022")
+    assert e.value == "404 833 048 00022"
+
+
+def test_siret_groupe_avec_numero():
+    (e,) = _sirets("SIRET n° 404 833 048 00022")
+    assert e.value == "404 833 048 00022"
+
+
+def test_siret_groupe_sans_mention_n_est_pas_detecte():
+    """Sans contexte, la suite de chiffres ne se distingue pas d'un montant :
+    la masquer rendrait un FEC illisible."""
+    assert _sirets("Total 404 833 048 00022 euros") == []
+
+
+def test_siret_groupe_a_la_cle_fausse_est_rejete():
+    assert _sirets("SIRET : 404 833 048 00023") == []
+
+
+def test_la_forme_collee_reste_detectee():
+    (e,) = _sirets("SIRET 40483304800022")
+    assert e.value == "40483304800022"
