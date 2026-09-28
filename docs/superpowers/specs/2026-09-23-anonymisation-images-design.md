@@ -105,6 +105,25 @@ L'exe se lance, sa fenêtre s'ouvre, aucun `anonymator-crash.log` : **le conflit
 plugins Qt entre OpenCV et PySide6 ne se produit pas**. C'était le risque principal
 de l'empaquetage, et il ne se voit qu'ici — jamais en test.
 
+#### L'OCR fonctionne-t-il dans un exe gelé ?
+
+Le lancement prouve que l'application démarre, pas que la reconnaissance marche : le
+code résout ses modèles par `rapidocr.__file__`, qui devient un chemin **virtuel** sous
+PyInstaller. Vérifié par une sonde — un mini-exe PyInstaller reproduisant la résolution
+puis lançant un OCR réel :
+
+```
+gelé              : True
+rapidocr.__file__ : …\dist\probe\_internal\rapidocr\__init__.py
+dossier modèles   : existe = True   (les 3 .onnx présents)
+LECTURE OCR       : ['Eleonore Chateauneuf 06 12 34 56 78']
+```
+
+Le chemin virtuel se résout bien sur disque : `Path(rapidocr.__file__).parent` pointe
+sur le dossier où le `.spec` dépose les données. Le repli sur `sys._MEIPASS` ajouté dans
+`_models_dir()` n'est donc pas nécessaire en pratique — il reste comme filet, et surtout
+l'absence de modèle lève désormais une erreur qui **nomme le fichier manquant**.
+
 La croissance dépasse l'estimation initiale, faite sur le zip compressé. Les 289 Mo
 qui y servaient de base étaient eux aussi approximatifs : les archives réelles font
 275,7 Mo. La mesure compressée reste à faire au premier build de marque, qui
