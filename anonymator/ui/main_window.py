@@ -1,4 +1,5 @@
 # anonymator/ui/main_window.py
+from functools import lru_cache
 from pathlib import Path
 from PySide6.QtCore import QTimer
 from PySide6.QtGui import QIcon
@@ -13,6 +14,7 @@ from anonymator.ui.home_screen import HomeScreen
 from anonymator.ui.text_screen import TextScreen
 from anonymator.ui.file_screen import FileScreen
 from anonymator.ui.pdf_screen import PdfScreen
+from anonymator.ui.image_screen import ImageScreen
 from anonymator.ui.settings_screen import SettingsScreen
 from anonymator.ui.rules_screen import RulesScreen
 from anonymator.ui.about_screen import AboutScreen
@@ -22,6 +24,26 @@ from anonymator.ui import registration
 _ASSETS = Path(__file__).parent / "assets"
 
 PREFS_PATH = Path.home() / ".anonymator" / "preferences.json"
+
+
+@lru_cache(maxsize=1)
+def _ocr_provider():
+    """Construit le moteur OCR à la première analyse, puis le réutilise.
+
+    Appelé DANS le worker, jamais sur le thread UI : charger les modèles prend
+    plusieurs secondes. Le cache évite de recommencer à chaque image.
+
+    Seul l'`ImportError` est rattrapé — dépendance OCR absente d'une build :
+    on retombe alors sur NullOcr, mode dégradé où le tracé manuel de zones
+    reste disponible. Toute autre défaillance (modèle illisible, mémoire…)
+    remonte à l'utilisateur via le signal `error` du worker : le projet a déjà
+    payé le prix d'une erreur avalée en silence."""
+    try:
+        from anonymator.files.image.ocr import RapidOcrEngine
+    except ImportError:
+        from anonymator.files.image.ocr import NullOcr
+        return NullOcr()
+    return RapidOcrEngine()
 
 
 class MainWindow(QMainWindow):
@@ -56,7 +78,7 @@ class MainWindow(QMainWindow):
         self.home = HomeScreen(self.show_text, self.show_file, self.show_settings,
                                model_available=is_model_available(),
                                on_download=self._request_model,
-                               on_pdf=self.show_pdf,
+                               on_pdf=self.show_pdf, on_image=self.show_image,
                                on_rules=self.show_rules, on_about=self.show_about)
         self.text_screen = TextScreen(self.ref, self.loader, self.prefs,
                                       self.show_home, on_request_model=self._request_model)
@@ -65,12 +87,16 @@ class MainWindow(QMainWindow):
                                       on_request_model=self._request_model)
         self.pdf_screen = PdfScreen(self.ref, self.loader, self.prefs,
                                     self.show_home, on_request_model=self._request_model)
+        self.image_screen = ImageScreen(self.ref, self.loader, self.prefs,
+                                        self.show_home,
+                                        on_request_model=self._request_model)
+        self.image_screen.ocr_provider = _ocr_provider
         self.settings_screen = SettingsScreen(self.ref, self.prefs,
                                               self._apply_prefs, self.show_home)
         self.rules_screen = RulesScreen(self.rules_path, self._apply_prefs, self.show_home)
         self.about_screen = AboutScreen(self.show_home)
         for w in (self.home, self.text_screen, self.file_screen,
-                  self.pdf_screen, self.settings_screen,
+                  self.pdf_screen, self.image_screen, self.settings_screen,
                   self.rules_screen, self.about_screen):
             self.stack.addWidget(w)
 
@@ -103,6 +129,7 @@ class MainWindow(QMainWindow):
         self.text_screen.ref = self.ref
         self.file_screen.ref = self.ref
         self.pdf_screen.ref = self.ref
+        self.image_screen.ref = self.ref
         self._apply_theme()
         if theme_changed:
             # reconstruire hors du callback du combo (évite de détruire le
@@ -130,6 +157,7 @@ class MainWindow(QMainWindow):
         self.text_screen.hide_degraded()
         self.file_screen.hide_degraded()
         self.pdf_screen.hide_degraded()
+        self.image_screen.hide_degraded()
 
     def closeEvent(self, event):
         # SettingsScreen est un enfant du QStackedWidget : son closeEvent ne se
@@ -153,6 +181,9 @@ class MainWindow(QMainWindow):
 
     def show_pdf(self):
         self.stack.setCurrentWidget(self.pdf_screen)
+
+    def show_image(self):
+        self.stack.setCurrentWidget(self.image_screen)
 
     def show_settings(self):
         self.stack.setCurrentWidget(self.settings_screen)

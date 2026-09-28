@@ -1,7 +1,8 @@
 # anonymator/files/pdf/extract.py
-from dataclasses import dataclass
 from pathlib import Path
 import fitz
+
+from anonymator.files.textlayer import WordBox, PageText  # noqa: F401
 
 MIN_CHARS_PER_PAGE = 10   # < ce seuil de caractères extractibles / page → scanné
 
@@ -16,21 +17,6 @@ class EncryptedPdfError(Exception):
 
 class CorruptPdfError(Exception):
     pass
-
-
-@dataclass
-class WordBox:
-    text: str
-    rect: tuple[float, float, float, float]   # (x0, y0, x1, y1) en points PDF
-    char_start: int                            # offset inclusif dans le texte plat
-    char_end: int                              # offset exclusif
-
-
-@dataclass
-class PageText:
-    page_index: int
-    text: str                # texte plat reconstruit en ordre de lecture
-    words: list[WordBox]
 
 
 def open_document(path: Path) -> "fitz.Document":

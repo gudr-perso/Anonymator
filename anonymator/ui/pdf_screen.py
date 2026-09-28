@@ -16,7 +16,7 @@ from anonymator.files.anonymize_file import FileResult
 from anonymator.core.pdf_review_session import PdfReviewSession
 from anonymator.ui.pdf_scan_worker import PdfScanWorker
 from anonymator.ui.model_loader import ModelLoader
-from anonymator.ui.pdf_canvas import PdfCanvas
+from anonymator.ui.spatial_canvas import SpatialCanvas
 from anonymator.ui.colors import color_for
 from anonymator.ui.icons import icon
 from anonymator.ui.components.header import HeaderBand
@@ -83,7 +83,7 @@ class PdfScreen(QWidget):
         root.addLayout(band_row)
 
         # ---- corps : canevas (gauche) + entités (droite) ----
-        self.canvas = PdfCanvas()
+        self.canvas = SpatialCanvas()
         self.canvas.manual_rect_drawn.connect(self._on_manual_rect)
         canvas_card = Card("document", "Aperçu de la page")
         canvas_card.body.addWidget(self.canvas)

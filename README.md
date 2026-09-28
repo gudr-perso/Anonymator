@@ -48,6 +48,27 @@ fictives), `LICENSE` et `_internal/` (composants techniques — ne rien y modifi
 4. Cliquer **Anonymiser et enregistrer** → le fichier anonymisé est sauvegardé dans le dossier de sortie.
 5. L'original n'est **jamais modifié**.
 
+### Mode Image
+
+1. Cliquer **Importer une image** sur l'écran d'accueil.
+2. Cliquer **Ouvrir** → sélectionner un `.png`, `.jpg`, `.bmp`, `.tif` ou `.webp`.
+   L'aperçu s'affiche immédiatement.
+3. Cliquer **Analyser** → l'application lit le texte présent dans l'image et **propose**
+   les zones contenant des données personnelles, surlignées sur l'aperçu. Comptez
+   quelques secondes, davantage sur une photo.
+4. Décocher les zones à **ne pas** masquer.
+5. **La lecture de texte dans une image n'est pas infaillible**, surtout sur une photo :
+   relisez l'image vous-même. Pour tout ce qui a été manqué, cliquer **Zone manuelle**
+   puis tracer un rectangle à la souris.
+6. Cliquer **Caviarder et enregistrer** → les pixels des zones retenues sont **détruits**
+   (irrécupérables) et les métadonnées EXIF supprimées, position GPS comprise.
+7. L'original n'est **jamais modifié**.
+
+> **Ce que l'application promet ici.** Elle *propose* ce qu'elle a su lire, vous *validez*.
+> Elle ne prétend pas avoir tout vu. L'encart « périmètre » de l'écran liste ce qui reste
+> hors de portée : écriture manuscrite, texte trop petit ou flou, visages, plaques
+> d'immatriculation, codes-barres.
+
 ### Paramètres
 
 - **Thème** : verrouillé aux couleurs de votre édition (le sélecteur n'apparaît que sur la
@@ -69,6 +90,7 @@ fictives), `LICENSE` et `_internal/` (composants techniques — ne rien y modifi
 | `.xlsx` | ✅ Édition en place (styles, formules et onglets conservés), revue feuille par feuille |
 | `.docx` / `.pptx` | ✅ Contenu Word/PowerPoint, mise en forme conservée, purge des métadonnées d'identité |
 | `.pdf` | ✅ PDF natifs : caviardage (destruction réelle) ou extraction .txt. Scannés (image seule) non supportés. |
+| `.png` `.jpg` `.bmp` `.tif` `.webp` | ✅ Texte lu dans l'image et **proposé** à votre validation, plus les zones que vous tracez. Pixels détruits, métadonnées EXIF purgées. `.heic` (photo iPhone) non supporté. |
 
 ---
 
@@ -76,6 +98,9 @@ fictives), `LICENSE` et `_internal/` (composants techniques — ne rien y modifi
 
 - Traitement **100 % local** : aucun appel réseau en usage normal.
 - Le téléchargement initial du modèle GLiNER est le seul accès réseau (une seule fois).
+- **La lecture de texte dans les images ne demande aucun téléchargement** : ses modèles
+  sont embarqués dans l'application et fonctionnent hors-ligne dès le premier lancement.
+  Un test automatisé coupe l'accès réseau pendant une lecture pour le garantir.
 - Au premier lancement, l'application **propose** de s'enregistrer (facultatif, jamais bloquant ;
   une relance au 5ᵉ lancement au plus). « M'enregistrer » ouvre un formulaire dans votre
   navigateur : l'application elle-même n'envoie rien. Le choix est mémorisé dans
@@ -92,8 +117,11 @@ fictives), `LICENSE` et `_internal/` (composants techniques — ne rien y modifi
 | Téléchargement très lent au 1er lancement | Connexion Internet requise (~2,2 Go) ; patienter |
 | Échec du téléchargement : `CERTIFICATE_VERIFY_FAILED` | Antivirus inspectant le HTTPS (Norton, Kaspersky…). L'app valide via le magasin de certificats Windows depuis la v0.4.3 ; sinon, ajouter une exception pour l'exécutable |
 | Fichier CSV mal parsé | Vérifier encodage (Latin-1/UTF-8) et séparateur |
-| `.pdf` scanné (image seule) | OCR non supporté en v1 — message clair, aucun plantage |
+| `.pdf` scanné (image seule) | Non supporté en mode PDF — message clair, aucun plantage. Contournement : exporter la page en `.png` et passer par le mode Image |
 | Nom manqué lors de la détection | Vérifier que le modèle GLiNER est installé ; sur un tableau, forcer la colonne via un clic sur son en-tête ; sinon créer une règle « Toujours masquer » |
+| Sur une image, une donnée n'est pas proposée | La lecture de texte échoue sur le manuscrit, le flou, le contre-jour et les caractères trop petits. Tracer la zone à la main (bouton « Zone manuelle ») |
+| Sur une image en colonnes, des noms sont manqués | Le texte est reconstitué ligne à ligne : deux colonnes côte à côte sont lues entrelacées, ce qui gêne la reconnaissance des noms. Les motifs sûrs (e-mail, IBAN, téléphone) restent détectés ; pour le reste, tracer la zone |
+| Image `.heic` (photo iPhone) | Format non supporté : la convertir en `.jpg` avant import |
 
 ---
 

@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import QFrame, QVBoxLayout, QLabel
 from PySide6.QtCore import Qt
-from anonymator.files import ooxml
+from anonymator.files import coverage as coverage_registry
 from anonymator.ui.theme import color
 
 
@@ -28,7 +28,8 @@ class PerimetreCard(QFrame):
         self.set_format(fmt)
 
     def set_format(self, fmt: str) -> None:
-        coverage = ooxml.COVERAGE_BY_FORMAT.get(fmt, ooxml.COVERAGE_DOCX)
+        coverage = coverage_registry.COVERAGE_BY_FORMAT.get(
+            fmt, coverage_registry.COVERAGE_BY_FORMAT["docx"])
         self.fmt = fmt
         traite = "".join(f"• {x}<br>" for x in coverage["traite"])
         non = "".join(f"• {x}<br>" for x in coverage["non_traite"])

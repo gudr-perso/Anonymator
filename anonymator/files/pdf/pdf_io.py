@@ -1,11 +1,9 @@
 # anonymator/files/pdf/pdf_io.py
-from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
 from anonymator.ner import NerDetector
 from anonymator.referential import Referential
-from anonymator.model import Entity
 from anonymator.core.chunking import detect_long
 from anonymator.anonymize import apply_masking
 from anonymator.report.audit import AuditReport
@@ -13,17 +11,9 @@ from anonymator.output_naming import anonymized_path
 from anonymator.files import txt_io
 from anonymator.files.anonymize_file import FileResult
 from anonymator.files.pdf import extract, redact, render, propagate
-from anonymator.files.pdf.extract import WordBox
+from anonymator.files.textlayer import WordBox, PageScan  # noqa: F401
 
 Rect = tuple[float, float, float, float]
-
-
-@dataclass
-class PageScan:
-    page_index: int
-    text: str
-    words: list[WordBox]
-    entities: list[Entity]
 
 
 def scan_pdf(path: Path, ner: NerDetector, ref: Referential) -> list[PageScan]:

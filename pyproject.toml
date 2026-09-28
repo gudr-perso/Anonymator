@@ -7,6 +7,6 @@ requires-python = ">=3.11"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = [
-    "integration: tests nécessitant le vrai modèle GLiNER (lents)",
+    "integration: tests nécessitant les vrais modèles (GLiNER, OCR) — lents",
 ]
 addopts = "-m 'not integration'"
