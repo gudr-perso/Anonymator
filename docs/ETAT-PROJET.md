@@ -1,7 +1,7 @@
 # Anonymator — État du projet & comment continuer
 
 > Point de reprise. Lis ce fichier en premier quand tu rouvres le projet (y compris depuis un autre PC).
-> Dernière mise à jour : 2026-09-02.
+> Dernière mise à jour : 2026-09-28.
 
 ---
 
@@ -28,14 +28,21 @@ Développement piloté par specs + plans, en TDD, exécution par sous-agents ave
 | **Chantier « colonnes + revue XLSX »** (plan par colonne, forçage manuel, revue feuille par feuille) | ✅ **Fait — `v0.5.0`/`v0.5.1`**, fusionné sur `main` |
 | **Landing page Cum'Anonyme** (`html/index.html`, autonome) | ✅ **Fait** — DL vers le partage pCloud, renvoi vers la doc utilisateur |
 | **Documentation utilisateur publiée** (Notion, neutre par édition) | ✅ **Fait — 2026-08-28** |
+| **Anonymisation des images** (OCR embarqué + tracé manuel de zones) | ✅ **Fait** — branche `feat/anonymisation-images` |
 | Export du **rapport d'audit** depuis l'UI | ⬜ **Non exposé** — `report/audit.py` est prêt et alimenté par les sessions, il manque le bouton |
 | Test d'intégration GLiNER (modèle réel) | ⬜ **Jamais lancé** (voir `docs/installation-gliner.md`) |
 | Installeur Windows (setup.exe + raccourcis + code signing) | ⬜ **Pas commencé** — « Plan 5 » (brainstorming dédié à faire) |
 
-**Tests : 637 verts + 1 d'intégration désélectionné** (`.venv/Scripts/python -m pytest -q` → `637 passed, 1 deselected`, ~20 s).
-Le test d'intégration ne nécessite `torch` que si on lance `-m integration`.
+**Tests : 815 verts + 4 d'intégration désélectionnés** (`.venv/Scripts/python -m pytest -q` → `815 passed, 4 deselected`, ~60 s).
+Les tests d'intégration exigent les vrais modèles : `-m integration` pour GLiNER et pour l'OCR
+(lecture réelle, restitution des accents, et **verrou réseau** — socket coupée pendant un OCR).
 
-**Version courante : `0.6.0`** (`anonymator/__init__.py` = source de vérité, dupliquée dans `pyproject.toml`).
+> ⚠️ Ce compte a longtemps été faux dans ce fichier (« 637 », figé début septembre alors que la
+> suite en comptait déjà 721). **Ne pas se fier aux nombres absolus** trouvés dans les plans :
+> relever son point de départ par un `pytest -q` et raisonner en écarts. La seule règle qui
+> tienne : le compte ne baisse jamais.
+
+**Version courante : `0.8.1`** (`anonymator/__init__.py` = source de vérité, dupliquée dans `pyproject.toml`).
 Corrections issues d'une revue de code systématique : trois fuites de données
 (liens hypertexte et contrôles de contenu Word, métadonnées du classeur), deux
 corruptions de fichier de sortie (second enregistrement, cellules fusionnées) et
@@ -69,9 +76,21 @@ L'inventaire des composants embarqués et l'état du modèle sont figés dans
 
 ## Prochaine action
 
-Le produit est livré (texte, csv/xlsx avec raisonnement par colonne, PDF, docx/pptx, règles métier,
-deux marques, landing page, doc utilisateur). Pistes ouvertes, par ordre de valeur :
+Le produit est livré (texte, csv/xlsx avec raisonnement par colonne, PDF, docx/pptx, **images**,
+règles métier, deux marques, landing page, doc utilisateur).
 
+> **⚠️ À trancher en premier — une release attend.** `main` porte depuis le 2026-09-28 trois
+> correctifs de détection qui réparent de vraies fuites (`3c89a68`) : un IBAN ou un NIR séparé
+> par des **espaces insécables** était déclaré invalide donc **non masqué** (cas courant en Word
+> et PDF), le motif IBAN absorbait un mot voisin avec le même effet, et le SIRET écrit par
+> groupes n'était pas détecté. **Les archives `v0.8.1` en circulation portent ces fuites.**
+> Décision prise le 2026-09-28 : attendre la fin du chantier image et tout diffuser d'un coup.
+> Ne pas l'oublier au moment du tag.
+
+Pistes ouvertes, par ordre de valeur :
+
+0. **Diffuser** : bump de version, `docs/RELEASE.md`, tag, build des deux marques, remplacement
+   du partage pCloud — cf. l'avertissement ci-dessus.
 1. **Installeur Windows** (« Plan 5 ») : brainstorming dédié — `setup.exe` (Inno Setup ?), raccourcis menu Démarrer,
    éventuel **code signing** (supprimerait l'avertissement SmartScreen documenté dans la doc utilisateur).
    Un seul installeur par marque (réutilise `scripts/build.ps1` qui zippe déjà par marque).
@@ -114,7 +133,16 @@ anonymator/
   brands/             cap.py, cuma.py : points d'entrée verrouillés (build paramétré)
   files/              encoding, csv_io, columns (plan TYPED/TEXT/SKIP par colonne),
                       txt_io, xlsx_io (scan_workbook / apply_workbook), anonymize_file (orchestrateur + dispatcher)
+  textlayer.py        couche de texte positionné : WordBox / PageText / PageScan + mapping
+                      entité→rectangles + propagation. **Aucune dépendance de format** — un
+                      PDF natif l'extrait, un OCR la reconstruit. Les modules pdf/ ré-exportent.
+  coverage.py         registre des périmètres par format (ooxml + image), lu par PerimetreCard
     pdf/              pdf_io, extract, mapping, redact (caviardage réel PyMuPDF), render, propagate
+    image/            ocr (protocole OcrEngine + FakeOcr / NullOcr / RapidOcrEngine, modèles
+                      embarqués imposés + réduction au-delà de 2000 px), layout (ordre de
+                      lecture depuis les boîtes OCR), image_io (décodage, orientation EXIF
+                      appliquée AVANT purge, scan_image, anonymize_image_redact), redact
+                      (écrasement des pixels), __init__ (COVERAGE_IMAGE)
     ooxml/            docx_io, pptx_io, scan, run_remap, text_unit, xml_parts, metadata (purge)
   report/audit.py     AuditReport (agrégation + export CSV/JSON) — brique moteur, PAS exposée dans l'UI
   core/               model_status (dispo/taille cache GLiNER), model_download (DL HuggingFace + progression),
@@ -128,7 +156,7 @@ anonymator/
                       pdf_screen + pdf_canvas (aperçu image + overlays + zoom),
                       workers QThread (text_analyze, file_scan/anonymize, xlsx_scan, ooxml_scan, pdf_scan, download),
                       model_loader, preferences, colors, entity_meta, icons, theme, components/
-tests/                un fichier de test par module (TDD) — 101 fichiers, 637 tests verts
+tests/                un fichier de test par module (TDD) — 115 fichiers, 815 tests verts
 exemples/             jeu de démonstration à données fictives (clients_demo.csv/.xlsx, compte_rendu_reunion_demo.pdf),
                       copié à la racine du dossier distribué par build.ps1 ; couvert par test_demo_dataset.py
 html/index.html       landing page Cum'Anonyme (autonome, CSS inline, logos base64)
@@ -166,6 +194,18 @@ docs/                 ETAT-PROJET.md (ce fichier), DOCUMENTATION.md (v2.0, les 3
   des valeurs confirmées + ordre de lecture. PyMuPDF isolé dans `anonymator/files/pdf/`.
 - **Office .docx/.pptx** : remap mutualisé, **revue par liste d'entités** (pas de rendu visuel), couverture cœur +
   périphérique, **purge systématique des métadonnées** d'identité tracée dans l'audit.
+- **Images** : OCR **RapidOCR** (PP-OCRv6 ONNX), modèles **embarqués** dans l'exe (~32 Mo) et
+  **imposés explicitement** — laissés par défaut ils seraient résolus via un hébergeur externe,
+  ce qui casserait la promesse « aucun appel réseau ». Licence Apache-2.0 **code et poids**,
+  sans clause non commerciale ; contrairement à GLiNER ils sont *redistribués*, d'où
+  `third-party-licenses/Apache-2.0.txt`. `onnxruntime` était déjà embarqué via `gliner`.
+  ⚠️ **opencv** : `rapidocr` réclame `opencv_python` (plugins Qt, conflit PySide6) ; les deux
+  variantes écrivent le même dossier `cv2` et ne cohabitent pas → installer, désinstaller la
+  complète, réinstaller `--no-deps` la *headless*.
+  **Promesse : l'application propose, l'utilisateur valide** — jamais « tout a été vu ». Revue
+  obligatoire (`run_redact` rend `None` sans session) et **tracé manuel** de zones, qui rend la
+  fonction utile même quand l'OCR échoue. Caviardage par **écrasement des pixels**, purge EXIF.
+  Limite assumée et annoncée : une mise en page en colonnes est lue entrelacée.
 - **Sessions de revue** : une hiérarchie unique (`ReviewSessionBase` → `TabularReviewSession` → CSV/XLSX,
   plus `OoxmlReviewSession` et `PdfReviewSession`), `_index()` **rejouable** (aucun compte différentiel),
   et `apply_and_save(out_path)` commun — l'écran n'a pas à connaître le format.
