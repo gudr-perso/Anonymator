@@ -9,7 +9,13 @@ _UNCONFIRMABLE = {"IBAN", "NIR", "VAT"}   # format plausible conservé même si 
 
 _PATTERNS = [
     (re.compile(r"\b[\w.+-]+@[\w-]+\.[\w.-]+\b"), "EMAIL", None),
-    (re.compile(r"(?:(?:\+33|0033)\s?|0)[1-9](?:[\s.\-]?\d{2}){4}"),
+    # Séparateurs internes : espace et espaces insécables seulement. Avec
+    # \s, un numéro enjambe une tabulation ou un retour à la ligne et le
+    # motif fabrique de faux téléphones dans un tableau dense en chiffres —
+    # un FEC lu en .txt recolle ainsi la fin d'une colonne au début de la
+    # suivante (« 01<TAB>20250106 »).
+    (re.compile(r"(?:(?:\+33|0033)[ \u00a0\u202f]?|0)"
+                r"[1-9](?:[ \u00a0\u202f.\-]?\d{2}){4}"),
      "PHONE", None),
     # TVA intracommunautaire FR : clé + SIREN, espaces tolérés. La regex IBAN
     # lit aussi « FR47404833048 », comme un IBAN invalide : la fusion garde la
