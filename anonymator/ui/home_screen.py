@@ -60,7 +60,7 @@ class HeroPanel(QWidget):
 class HomeScreen(QWidget):
     def __init__(self, on_text, on_file, on_settings,
                  model_available: bool = True, on_download=None, on_dismiss=None,
-                 on_pdf=None, on_rules=None, on_about=None):
+                 on_pdf=None, on_rules=None, on_about=None, on_image=None):
         super().__init__()
         self._on_dismiss = on_dismiss
         root = QVBoxLayout(self)
@@ -137,13 +137,16 @@ class HomeScreen(QWidget):
                                 ".txt, .csv, .xlsx, .docx ou .pptx", on_click=on_file)
         self.btn_pdf = NavCard("document", "Importer un PDF",
                                "Caviarder ou extraire (PDF natifs)", on_click=on_pdf)
+        self.btn_image = NavCard("scan", "Importer une image",
+                                 "Caviarder une capture, un scan, une photo",
+                                 on_click=on_image)
         self.btn_settings = NavCard("settings", "Paramètres",
                                     "Thème, dossier, types, modèle", on_click=on_settings)
         self.btn_rules = NavCard("shield", "Gestion des règles",
                                  "Règles métier", on_click=on_rules)
         self.btn_about = NavCard("sparkle", "À propos",
                                  "Licence, version et mentions", on_click=on_about)
-        for c in (self.btn_text, self.btn_file, self.btn_pdf,
+        for c in (self.btn_text, self.btn_file, self.btn_pdf, self.btn_image,
                   self.btn_settings, self.btn_rules, self.btn_about):
             rv.addWidget(c)
         rv.addStretch()

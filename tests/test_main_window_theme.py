@@ -27,7 +27,8 @@ def test_theme_switch_rebuilds_and_updates_active(qtbot, tmp_path):
         w._apply_prefs()
         assert active_theme() == "cap"
         w._retheme()   # exécuter le rebuild différé de façon synchrone
-        assert w.stack.count() == 7
+        # accueil, texte, fichier, pdf, image, paramètres, règles, à propos
+        assert w.stack.count() == 8
     finally:
         set_active_theme(DEFAULT_THEME)
 
