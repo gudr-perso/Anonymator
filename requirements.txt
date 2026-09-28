@@ -6,6 +6,19 @@ gliner>=0.2.13
 lxml>=6.1
 openpyxl>=3.1
 pymupdf>=1.24
+# OCR des images.
+#
+# ATTENTION opencv : rapidocr declare `opencv_python`, la variante complete,
+# qui embarque ses propres plugins Qt et entre en conflit avec PySide6 sous
+# PyInstaller. Les deux variantes ecrivent le MEME dossier cv2 et ne peuvent
+# pas cohabiter : desinstaller l'une efface les fichiers de l'autre. Un
+# `pip install -r requirements.txt` installe donc la complete en dependance
+# de rapidocr. Apres installation, verifier et corriger si besoin :
+#     pip uninstall -y opencv_python
+#     pip install --force-reinstall --no-deps opencv-python-headless
+#     pip list | grep -i opencv   # doit ne montrer QUE opencv-python-headless
+rapidocr>=3.9
+opencv-python-headless>=4.10
 PySide6>=6.6
 pytest>=8.0
 pytest-qt>=4.4

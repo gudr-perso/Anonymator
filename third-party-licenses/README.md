@@ -41,9 +41,23 @@ sein de l'arbre source, et sur le dépôt de chaque projet.
 | PyYAML | configuration | MIT |
 | `regex` | expressions régulières | Apache-2.0 |
 | `certifi` | certificats racine | MPL-2.0 |
+| RapidOCR (`rapidocr`) | reconnaissance de texte dans les images | Apache-2.0 |
+| OpenCV (`opencv-python-headless`) | traitement d'image pour l'OCR | Apache-2.0 |
+| `shapely`, `pyclipper` | géométrie des boîtes de texte | BSD-3-Clause / MIT |
+| `omegaconf`, `antlr4-python3-runtime` | configuration de RapidOCR | BSD-3-Clause |
 
 > Le modèle GLiNER lui-même (`urchade/gliner_multi-v2.1`, poids Apache-2.0) est
 > **téléchargé au premier lancement** et n'est pas redistribué dans l'exécutable.
+
+> **Les modèles OCR, eux, sont redistribués.** Contrairement aux poids GLiNER,
+> les trois modèles **PP-OCR** (`PP-OCRv6_det_small.onnx`,
+> `PP-OCRv6_rec_small.onnx`, `ch_ppocr_mobile_v2.0_cls_mobile.onnx`, ~32 Mo au
+> total) sont **embarqués dans l'exécutable** : ils voyagent avec l'application,
+> sans aucun téléchargement. Issus de PaddleOCR et convertis en ONNX par le
+> projet RapidOCR, ils sont distribués sous **Apache-2.0** — code et poids sous
+> la même licence, sans clause non commerciale. Redistribuer un artefact
+> Apache-2.0 oblige à joindre le texte de la licence : il est fourni dans
+> [`Apache-2.0.txt`](Apache-2.0.txt).
 
 Cette liste couvre les composants notables ; la distribution peut embarquer des
 dépendances transitives supplémentaires, chacune conservant sa propre licence.
