@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (QWidget, QFrame, QVBoxLayout, QHBoxLayout,
                                QPushButton, QLabel, QFileDialog, QMessageBox,
                                QTreeWidget, QTreeWidgetItem, QHeaderView)
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QColor, QFont
 
 from anonymator.core.model_status import is_model_available
 from anonymator.core.spatial_review_session import SpatialReviewSession
@@ -26,6 +27,7 @@ from anonymator.ui.components.cards import Card
 from anonymator.ui.components.grid import paint_grid
 from anonymator.ui.components.header import HeaderBand
 from anonymator.ui.components.nav_band import NavBand
+from anonymator.ui.colors import color_for
 from anonymator.ui.components.perimetre_card import PerimetreCard
 from anonymator.ui.icons import icon
 from anonymator.ui.image_scan_worker import ImageScanWorker
@@ -237,16 +239,38 @@ class ImageScreen(QWidget):
 
     # ---------- panneau latéral ----------
     def _build_side(self) -> None:
+        """Miroir exact de `PdfScreen._build_side`.
+
+        Les valeurs à clé de contrôle fausse portent la même mention que dans
+        l'écran PDF et le mode Fichier, et restent décochées. Ce comportement
+        est déjà le plus déroutant de l'outil : il ne doit pas en plus changer
+        d'un format à l'autre."""
+        gras = QFont()
+        gras.setBold(True)
         self.side.blockSignals(True)
         self.side.clear()
         for etype in self.session.types():
-            parent = QTreeWidgetItem([etype, ""])
+            parent = QTreeWidgetItem(
+                [etype, f"×{self.session.count_retained(etype)}"])
+            parent.setForeground(0, QColor(color_for(etype)))
+            parent.setForeground(1, QColor(color("text_muted")))
+            parent.setTextAlignment(1, Qt.AlignRight | Qt.AlignVCenter)
+            parent.setFont(0, gras)
+            parent.setData(0, Qt.UserRole, ("type", etype, None))
             parent.setFlags(parent.flags() | Qt.ItemIsUserCheckable)
             parent.setCheckState(
                 0, Qt.Checked if self.session.is_type_enabled(etype)
                 else Qt.Unchecked)
             for value, count in self.session.values_for(etype):
-                child = QTreeWidgetItem([value, str(count)])
+                confirme = self.session.is_value_confirmed(etype, value)
+                libelle = value if confirme else f"{value}   ⚠ clé non conforme"
+                child = QTreeWidgetItem([libelle, f"×{count}"])
+                child.setForeground(1, QColor(color("text_muted")))
+                child.setTextAlignment(1, Qt.AlignRight | Qt.AlignVCenter)
+                # La valeur brute vit dans UserRole : le libellé est décoré,
+                # elle ne l'est pas. Sans cela, cocher une valeur signalée
+                # ne retrouverait aucune entité.
+                child.setData(0, Qt.UserRole, ("value", etype, value))
                 child.setFlags(child.flags() | Qt.ItemIsUserCheckable)
                 child.setCheckState(
                     0, Qt.Checked
@@ -261,13 +285,20 @@ class ImageScreen(QWidget):
     def _on_side_changed(self, item, _col) -> None:
         if self.session is None:
             return
+        kind, etype, value = item.data(0, Qt.UserRole)
         checked = item.checkState(0) == Qt.Checked
-        if item.parent() is None:
-            self.session.set_type_enabled(item.text(0), checked)
+        if kind == "type":
+            self.session.set_type_enabled(etype, checked)
         else:
-            self.session.set_value_enabled(
-                item.parent().text(0), item.text(0), checked)
+            self.session.set_value_enabled(etype, value, checked)
+        self._refresh_counts()
         self._refresh_overlays()
+
+    def _refresh_counts(self) -> None:
+        for i in range(self.side.topLevelItemCount()):
+            parent = self.side.topLevelItem(i)
+            _, etype, _ = parent.data(0, Qt.UserRole)
+            parent.setText(1, f"×{self.session.count_retained(etype)}")
 
     def _refresh_overlays(self) -> None:
         if self.session is None:

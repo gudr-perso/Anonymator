@@ -95,3 +95,51 @@ def test_l_ecran_signale_l_attente_pendant_l_analyse(qtbot, tmp_path):
     screen._set_busy(False)
     assert not screen._overlay.isVisible()
     assert screen.btn_review.isEnabled()
+
+
+# --- valeurs a cle de controle fausse ---------------------------------------
+# Meme comportement que le PDF, le mode Fichier et le mode Texte : surlignage
+# en pointille, mention explicite dans la liste, et case DECOCHEE par defaut.
+# C'est le comportement le plus deroutant de l'outil ; il ne doit pas differer
+# d'un ecran a l'autre.
+
+_IBAN_CLE_FAUSSE = "FR76 3000 6000 0112 3456 7890 188"
+
+
+def _ecran_cle_fausse(qtbot, tmp_path):
+    screen = _ecran(qtbot, [OcrBox(_IBAN_CLE_FAUSSE, (10.0, 10.0, 200.0, 30.0), 0.9)])
+    _analyser(screen, qtbot, _image(tmp_path))
+    return screen
+
+
+def test_une_cle_fausse_porte_la_mention_dans_la_liste(qtbot, tmp_path):
+    screen = _ecran_cle_fausse(qtbot, tmp_path)
+    libelles = []
+    for i in range(screen.side.topLevelItemCount()):
+        parent = screen.side.topLevelItem(i)
+        libelles += [parent.child(j).text(0) for j in range(parent.childCount())]
+    assert any("clé non conforme" in t for t in libelles), libelles
+
+
+def test_une_cle_fausse_est_decochee_par_defaut(qtbot, tmp_path):
+    from PySide6.QtCore import Qt
+    screen = _ecran_cle_fausse(qtbot, tmp_path)
+    parent = screen.side.topLevelItem(0)
+    assert parent.child(0).checkState(0) == Qt.Unchecked
+
+
+def test_cocher_une_cle_fausse_la_fait_masquer(qtbot, tmp_path):
+    """La valeur brute doit survivre a la decoration du libelle : sans cela,
+    cocher la case ne retrouverait aucune entite."""
+    from PySide6.QtCore import Qt
+    screen = _ecran_cle_fausse(qtbot, tmp_path)
+    assert screen.session.retained_rects_by_page().get(0, []) == []
+    parent = screen.side.topLevelItem(0)
+    parent.child(0).setCheckState(0, Qt.Checked)
+    assert screen.session.retained_rects_by_page().get(0, []) != []
+
+
+def test_la_cle_fausse_est_transmise_au_canevas_en_pointille(qtbot, tmp_path):
+    screen = _ecran_cle_fausse(qtbot, tmp_path)
+    assert screen.session.unconfirmed_entity_rects(0) != []
+    assert screen.session.retained_entity_rects(0) == []
