@@ -225,7 +225,13 @@ variantes écrivent le **même dossier `cv2`** et ne cohabitent pas. Après
 **Tests** : 820 verts, 4 d'intégration désélectionnés (GLiNER, et pour l'OCR :
 lecture réelle, restitution des accents, **verrou réseau**).
 
-**Poids** : le dossier distribué passe de 723,1 à 871,8 Mo non compressés.
+**Poids** : le dossier distribué passe de 723,1 à **872,0 Mo** non compressés ; l'archive
+`.zip` de 275,7 à **346,2 Mo** (**+70,5 Mo** compressés), identique pour les deux éditions.
+
+**Build du 2026-09-30**, depuis le commit taggé `v0.9.0` : les deux marques construites,
+`LICENSE` et `exemples/` présents à la racine du dossier distribué, les trois modèles ONNX
+dans `_internal/`, **une seule variante d'OpenCV** embarquée, et les deux exécutables
+lancés avec succès (fenêtres « CAP'nonyme » et « Cum'Anonyme », aucun crash log).
 
 ## v0.8.1 — 2026-09-22
 
