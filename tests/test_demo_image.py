@@ -53,6 +53,36 @@ def test_les_regles_seules_trouvent_les_quatre_types_annonces():
 
 
 @pytest.mark.integration
+def test_le_caviardage_ne_deborde_pas_sur_la_phrase_entiere():
+    """Garde-fou sur la granularité des rectangles.
+
+    Le moteur rend par défaut une boîte par LIGNE. Prise pour un mot, elle
+    faisait caviarder toute la phrase : masquer le nom du comptable effaçait
+    « Pour toute question, notre comptable … reste joignable au ». On demande
+    donc le découpage mot à mot. Si ce test tombe, c'est que la granularité a
+    régressé — et l'utilisateur récupérera des images noircies à l'excès."""
+    from anonymator.files.image import image_io
+    from anonymator.files.image.ocr import RapidOcrEngine
+    from anonymator.files.textlayer import PageText, rects_for_entity
+    from anonymator.ner import NullNer
+    from anonymator.referential import Referential
+
+    pages = image_io.scan_image(IMAGE, RapidOcrEngine(), NullNer(),
+                                Referential.load_default())
+    page = pages[0]
+    pt = PageText(0, page.text, page.words)
+
+    telephones = [e for e in page.entities if e.type == "PHONE"]
+    assert telephones, "le téléphone de démonstration doit être détecté"
+    largeurs = [r[2] - r[0] for r in rects_for_entity(pt, telephones[0])]
+    assert largeurs, "le téléphone doit produire au moins un rectangle"
+    # La ligne fait ~220 px ; un rectangle par groupe de chiffres en fait ~25.
+    assert max(largeurs) < 120, (
+        f"rectangle trop large ({max(largeurs):.0f} px) : la phrase autour du "
+        "numéro serait caviardée avec lui")
+
+
+@pytest.mark.integration
 def test_la_signature_manuscrite_reste_invisible_a_la_detection():
     """C'est le cœur pédagogique de l'image : elle prouve pourquoi
     l'application *propose* et pourquoi il faut relire. Si un jour la

@@ -17,7 +17,7 @@ class _FauxMoteur:
     def __init__(self, *a, **k):
         self.params = k.get("params")
 
-    def __call__(self, arr):
+    def __call__(self, arr, **kw):
         return _FausseSortie()
 
 
@@ -38,7 +38,7 @@ def test_une_sortie_vide_ne_casse_rien(monkeypatch):
         scores = None
 
     class _Moteur(_FauxMoteur):
-        def __call__(self, arr):
+        def __call__(self, arr, **kw):
             return _Vide()
 
     monkeypatch.setattr(ocr_mod, "_load_rapidocr", lambda: _Moteur)
@@ -53,7 +53,7 @@ def test_une_grande_image_est_reduite_mais_les_boites_reviennent_a_l_echelle(
     vues = {}
 
     class _Moteur(_FauxMoteur):
-        def __call__(self, arr):
+        def __call__(self, arr, **kw):
             vues["taille"] = (arr.shape[1], arr.shape[0])
             return _FausseSortie()
 
@@ -71,7 +71,7 @@ def test_une_petite_image_n_est_pas_redimensionnee(monkeypatch):
     vues = {}
 
     class _Moteur(_FauxMoteur):
-        def __call__(self, arr):
+        def __call__(self, arr, **kw):
             vues["taille"] = (arr.shape[1], arr.shape[0])
             return _FausseSortie()
 
@@ -126,3 +126,57 @@ def test_repli_sur_meipass_quand_le_dossier_du_module_n_existe_pas(monkeypatch, 
 
     monkeypatch.setitem(sys.modules, "rapidocr", _FauxModule())
     assert ocr_mod._models_dir() == faux
+
+
+# --- granularite des boites -------------------------------------------------
+# RapidOCR rend par defaut UNE boite par LIGNE. Traitee comme un mot, une telle
+# boite fait caviarder la phrase entiere : masquer « Damien Lacroix » effacait
+# « Pour toute question, notre comptable ... reste ». On demande donc le decoupage
+# mot a mot, que le moteur sait produire.
+
+class _SortieMots:
+    boxes = [[[0, 0], [400, 0], [400, 20], [0, 20]]]
+    txts = ("joignable au 05 32 14 79 60",)
+    scores = (0.99,)
+    word_results = (
+        (
+            ("joignable", 0.99, [[0, 0], [80, 0], [80, 20], [0, 20]]),
+            ("au", 0.99, [[85, 0], [110, 0], [110, 20], [85, 20]]),
+            ("05 32 14 79 60", 0.98, [[115, 0], [260, 0], [260, 20], [115, 20]]),
+        ),
+    )
+
+
+def test_les_boites_sont_rendues_mot_a_mot(monkeypatch):
+    class _Moteur(_FauxMoteur):
+        def __call__(self, arr, **kw):
+            return _SortieMots()
+
+    monkeypatch.setattr(ocr_mod, "_load_rapidocr", lambda: _Moteur)
+    boxes = ocr_mod.RapidOcrEngine().read(Image.new("RGB", (400, 20), (255,) * 3))
+    assert [b.text for b in boxes] == ["joignable", "au", "05 32 14 79 60"]
+    assert boxes[0].rect == (0.0, 0.0, 80.0, 20.0)
+    assert boxes[2].rect == (115.0, 0.0, 260.0, 20.0)
+
+
+def test_repli_sur_la_ligne_si_un_mot_n_a_pas_de_boite(monkeypatch):
+    """Mieux vaut caviarder trop large que perdre la zone : sans boite de mot,
+    on retombe sur la ligne."""
+    class _SortieIncomplete(_SortieMots):
+        word_results = ((("joignable", 0.99, None),),)
+
+    class _Moteur(_FauxMoteur):
+        def __call__(self, arr, **kw):
+            return _SortieIncomplete()
+
+    monkeypatch.setattr(ocr_mod, "_load_rapidocr", lambda: _Moteur)
+    boxes = ocr_mod.RapidOcrEngine().read(Image.new("RGB", (400, 20), (255,) * 3))
+    assert [b.text for b in boxes] == ["joignable au 05 32 14 79 60"]
+    assert boxes[0].rect == (0.0, 0.0, 400.0, 20.0)
+
+
+def test_sans_word_results_on_garde_les_lignes(monkeypatch):
+    """Compatibilite : un moteur qui ne sait pas decouper reste exploitable."""
+    monkeypatch.setattr(ocr_mod, "_load_rapidocr", lambda: _FauxMoteur)
+    boxes = ocr_mod.RapidOcrEngine().read(Image.new("RGB", (50, 20), (255,) * 3))
+    assert [b.text for b in boxes] == ["Dupont"]
