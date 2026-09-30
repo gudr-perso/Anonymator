@@ -33,7 +33,7 @@ Développement piloté par specs + plans, en TDD, exécution par sous-agents ave
 | Test d'intégration GLiNER (modèle réel) | ⬜ **Jamais lancé** (voir `docs/installation-gliner.md`) |
 | Installeur Windows (setup.exe + raccourcis + code signing) | ⬜ **Pas commencé** — « Plan 5 » (brainstorming dédié à faire) |
 
-**Tests : 815 verts + 4 d'intégration désélectionnés** (`.venv/Scripts/python -m pytest -q` → `815 passed, 4 deselected`, ~60 s).
+**Tests : 826 verts + 7 d'intégration désélectionnés** (`.venv/Scripts/python -m pytest -q` → `826 passed, 7 deselected`, ~60 s).
 Les tests d'intégration exigent les vrais modèles : `-m integration` pour GLiNER et pour l'OCR
 (lecture réelle, restitution des accents, et **verrou réseau** — socket coupée pendant un OCR).
 
@@ -42,7 +42,9 @@ Les tests d'intégration exigent les vrais modèles : `-m integration` pour GLiN
 > relever son point de départ par un `pytest -q` et raisonner en écarts. La seule règle qui
 > tienne : le compte ne baisse jamais.
 
-**Version courante : `0.8.1`** (`anonymator/__init__.py` = source de vérité, dupliquée dans `pyproject.toml`).
+**Version courante : `0.9.1`** (`anonymator/__init__.py` = source de vérité, dupliquée dans `pyproject.toml`).
+Mode Image + quatre correctifs de détection ; la `0.9.0`, taguée le même jour, n'a jamais été
+diffusée — elle caviardait la ligne entière au lieu du mot. Détail dans `docs/RELEASE.md`.
 Corrections issues d'une revue de code systématique : trois fuites de données
 (liens hypertexte et contrôles de contenu Word, métadonnées du classeur), deux
 corruptions de fichier de sortie (second enregistrement, cellules fusionnées) et
@@ -79,18 +81,18 @@ L'inventaire des composants embarqués et l'état du modèle sont figés dans
 Le produit est livré (texte, csv/xlsx avec raisonnement par colonne, PDF, docx/pptx, **images**,
 règles métier, deux marques, landing page, doc utilisateur).
 
-> **⚠️ À trancher en premier — une release attend.** `main` porte depuis le 2026-09-28 trois
-> correctifs de détection qui réparent de vraies fuites (`3c89a68`) : un IBAN ou un NIR séparé
-> par des **espaces insécables** était déclaré invalide donc **non masqué** (cas courant en Word
-> et PDF), le motif IBAN absorbait un mot voisin avec le même effet, et le SIRET écrit par
-> groupes n'était pas détecté. **Les archives `v0.8.1` en circulation portent ces fuites.**
-> Décision prise le 2026-09-28 : attendre la fin du chantier image et tout diffuser d'un coup.
-> Ne pas l'oublier au moment du tag.
+> **⚠️ À faire en premier — la `v0.9.1` est prête mais non diffusée.** Elle est taguée et
+> buildée ; il reste à **déposer les deux archives sur le partage pCloud**. Tant que ce n'est
+> pas fait, les utilisateurs téléchargent la `v0.8.1`, qui porte **quatre défauts de détection**
+> corrigés depuis : IBAN et NIR à espaces insécables non masqués (cas courant en Word et PDF),
+> motif IBAN avalant un mot voisin, faux numéros de téléphone fabriqués dans un FEC, SIRET
+> écrit par groupes non détecté. Trois d'entre eux laissaient des données **en clair**.
+> ⚠️ Ne pas déposer les archives `v0.9.0` : elles existent dans `dist/` mais caviardaient la
+> ligne entière au lieu du mot.
 
 Pistes ouvertes, par ordre de valeur :
 
-0. **Diffuser** : bump de version, `docs/RELEASE.md`, tag, build des deux marques, remplacement
-   du partage pCloud — cf. l'avertissement ci-dessus.
+0. **Déposer les archives `v0.9.1`** sur le partage pCloud — cf. l'avertissement ci-dessus.
 1. **Installeur Windows** (« Plan 5 ») : brainstorming dédié — `setup.exe` (Inno Setup ?), raccourcis menu Démarrer,
    éventuel **code signing** (supprimerait l'avertissement SmartScreen documenté dans la doc utilisateur).
    Un seul installeur par marque (réutilise `scripts/build.ps1` qui zippe déjà par marque).
