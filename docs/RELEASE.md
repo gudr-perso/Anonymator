@@ -142,6 +142,91 @@ moment du gel, version par version.
 Régénérer l'inventaire de l'environnement courant :
 `.venv/Scripts/python -m pip list --format=freeze`
 
+## v0.9.0 — 2026-09-30
+
+Nouveau **mode Image**, et **quatre correctifs de détection** qui réparent de
+vraies fuites. Ces correctifs touchent **tous les formats** — texte, CSV, XLSX,
+PDF, Word, PowerPoint — et non le seul mode Image.
+
+> **Mise à jour recommandée à tous les utilisateurs.** Trois des quatre
+> correctifs concernent des données qui restaient **en clair** dans un fichier
+> présenté comme anonymisé. Les archives `v0.8.1` et antérieures portent ces
+> défauts.
+
+### Correctifs de détection
+
+- **IBAN et NIR séparés par des espaces insécables** : les validateurs ne
+  retiraient que l'espace simple. Un numéro contenant un insécable, une
+  tabulation ou un saut de ligne était déclaré invalide, classé « non confirmé »,
+  donc **non masqué par défaut**. L'insécable est courant en Word et en PDF
+  français : le cas n'avait rien d'exotique. `vat_fr_is_plausible` normalisait
+  déjà tous les blancs dans le même fichier — ces deux validateurs étaient les
+  exceptions.
+- **Motif IBAN glouton** : une suite de groupes séparés par un blanc *optionnel*
+  pouvait absorber le mot voisin (« FR76 … 189 SIRET » lu d'un bloc), ce qui
+  cassait la clé de contrôle et produisait le même effet. Avant de renoncer, la
+  détection retente désormais sur le plus long préfixe valide ; elle ne masque
+  jamais moins qu'avant.
+- **Motif téléphone traversant une tabulation ou un saut de ligne** : dans un FEC
+  lu en `.txt`, il soudait la fin d'une colonne au début de la suivante et
+  **fabriquait** de faux numéros, masquant des montants ou des dates. Séparateurs
+  internes désormais explicites (espace, insécable, insécable fine).
+- **SIRET écrit par groupes** (`404 833 048 00022`) : non détecté, seule la forme
+  collée l'était. Détection ajoutée **avec contexte obligatoire**, comme pour le
+  SIREN groupé — hors contexte, la suite de chiffres ne se distingue pas d'un
+  montant et la masquer rendrait un FEC illisible.
+
+### Mode Image
+
+Ouvrir une capture d'écran, un scan ou une photo (`.png`, `.jpg`, `.bmp`, `.tif`,
+`.webp`), voir les zones que la reconnaissance de texte **propose**, les valider
+ou les décocher, **tracer à la souris** ce qu'elle a manqué, puis enregistrer une
+image dont les pixels sont **détruits** et les métadonnées EXIF purgées.
+
+- **Aucun téléchargement, aucun appel réseau** : les modèles OCR sont embarqués
+  dans l'exécutable. Un test coupe la socket pendant une lecture pour le garantir.
+- **La revue est obligatoire par construction** : aucun chemin ne mène à un
+  fichier de sortie sans être passé par elle.
+- **La promesse est prudente** : l'application propose, l'utilisateur valide. Elle
+  ne prétend pas avoir tout vu. L'encart « périmètre » de l'écran liste ce qui
+  reste hors de portée — écriture manuscrite, texte trop petit ou flou, visages,
+  plaques, codes-barres, et les mises en page en colonnes.
+- `.heic` (photo iPhone) non supporté : message clair, aucun plantage.
+
+### Sous le capot
+
+La couche de texte positionné (`WordBox`, `PageText`, `PageScan`, mapping
+entité→rectangles, propagation) sort du dossier `pdf/` vers
+`anonymator/files/textlayer.py`, où elle ne dépend plus d'aucun format : un PDF
+natif l'extrait, un OCR la reconstruit. `PdfReviewSession` devient
+`SpatialReviewSession`, `PdfCanvas` devient `SpatialCanvas`. Les anciens modules
+ré-exportent : aucun appelant ne change.
+
+### Composants embarqués — ajouts
+
+| Composant | Rôle | Licence |
+|---|---|---|
+| `rapidocr` 3.9.2 | reconnaissance de texte dans les images | Apache-2.0 |
+| Modèles PP-OCRv6 (~32 Mo) | détection, reconnaissance, orientation | Apache-2.0 (amont PaddleOCR) |
+| `opencv-python-headless` | traitement d'image pour l'OCR | Apache-2.0 |
+| `shapely`, `pyclipper`, `omegaconf`, `antlr4-python3-runtime` | géométrie et configuration | BSD-3-Clause / MIT |
+
+⚠️ Contrairement au modèle GLiNER, **téléchargé** au premier lancement, les modèles
+PP-OCR sont **redistribués** dans l'exécutable. Le texte de leur licence est fourni
+dans `third-party-licenses/Apache-2.0.txt`.
+
+⚠️ **OpenCV** : `rapidocr` déclare `opencv_python`, la variante qui embarque ses
+propres plugins Qt et entre en conflit avec PySide6 sous PyInstaller. Les deux
+variantes écrivent le **même dossier `cv2`** et ne cohabitent pas. Après
+`pip install -r requirements.txt`, vérifier et corriger :
+`pip uninstall -y opencv_python` puis
+`pip install --force-reinstall --no-deps opencv-python-headless`.
+
+**Tests** : 820 verts, 4 d'intégration désélectionnés (GLiNER, et pour l'OCR :
+lecture réelle, restitution des accents, **verrou réseau**).
+
+**Poids** : le dossier distribué passe de 723,1 à 871,8 Mo non compressés.
+
 ## v0.8.1 — 2026-09-22
 
 Correctif d'affichage, **remplace la v0.8.0** (dont les archives n'ont pas été
