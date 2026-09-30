@@ -142,7 +142,42 @@ moment du gel, version par version.
 Régénérer l'inventaire de l'environnement courant :
 `.venv/Scripts/python -m pip list --format=freeze`
 
-## v0.9.0 — 2026-09-30
+## v0.9.1 — 2026-09-30
+
+Correctif de caviardage sur les images, **remplace la v0.9.0** (dont les archives
+n'ont pas été diffusées). Tout le contenu de la v0.9.0 part avec celle-ci.
+
+- **Caviardage mot à mot au lieu de la ligne entière.** Masquer un nom effaçait
+  toute la phrase qui l'entourait — « Pour toute question, notre comptable
+  *[nom]* reste joignable au *[numéro]* » disparaissait en bloc — et masquer un
+  IBAN emportait le mot « IBAN : » avec lui. Le résultat restait sûr, mais
+  illisible bien au-delà du nécessaire.
+
+  Cause : RapidOCR rend par défaut **une boîte par ligne**, là où PyMuPDF rend
+  une boîte par **mot** côté PDF. `layout.py` prenait chaque boîte pour un mot,
+  donc un « mot » faisait 457 px de large. La granularité du rectangle est la
+  granularité du caviardage : le défaut ne se voit pas en lisant le code, mais
+  saute aux yeux sur l'image produite.
+
+  Le moteur sait découper (`return_word_box`) ; on l'exploite, avec repli sur la
+  boîte de ligne quand un mot n'a pas la sienne — caviarder trop large reste
+  sûr, perdre la zone ne l'est pas. Sur l'image de démonstration, le téléphone
+  passe d'**un rectangle de 222 px à cinq de 16 à 24 px**, et les libellés
+  « SIRET : » et « IBAN : » restent lisibles.
+
+- **Image de démonstration** `exemples/capture_mail_demo.png` : une capture
+  d'écran de messagerie à données fictives, dans l'univers de `clients_demo.csv`.
+  Elle est conçue pour montrer les deux moitiés du travail — les règles seules y
+  trouvent e-mail, téléphone, IBAN et SIRET **sans le modèle GLiNER**, mais ni la
+  signature manuscrite ni la pastille d'initiales ne sont détectées : il faut les
+  tracer à la main. Régénérable par `scripts/make_demo_image.py`, dont les
+  données fictives restent lisibles plutôt qu'enfouies dans un binaire.
+
+**Tests** : 826 verts, 7 d'intégration désélectionnés. Un test épingle la
+granularité : au-delà de 120 px pour un rectangle de téléphone, la régression
+est revenue.
+
+## v0.9.0 — 2026-09-30 (jamais diffusée)
 
 Nouveau **mode Image**, et **quatre correctifs de détection** qui réparent de
 vraies fuites. Ces correctifs touchent **tous les formats** — texte, CSV, XLSX,
