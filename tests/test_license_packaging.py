@@ -27,8 +27,9 @@ def test_example_dataset_is_present_in_repo():
     assert (exdir / "clients_demo.csv").exists()
     assert (exdir / "clients_demo.xlsx").exists()
     assert (exdir / "compte_rendu_reunion_demo.pdf").exists()
-    # Un exemple par mode : le mode Image a le sien depuis la v0.9.0.
+    # Un exemple par module : Fichier (csv/xlsx), PDF, Image, Texte.
     assert (exdir / "capture_mail_demo.png").exists()
+    assert (exdir / "texte_demo.txt").exists()
 
 
 def test_build_script_ships_examples_next_to_exe():
