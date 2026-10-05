@@ -87,8 +87,14 @@ règles métier, deux marques, landing page, doc utilisateur).
 > corrigés depuis : IBAN et NIR à espaces insécables non masqués (cas courant en Word et PDF),
 > motif IBAN avalant un mot voisin, faux numéros de téléphone fabriqués dans un FEC, SIRET
 > écrit par groupes non détecté. Trois d'entre eux laissaient des données **en clair**.
-> ⚠️ Ne pas déposer les archives `v0.9.0` : elles existent dans `dist/` mais caviardaient la
-> ligne entière au lieu du mot.
+> Les archives `v0.9.0`, qui caviardaient la ligne entière au lieu du mot, ont été supprimées
+> de `dist/` le 2026-09-30 : il ne reste que les bonnes.
+>
+> **Deux écarts assumés entre ces archives et le dépôt** (décision du 2026-10-05, **pas de
+> rebuild pour l'instant**) : elles contiennent `exemples/texte.txt` sous son ancien nom plutôt
+> que `texte_demo.txt`, et l'écran Image y affiche une valeur à clé fausse décochée **sans la
+> mention** « ⚠ clé non conforme ». Ni l'un ni l'autre ne change ce qui est caviardé. Ces deux
+> points partiront avec la version suivante — inutile de rouvrir le sujet.
 
 Pistes ouvertes, par ordre de valeur :
 
@@ -208,6 +214,17 @@ docs/                 ETAT-PROJET.md (ce fichier), DOCUMENTATION.md (v2.0, les 3
   obligatoire (`run_redact` rend `None` sans session) et **tracé manuel** de zones, qui rend la
   fonction utile même quand l'OCR échoue. Caviardage par **écrasement des pixels**, purge EXIF.
   Limite assumée et annoncée : une mise en page en colonnes est lue entrelacée.
+- **Jeu de démonstration : un exemple par module.** `texte_demo.txt` (Texte), `clients_demo.csv`
+  et `.xlsx` (Fichier), `compte_rendu_reunion_demo.pdf` (PDF), `capture_mail_demo.png` (Image,
+  régénérable par `scripts/make_demo_image.py`). **L'IBAN et les deux NIR de `texte_demo.txt`
+  ont volontairement des clés de contrôle fausses** (décision du 2026-10-05) : ils démontrent le
+  comportement « clé non conforme » — pointillé, mention, case décochée — qui est le plus
+  déroutant de l'outil et que mieux vaut rencontrer sur un exemple que sur son propre fichier.
+  **Ne pas les « corriger ».**
+- **Valeurs à clé de contrôle fausse : même traitement sur les quatre écrans** — surlignage en
+  pointillé, mention explicite, case décochée. La session (`SpatialReviewSession`) en porte la
+  logique ; chaque écran doit afficher la mention. ⚠️ Le libellé de la liste est **décoré**, la
+  valeur brute vit dans `Qt.UserRole` : lire `item.text(0)` casse le décochage.
 - **Sessions de revue** : une hiérarchie unique (`ReviewSessionBase` → `TabularReviewSession` → CSV/XLSX,
   plus `OoxmlReviewSession` et `PdfReviewSession`), `_index()` **rejouable** (aucun compte différentiel),
   et `apply_and_save(out_path)` commun — l'écran n'a pas à connaître le format.
